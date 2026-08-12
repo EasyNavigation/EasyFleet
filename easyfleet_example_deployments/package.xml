@@ -11,9 +11,14 @@
     / PerceptionActionServerBase classes), the "alone" and "collaboration"
     example mission scripts built on easyfleet_mission_manager, plus the
     launch files and per-robot JSON/parameter configuration each capability
-    instance is started with. A real integrator would add their own backend
-    (Nav2, EasyNav, a vendor SDK, ...) as a sibling package following the
-    same pattern.
+    instance is started with. Three scenarios: "alone" and "collaboration"
+    (the mock capabilities), and "easynav" (the real EasyNav-backed
+    navigation capability from easyfleet_easynav_navigation, against
+    EasyNav's own Dummy* plugins, or -- via easynav_gazebo_launch.yaml --
+    against a real EasyNav navigation stack for use with a real robot or
+    Gazebo simulation). A real integrator would add their own backend
+    (Nav2, a vendor SDK, ...) as a sibling package following the same
+    pattern as easyfleet_easynav_navigation.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
@@ -35,6 +40,10 @@
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>launch_yaml</exec_depend>
+  <exec_depend>easyfleet_easynav_navigation</exec_depend>
+  <exec_depend>easynav_system</exec_depend>
+  <exec_depend>easynav_indoor_testcase</exec_depend>
+  <exec_depend>rviz2</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

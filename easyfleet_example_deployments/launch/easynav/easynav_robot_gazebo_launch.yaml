@@ -1,0 +1,60 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# easynav_robot in the "easynav" scenario's real-navigation variant: a real
+# EasyNav stack (easynav_system system_main, configured with the costmap
+# localizer/maps-manager/planner + regulated pure-pursuit controller from
+# src/easynav_indoor_testcase, on the "home2" map) plus the EasyNav-backed
+# navigation capability -- for use against a real robot or a Gazebo
+# simulation of one, started separately (this file does not launch Gazebo
+# itself, same as easynav_costmap_rpp.launch.py doesn't).
+#
+# Deliberately unnamespaced (no push_ros_namespace), matching
+# easynav_costmap_rpp.launch.py's own convention: system_main's
+# sensors_node/localizer_node/controller_node need to see the same
+# (unnamespaced) scan_raw topic and TF frames the robot/Gazebo publishes.
+# The navigation capability is launched unnamespaced alongside it so its
+# GoalManagerClient's relative "easynav_control" topic still resolves to
+# system_main's own GoalManager. As a result this launches at most one
+# robot at a time -- unlike the "alone"/"collaboration"/(Dummy-plugin)
+# "easynav" scenarios, which namespace per robot.
+launch:
+  - node:
+      pkg: "easynav_system"
+      exec: "system_main"
+      output: "screen"
+      param:
+        - from: "$(find-pkg-share easyfleet_example_deployments)/config/easynav/easynav_robot/easynav_system.costmap_rpp.params.yaml"
+
+  - node:
+      pkg: "easyfleet_easynav_navigation"
+      exec: "easynav_navigation_capability_node"
+      name: "navigation"
+      output: "screen"
+      param:
+        - from: "$(find-pkg-share easyfleet_example_deployments)/config/easynav/easynav_robot/navigation_params.yaml"
+        - name: "behavior_tree_xml"
+          value: "$(find-pkg-share easyfleet_easynav_navigation)/behavior_trees/navigate.xml"
+        - name: "capabilities_file"
+          value: "$(find-pkg-share easyfleet_example_deployments)/config/easynav/easynav_robot/navigation_gazebo.json"
+
+  - node:
+      pkg: "rviz2"
+      exec: "rviz2"
+      output: "screen"
+      args: "-d $(find-pkg-share easynav_indoor_testcase)/rviz_config/easynav_costmap.rviz"
+      param:
+        - name: "use_sim_time"
+          value: true

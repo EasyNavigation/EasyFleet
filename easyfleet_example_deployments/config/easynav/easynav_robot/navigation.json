@@ -1,0 +1,70 @@
+{
+  "name": "navigation",
+  "display_name": "Navigate to a named waypoint (EasyNav-backed)",
+  "description": "Moves the robot to one of a fixed set of named waypoints (configured on this node as ROS parameters) by driving a real EasyNav navigation stack through easynav::GoalManagerClient. Internally structured as a BehaviorTree.CPP tree (StartOff -> Navigate -> Finish). Unlike the mock navigation_fake_capability, this is a real easyfleet_core::NavigationActionServerBase backend -- see easyfleet_easynav_navigation.",
+  "action": {
+    "name": "/easynav_robot/navigation",
+    "type": "easyfleet_interfaces/action/Navigation",
+    "goal": {
+      "target_pose": "geometry_msgs/PoseStamped - unused by this backend.",
+      "waypoints": "geometry_msgs/PoseStamped[] - unused by this backend.",
+      "parameters_json": "string - REQUIRED for this backend: a JSON object with a string field \"goal_id\" naming one of the waypoints configured on this node (see 'parameters' below for the current list). Goals without a valid goal_id are rejected."
+    },
+    "feedback": {
+      "current_pose": "geometry_msgs/PoseStamped - robot's current pose, as reported by EasyNav.",
+      "navigation_time": "builtin_interfaces/Duration - time elapsed since this navigation goal started, as reported by EasyNav.",
+      "estimated_time_remaining": "builtin_interfaces/Duration - as reported by EasyNav.",
+      "distance_remaining": "float32 - straight-line distance left to the goal, as reported by EasyNav.",
+      "number_of_recoveries": "int16 - always 0: EasyNav has no equivalent concept.",
+      "current_waypoint_index": "uint32 - always 0: this backend navigates to one waypoint per goal, not a waypoint list."
+    },
+    "result": {
+      "error_code": "uint16 - 0 SUCCESS, 1 REJECTED, 2 ABORTED, 3 CANCELED, 4 TIMEOUT, 10 NO_PATH_FOUND, 11 LOCALIZATION_LOST.",
+      "error_msg": "string - human-readable explanation, populated when error_code is non-zero.",
+      "final_pose": "geometry_msgs/PoseStamped - robot's pose when the goal ended, as reported by EasyNav.",
+      "total_time": "builtin_interfaces/Duration - not populated by this backend (left at its default)."
+    }
+  },
+  "requirements": [
+    "parameters_json must contain a \"goal_id\" naming one of this node's configured waypoints.",
+    "EasyNav (easynav_system system_main) must already be running and reachable on the easynav_control topic."
+  ],
+  "effects": [
+    "On success (error_code == SUCCESS), the robot's physical location changes to be at (or very near) the requested waypoint.",
+    "A currently executing goal can be preempted by a newer navigation goal: EasyNav is redirected to the new waypoint without stopping first (see 'preemption' below).",
+    "A canceled or capability-shutdown goal sends EasyNav an explicit cancellation, stopping the robot."
+  ],
+  "preemption": {
+    "supported": true,
+    "controlled_by_parameter": "navigation.allow_preemption",
+    "behavior_when_enabled": "Sending a new goal while one is active aborts the previous ROS goal, but EasyNav itself is redirected (not stopped) to the new waypoint -- the robot keeps moving, just towards the new target.",
+    "behavior_when_disabled": "Sending a new goal while one is active is rejected outright; the caller must wait for the current navigation to finish, or explicitly cancel it, before sending another."
+  },
+  "parameters": {
+    "navigation.allow_preemption": {
+      "type": "bool",
+      "default": true,
+      "description": "Whether a new navigation goal is allowed to preempt (replace) one that is currently executing."
+    },
+    "navigation.tick_rate_hz": {
+      "type": "double",
+      "unit": "hertz",
+      "default": 10.0,
+      "description": "Rate at which the internal behavior tree is ticked while a goal is executing."
+    },
+    "navigation.waypoint_ids": {
+      "type": "string[]",
+      "default": ["dock", "kitchen", "charging_station"],
+      "description": "The set of named waypoints this node accepts as parameters_json.goal_id. Each id must have a matching navigation.waypoints.<id>.{frame_id,x,y,yaw} sub-parameter."
+    },
+    "capabilities_file": {
+      "type": "string",
+      "description": "Path to this very capability description file; published verbatim on /capabilities when the node is activated."
+    }
+  },
+  "notes": [
+    "This backend drives a real EasyNav navigation stack (easynav_system system_main), not a mock -- but in this 'easynav' example deployment, EasyNav itself is configured with its own Dummy* plugins (see config/easynav/easynav_robot/easynav_system.dummy.params.yaml), so it accepts goals but never completes them on its own (DummyLocalizer never reports a robot pose). Swapping EasyNav's params file for a real stack (e.g. costmap.rpp.params.yaml from src/easynav_indoor_testcase) is enough to get real navigation, with no change to this capability.",
+    "Because the mock EasyNav configuration above never completes a goal, this capability's goals run until canceled -- the same 'runs until stopped' pattern as this package's perception_fake_capability.",
+    "Deployment: 'easynav' scenario, easynav_robot."
+  ]
+}

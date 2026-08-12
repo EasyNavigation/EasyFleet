@@ -1,0 +1,43 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# easynav_robot in the "easynav" scenario: a real EasyNav stack
+# (easynav_system system_main, configured here with its own Dummy* plugins --
+# see config/easynav/easynav_robot/easynav_system.dummy.params.yaml) plus the
+# real EasyNav-backed navigation capability, namespaced under /easynav_robot.
+# Can be run standalone.
+launch:
+  - group:
+      - push_ros_namespace:
+          namespace: "easynav_robot"
+
+      - node:
+          pkg: "easynav_system"
+          exec: "system_main"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_example_deployments)/config/easynav/easynav_robot/easynav_system.dummy.params.yaml"
+
+      - node:
+          pkg: "easyfleet_easynav_navigation"
+          exec: "easynav_navigation_capability_node"
+          name: "navigation"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_example_deployments)/config/easynav/easynav_robot/navigation_params.yaml"
+            - name: "behavior_tree_xml"
+              value: "$(find-pkg-share easyfleet_easynav_navigation)/behavior_trees/navigate.xml"
+            - name: "capabilities_file"
+              value: "$(find-pkg-share easyfleet_example_deployments)/config/easynav/easynav_robot/navigation.json"

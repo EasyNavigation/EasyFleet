@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_easynav_navigation</name>
+  <version>0.1.0</version>
+  <description>
+    Real navigation capability implementation, backed by the EasyNav
+    navigation stack (easynav_system::GoalManagerClient) and structured as a
+    BehaviorTree.CPP tree (StartOff, Navigate, Finish). Resolves the named
+    waypoints configured as ROS parameters to poses before handing them to
+    EasyNav -- EasyNav itself has no named-waypoint concept. The reference
+    example of a real easyfleet_core::NavigationActionServerBase backend
+    (the "fake" one in easyfleet_example_deployments is a mock; this one
+    drives a real EasyNav system).
+  </description>
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easynav_system</depend>
+  <depend>behaviortree_cpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nlohmann-json-dev</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

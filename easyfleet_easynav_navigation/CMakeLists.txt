@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(easyfleet_example_deployments)
+project(easyfleet_easynav_navigation)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -15,16 +15,16 @@ find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(easyfleet_core REQUIRED)
-find_package(easyfleet_interfaces REQUIRED)
-find_package(easyfleet_mission_manager REQUIRED)
+find_package(easynav_system REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(vision_msgs REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 add_library(${PROJECT_NAME}
-  src/${PROJECT_NAME}/navigation_fake_capability.cpp
-  src/${PROJECT_NAME}/manipulation_fake_capability.cpp
-  src/${PROJECT_NAME}/perception_fake_capability.cpp
+  src/${PROJECT_NAME}/start_off.cpp
+  src/${PROJECT_NAME}/navigate.cpp
+  src/${PROJECT_NAME}/finish.cpp
+  src/${PROJECT_NAME}/easynav_navigation_capability.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -35,33 +35,28 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rclcpp_action::rclcpp_action
   rclcpp_lifecycle::rclcpp_lifecycle
   easyfleet_core::easyfleet_core
-  easyfleet_interfaces::easyfleet_interfaces
+  easynav_system::easynav_system
+  behaviortree_cpp::behaviortree_cpp
   geometry_msgs::geometry_msgs
-  sensor_msgs::sensor_msgs
-  vision_msgs::vision_msgs
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+  nlohmann_json::nlohmann_json
 )
 
-foreach(capability navigation manipulation perception)
-  add_executable(${capability}_fake_capability_node src/${capability}_fake_capability_main.cpp)
-  target_link_libraries(${capability}_fake_capability_node
-    ${PROJECT_NAME}
-    rclcpp::rclcpp
-    lifecycle_msgs::lifecycle_msgs
-  )
-endforeach()
-
-foreach(scenario alone collaboration easynav)
-  add_executable(${scenario}_mission_node src/main_${scenario}.cpp)
-  target_link_libraries(${scenario}_mission_node
-    rclcpp::rclcpp
-    easyfleet_core::easyfleet_core
-    easyfleet_mission_manager::easyfleet_mission_manager
-  )
-endforeach()
+add_executable(easynav_navigation_capability_node src/easynav_navigation_capability_main.cpp)
+target_link_libraries(easynav_navigation_capability_node
+  ${PROJECT_NAME}
+  rclcpp::rclcpp
+  lifecycle_msgs::lifecycle_msgs
+)
 
 install(
   DIRECTORY include/
   DESTINATION include
+)
+install(
+  DIRECTORY behavior_trees
+  DESTINATION share/${PROJECT_NAME}
 )
 install(
   TARGETS ${PROJECT_NAME}
@@ -71,18 +66,8 @@ install(
   RUNTIME DESTINATION bin
 )
 install(
-  TARGETS
-    navigation_fake_capability_node
-    manipulation_fake_capability_node
-    perception_fake_capability_node
-    alone_mission_node
-    collaboration_mission_node
-    easynav_mission_node
+  TARGETS easynav_navigation_capability_node
   DESTINATION lib/${PROJECT_NAME}
-)
-install(
-  DIRECTORY launch config
-  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
@@ -90,13 +75,10 @@ ament_export_dependencies(
   rclcpp
   rclcpp_action
   rclcpp_lifecycle
-  lifecycle_msgs
   easyfleet_core
-  easyfleet_interfaces
-  easyfleet_mission_manager
+  easynav_system
+  behaviortree_cpp
   geometry_msgs
-  sensor_msgs
-  vision_msgs
 )
 
 if(BUILD_TESTING)

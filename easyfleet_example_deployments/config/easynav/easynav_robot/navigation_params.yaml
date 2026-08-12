@@ -1,0 +1,60 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Parameters for the "navigation" capability of easynav_robot, shared by
+# both the "easynav" scenario's Dummy-plugin launch
+# (easynav_robot_launch.yaml) and its real EasyNav/Gazebo launch
+# (easynav_robot_gazebo_launch.yaml) -- see
+# easynav_navigation_capability_node. `capabilities_file` and
+# `behavior_tree_xml` are supplied by those launch files, not set here
+# (they need find-pkg-share substitution, which only launch files can
+# resolve).
+#
+# Waypoints match src/easynav_indoor_testcase's "home2" map/world (see
+# easynav_system.costmap_rpp.params.yaml's map_path_file), so they are
+# valid, reachable targets for the real-EasyNav/Gazebo launch, not just
+# placeholders for the Dummy-plugin one.
+#
+# Uses the "/**" wildcard (rather than a bare "navigation:" node name) so
+# this file matches this node regardless of whether it ends up namespaced
+# (easynav_robot_launch.yaml pushes it under "easynav_robot") or not
+# (easynav_robot_gazebo_launch.yaml, matching
+# easynav_costmap_rpp.launch.py's convention, uses no namespace) -- a bare
+# node name only matches a node's *unqualified* name and does not account
+# for a namespace push, which silently drops every parameter this file
+# sets (arrays most noticeably, since their code-side default is an empty
+# vector).
+/**:
+  ros__parameters:
+    navigation:
+      allow_preemption: true
+      tick_rate_hz: 10.0
+      waypoint_ids: ["dock", "kitchen", "charging_station"]
+      waypoints:
+        dock:
+          frame_id: "map"
+          x: 0.0
+          y: 2.5
+          yaw: 1.57
+        kitchen:
+          frame_id: "map"
+          x: 5.4
+          y: -3.0
+          yaw: 0.0
+        charging_station:
+          frame_id: "map"
+          x: -7.86
+          y: -0.15
+          yaw: -3.14
