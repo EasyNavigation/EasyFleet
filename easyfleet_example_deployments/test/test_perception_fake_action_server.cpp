@@ -27,15 +27,15 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "easyfleet_capabilities/perception_capability.hpp"
+#include "easyfleet_example_deployments/perception_fake_capability.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
 using Perception = easyfleet_interfaces::action::Perception;
-using easyfleet_capabilities::PerceptionActionServer;
-using easyfleet_capabilities_test::spin_in_background;
-using easyfleet_capabilities_test::unique_test_name;
-using easyfleet_capabilities_test::wait_until;
+using easyfleet_example_deployments::PerceptionFakeActionServer;
+using easyfleet_example_deployments_test::spin_in_background;
+using easyfleet_example_deployments_test::unique_test_name;
+using easyfleet_example_deployments_test::wait_until;
 
 namespace
 {
@@ -52,7 +52,7 @@ Perception::Goal make_goal(const std::string & object_class = "gato")
 // Mock detection rate is fixed fast (via parameter overrides at node
 // construction) for the whole suite, so tests collecting several feedback
 // messages stay quick.
-class PerceptionActionServerTest : public ::testing::Test
+class PerceptionFakeActionServerTest : public ::testing::Test
 {
 protected:
   static void SetUpTestSuite()
@@ -67,7 +67,7 @@ protected:
     });
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_perception_server"), options);
-    action_server_ = std::make_shared<PerceptionActionServer>(server_node_.get(), action_name_);
+    action_server_ = std::make_shared<PerceptionFakeActionServer>(server_node_.get(), action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_perception_client"));
     client_ = rclcpp_action::create_client<Perception>(client_node_, action_name_);
@@ -97,19 +97,19 @@ protected:
 
   inline static std::string action_name_;
   inline static rclcpp_lifecycle::LifecycleNode::SharedPtr server_node_;
-  inline static std::shared_ptr<PerceptionActionServer> action_server_;
+  inline static std::shared_ptr<PerceptionFakeActionServer> action_server_;
   inline static rclcpp::Node::SharedPtr client_node_;
   inline static rclcpp_action::Client<Perception>::SharedPtr client_;
   inline static rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
   inline static std::thread spin_thread_;
 };
 
-TEST_F(PerceptionActionServerTest, ExposesConfiguredActionName)
+TEST_F(PerceptionFakeActionServerTest, ExposesConfiguredActionName)
 {
   EXPECT_EQ(action_server_->get_action_name(), action_name_);
 }
 
-TEST_F(PerceptionActionServerTest, RejectsGoalWithEmptyObjectClassesList)
+TEST_F(PerceptionFakeActionServerTest, RejectsGoalWithEmptyObjectClassesList)
 {
   Perception::Goal goal;
   auto future = client_->async_send_goal(goal);
@@ -117,14 +117,14 @@ TEST_F(PerceptionActionServerTest, RejectsGoalWithEmptyObjectClassesList)
   EXPECT_FALSE(future.get());
 }
 
-TEST_F(PerceptionActionServerTest, RejectsGoalForUnsupportedClass)
+TEST_F(PerceptionFakeActionServerTest, RejectsGoalForUnsupportedClass)
 {
   auto future = client_->async_send_goal(make_goal("perro"));
   ASSERT_EQ(future.wait_for(2s), std::future_status::ready);
   EXPECT_FALSE(future.get());
 }
 
-TEST_F(PerceptionActionServerTest, AcceptsTargetClassCaseInsensitiveAndAsSubstring)
+TEST_F(PerceptionFakeActionServerTest, AcceptsTargetClassCaseInsensitiveAndAsSubstring)
 {
   auto handle_future = client_->async_send_goal(make_goal("Gatos"));
   ASSERT_EQ(handle_future.wait_for(2s), std::future_status::ready);
@@ -139,7 +139,7 @@ TEST_F(PerceptionActionServerTest, AcceptsTargetClassCaseInsensitiveAndAsSubstri
   EXPECT_EQ(result_future.get().code, rclcpp_action::ResultCode::CANCELED);
 }
 
-TEST_F(PerceptionActionServerTest, StreamsOneToThreeDetectionsInBoth2dAnd3dUntilCanceled)
+TEST_F(PerceptionFakeActionServerTest, StreamsOneToThreeDetectionsInBoth2dAnd3dUntilCanceled)
 {
   std::mutex mutex;
   std::vector<std::shared_ptr<const Perception::Feedback>> feedbacks;
@@ -190,7 +190,7 @@ TEST_F(PerceptionActionServerTest, StreamsOneToThreeDetectionsInBoth2dAnd3dUntil
   }
 }
 
-TEST_F(PerceptionActionServerTest, NewGoalPreemptsRunningGoalByDefault)
+TEST_F(PerceptionFakeActionServerTest, NewGoalPreemptsRunningGoalByDefault)
 {
   EXPECT_TRUE(action_server_->is_preemptable());
 
@@ -221,7 +221,7 @@ TEST_F(PerceptionActionServerTest, NewGoalPreemptsRunningGoalByDefault)
   EXPECT_EQ(second_result_future.get().code, rclcpp_action::ResultCode::CANCELED);
 }
 
-TEST(PerceptionActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileBusy)
+TEST(PerceptionFakeActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileBusy)
 {
   const auto action_name = unique_test_name("perception_np");
   rclcpp::NodeOptions options;
@@ -232,7 +232,7 @@ TEST(PerceptionActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileB
   });
   auto server_node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
     unique_test_name("test_perception_server_np"), options);
-  auto action_server = std::make_shared<PerceptionActionServer>(server_node.get(), action_name);
+  auto action_server = std::make_shared<PerceptionFakeActionServer>(server_node.get(), action_name);
   ASSERT_FALSE(action_server->is_preemptable());
 
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_perception_client_np"));

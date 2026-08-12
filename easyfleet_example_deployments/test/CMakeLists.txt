@@ -7,50 +7,50 @@ find_package(ament_cmake_gtest REQUIRED)
 # /capabilities and /capabilities_status, so without domain isolation they
 # could cross-talk with any other test binary or capability node using
 # those same topics.
-ament_add_gtest(test_navigation_action_server test_navigation_action_server.cpp
+ament_add_gtest(test_navigation_fake_action_server test_navigation_fake_action_server.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=71)
-target_link_libraries(test_navigation_action_server
+target_link_libraries(test_navigation_fake_action_server
   ${PROJECT_NAME}
   GTest::gtest
 )
 
-ament_add_gtest(test_navigation_capability test_navigation_capability.cpp
+ament_add_gtest(test_navigation_fake_capability test_navigation_fake_capability.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=72)
-target_link_libraries(test_navigation_capability
+target_link_libraries(test_navigation_fake_capability
   ${PROJECT_NAME}
   GTest::gtest
 )
 
-ament_add_gtest(test_manipulation_action_server test_manipulation_action_server.cpp
+ament_add_gtest(test_manipulation_fake_action_server test_manipulation_fake_action_server.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=73)
-target_link_libraries(test_manipulation_action_server
+target_link_libraries(test_manipulation_fake_action_server
   ${PROJECT_NAME}
   GTest::gtest
 )
 
-ament_add_gtest(test_manipulation_capability test_manipulation_capability.cpp
+ament_add_gtest(test_manipulation_fake_capability test_manipulation_fake_capability.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=74)
-target_link_libraries(test_manipulation_capability
+target_link_libraries(test_manipulation_fake_capability
   ${PROJECT_NAME}
   GTest::gtest
 )
 
-ament_add_gtest(test_perception_action_server test_perception_action_server.cpp
+ament_add_gtest(test_perception_fake_action_server test_perception_fake_action_server.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=75)
-target_link_libraries(test_perception_action_server
+target_link_libraries(test_perception_fake_action_server
   ${PROJECT_NAME}
   GTest::gtest
 )
 
-ament_add_gtest(test_perception_capability test_perception_capability.cpp
+ament_add_gtest(test_perception_fake_capability test_perception_fake_capability.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=76)
-target_link_libraries(test_perception_capability
+target_link_libraries(test_perception_fake_capability
   ${PROJECT_NAME}
   GTest::gtest
 )

@@ -22,8 +22,8 @@ launch:
           namespace: "robot_3"
 
       - node:
-          pkg: "easyfleet_capabilities"
-          exec: "navigation_capability_node"
+          pkg: "easyfleet_example_deployments"
+          exec: "navigation_fake_capability_node"
           name: "navigation"
           output: "screen"
           param:
@@ -32,8 +32,8 @@ launch:
               value: "$(find-pkg-share easyfleet_example_deployments)/config/collaboration/robot_3/navigation.json"
 
       - node:
-          pkg: "easyfleet_capabilities"
-          exec: "manipulation_capability_node"
+          pkg: "easyfleet_example_deployments"
+          exec: "manipulation_fake_capability_node"
           name: "manipulation"
           output: "screen"
           param:

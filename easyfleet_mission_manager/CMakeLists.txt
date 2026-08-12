@@ -11,12 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_action REQUIRED)
 find_package(easyfleet_core REQUIRED)
 find_package(easyfleet_interfaces REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(vision_msgs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 add_library(${PROJECT_NAME}
@@ -34,26 +30,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   nlohmann_json::nlohmann_json
 )
 
-add_executable(easyfleet_mission_manager_alone_node src/main_alone.cpp)
-target_link_libraries(easyfleet_mission_manager_alone_node
-  ${PROJECT_NAME}
-  rclcpp::rclcpp
-  rclcpp_action::rclcpp_action
-  geometry_msgs::geometry_msgs
-  sensor_msgs::sensor_msgs
-  vision_msgs::vision_msgs
-)
-
-add_executable(easyfleet_mission_manager_collaboration_node src/main_collaboration.cpp)
-target_link_libraries(easyfleet_mission_manager_collaboration_node
-  ${PROJECT_NAME}
-  rclcpp::rclcpp
-  rclcpp_action::rclcpp_action
-  geometry_msgs::geometry_msgs
-  sensor_msgs::sensor_msgs
-  vision_msgs::vision_msgs
-)
-
 install(
   DIRECTORY include/
   DESTINATION include
@@ -64,10 +40,6 @@ install(
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
-)
-install(
-  TARGETS easyfleet_mission_manager_alone_node easyfleet_mission_manager_collaboration_node
-  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)

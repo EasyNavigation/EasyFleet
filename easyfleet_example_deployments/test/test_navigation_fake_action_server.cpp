@@ -27,15 +27,15 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "easyfleet_capabilities/navigation_capability.hpp"
+#include "easyfleet_example_deployments/navigation_fake_capability.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
 using Navigation = easyfleet_interfaces::action::Navigation;
-using easyfleet_capabilities::NavigationActionServer;
-using easyfleet_capabilities_test::spin_in_background;
-using easyfleet_capabilities_test::unique_test_name;
-using easyfleet_capabilities_test::wait_until;
+using easyfleet_example_deployments::NavigationFakeActionServer;
+using easyfleet_example_deployments_test::spin_in_background;
+using easyfleet_example_deployments_test::unique_test_name;
+using easyfleet_example_deployments_test::wait_until;
 
 namespace
 {
@@ -55,7 +55,7 @@ geometry_msgs::msg::PoseStamped make_pose(const std::string & frame_id = "map")
 // Mock timing is fixed short and fine-grained for the whole suite (via
 // parameter overrides at node construction) so tests run quickly while
 // still leaving enough steps to observe intermediate feedback reliably.
-class NavigationActionServerTest : public ::testing::Test
+class NavigationFakeActionServerTest : public ::testing::Test
 {
 protected:
   static void SetUpTestSuite()
@@ -71,7 +71,7 @@ protected:
     });
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_nav_server"), options);
-    action_server_ = std::make_shared<NavigationActionServer>(
+    action_server_ = std::make_shared<NavigationFakeActionServer>(
       server_node_.get(), action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_nav_client"));
@@ -102,19 +102,19 @@ protected:
 
   inline static std::string action_name_;
   inline static rclcpp_lifecycle::LifecycleNode::SharedPtr server_node_;
-  inline static std::shared_ptr<NavigationActionServer> action_server_;
+  inline static std::shared_ptr<NavigationFakeActionServer> action_server_;
   inline static rclcpp::Node::SharedPtr client_node_;
   inline static rclcpp_action::Client<Navigation>::SharedPtr client_;
   inline static rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
   inline static std::thread spin_thread_;
 };
 
-TEST_F(NavigationActionServerTest, ExposesConfiguredActionName)
+TEST_F(NavigationFakeActionServerTest, ExposesConfiguredActionName)
 {
   EXPECT_EQ(action_server_->get_action_name(), action_name_);
 }
 
-TEST_F(NavigationActionServerTest, RejectsGoalWithEmptyFrameId)
+TEST_F(NavigationFakeActionServerTest, RejectsGoalWithEmptyFrameId)
 {
   Navigation::Goal goal;
   goal.target_pose = make_pose("");
@@ -124,7 +124,7 @@ TEST_F(NavigationActionServerTest, RejectsGoalWithEmptyFrameId)
   EXPECT_FALSE(future.get());
 }
 
-TEST_F(NavigationActionServerTest, AcceptsGoalAndSucceedsWithNoError)
+TEST_F(NavigationFakeActionServerTest, AcceptsGoalAndSucceedsWithNoError)
 {
   Navigation::Goal goal;
   goal.target_pose = make_pose();
@@ -142,7 +142,7 @@ TEST_F(NavigationActionServerTest, AcceptsGoalAndSucceedsWithNoError)
   EXPECT_EQ(wrapped.result->error_code, Navigation::Result::SUCCESS);
 }
 
-TEST_F(NavigationActionServerTest, FeedbackReportsDecreasingDistanceRemaining)
+TEST_F(NavigationFakeActionServerTest, FeedbackReportsDecreasingDistanceRemaining)
 {
   Navigation::Goal goal;
   goal.target_pose = make_pose();
@@ -176,7 +176,7 @@ TEST_F(NavigationActionServerTest, FeedbackReportsDecreasingDistanceRemaining)
   EXPECT_NEAR(distances.back(), 0.0f, 1e-3f);
 }
 
-TEST_F(NavigationActionServerTest, ClientCancelResultsInCanceled)
+TEST_F(NavigationFakeActionServerTest, ClientCancelResultsInCanceled)
 {
   Navigation::Goal goal;
   goal.target_pose = make_pose();
@@ -196,7 +196,7 @@ TEST_F(NavigationActionServerTest, ClientCancelResultsInCanceled)
   EXPECT_EQ(result_future.get().code, rclcpp_action::ResultCode::CANCELED);
 }
 
-TEST_F(NavigationActionServerTest, NewGoalPreemptsRunningGoalByDefault)
+TEST_F(NavigationFakeActionServerTest, NewGoalPreemptsRunningGoalByDefault)
 {
   EXPECT_TRUE(action_server_->is_preemptable());
 
@@ -225,7 +225,7 @@ TEST_F(NavigationActionServerTest, NewGoalPreemptsRunningGoalByDefault)
   EXPECT_EQ(second_result_future.get().code, rclcpp_action::ResultCode::SUCCEEDED);
 }
 
-TEST(NavigationActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileBusy)
+TEST(NavigationFakeActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileBusy)
 {
   const auto action_name = unique_test_name("navigation_np");
   rclcpp::NodeOptions options;
@@ -237,7 +237,7 @@ TEST(NavigationActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileB
   });
   auto server_node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
     unique_test_name("test_nav_server_np"), options);
-  auto action_server = std::make_shared<NavigationActionServer>(server_node.get(), action_name);
+  auto action_server = std::make_shared<NavigationFakeActionServer>(server_node.get(), action_name);
   ASSERT_FALSE(action_server->is_preemptable());
 
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_nav_client_np"));

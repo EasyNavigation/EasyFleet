@@ -4,9 +4,13 @@
   <name>easyfleet_mission_manager</name>
   <version>0.1.0</version>
   <description>
-    Interactive CLI that discovers active capabilities (via /capabilities
-    and /capabilities_status), prints their description, and exercises them
-    sequentially and in parallel through easyfleet_core::CapabilityClient.
+    C++ library providing the reusable building blocks for a mission
+    manager: capability discovery (via /capabilities and
+    /capabilities_status), pretty-printing helpers, and a generic
+    run_capability() helper built on easyfleet_core::CapabilityClient.
+    Ships no executables of its own -- see easyfleet_example_deployments
+    for example mission scripts (alone_mission_node,
+    collaboration_mission_node) built on top of this library.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
@@ -14,12 +18,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>rclcpp_action</depend>
   <depend>easyfleet_core</depend>
   <depend>easyfleet_interfaces</depend>
-  <depend>geometry_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>vision_msgs</depend>
   <depend>nlohmann-json-dev</depend>
 
   <test_depend>ament_lint_auto</test_depend>

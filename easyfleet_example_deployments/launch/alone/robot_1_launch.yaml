@@ -23,8 +23,8 @@ launch:
           namespace: "robot_1"
 
       - node:
-          pkg: "easyfleet_capabilities"
-          exec: "navigation_capability_node"
+          pkg: "easyfleet_example_deployments"
+          exec: "navigation_fake_capability_node"
           name: "navigation"
           output: "screen"
           param:
@@ -33,8 +33,8 @@ launch:
               value: "$(find-pkg-share easyfleet_example_deployments)/config/alone/robot_1/navigation.json"
 
       - node:
-          pkg: "easyfleet_capabilities"
-          exec: "manipulation_capability_node"
+          pkg: "easyfleet_example_deployments"
+          exec: "manipulation_fake_capability_node"
           name: "manipulation"
           output: "screen"
           param:
@@ -43,8 +43,8 @@ launch:
               value: "$(find-pkg-share easyfleet_example_deployments)/config/alone/robot_1/manipulation.json"
 
       - node:
-          pkg: "easyfleet_capabilities"
-          exec: "perception_capability_node"
+          pkg: "easyfleet_example_deployments"
+          exec: "perception_fake_capability_node"
           name: "perception"
           output: "screen"
           param:

@@ -29,7 +29,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "easyfleet_capabilities/perception_capability.hpp"
+#include "easyfleet_example_deployments/perception_fake_capability.hpp"
 #include "easyfleet_interfaces/msg/capability_description.hpp"
 #include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "test_utils.hpp"
@@ -38,10 +38,10 @@ using namespace std::chrono_literals;
 using easyfleet_interfaces::msg::CapabilityDescription;
 using easyfleet_interfaces::msg::CapabilityStatus;
 using Perception = easyfleet_interfaces::action::Perception;
-using easyfleet_capabilities::PerceptionCapability;
-using easyfleet_capabilities_test::spin_in_background;
-using easyfleet_capabilities_test::unique_test_name;
-using easyfleet_capabilities_test::wait_until;
+using easyfleet_example_deployments::PerceptionFakeCapability;
+using easyfleet_example_deployments_test::spin_in_background;
+using easyfleet_example_deployments_test::unique_test_name;
+using easyfleet_example_deployments_test::wait_until;
 
 namespace
 {
@@ -110,10 +110,10 @@ private:
 
 }  // namespace
 
-// PerceptionCapability's node/action name ("perception") is fixed by design
+// PerceptionFakeCapability's node/action name ("perception") is fixed by design
 // (it isn't parameterized), so the capability is created and fully torn
 // down per test rather than shared across the suite.
-class PerceptionCapabilityTest : public ::testing::Test
+class PerceptionFakeCapabilityTest : public ::testing::Test
 {
 protected:
   void SetUp() override
@@ -123,7 +123,7 @@ protected:
     {
       rclcpp::Parameter("perception.detection_rate_hz", 50.0),
     });
-    capability_ = std::make_shared<PerceptionCapability>(options);
+    capability_ = std::make_shared<PerceptionFakeCapability>(options);
     sub_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_capability_subscriber"));
 
     executor_.add_node(capability_->get_node_base_interface());
@@ -165,7 +165,7 @@ protected:
     return collector;
   }
 
-  std::shared_ptr<PerceptionCapability> capability_;
+  std::shared_ptr<PerceptionFakeCapability> capability_;
   rclcpp::Node::SharedPtr sub_node_;
   rclcpp::executors::SingleThreadedExecutor executor_;
   std::thread spin_thread_;
@@ -173,14 +173,14 @@ protected:
   std::vector<rclcpp::SubscriptionBase::SharedPtr> status_subs_;
 };
 
-TEST_F(PerceptionCapabilityTest, StartsUnconfigured)
+TEST_F(PerceptionFakeCapabilityTest, StartsUnconfigured)
 {
   EXPECT_EQ(
     capability_->get_current_state().id(),
     lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 }
 
-TEST_F(PerceptionCapabilityTest, NodeAndActionAreNamedPerception)
+TEST_F(PerceptionFakeCapabilityTest, NodeAndActionAreNamedPerception)
 {
   EXPECT_EQ(std::string(capability_->get_name()), "perception");
   EXPECT_EQ(capability_->get_capability_name(), "perception");
@@ -190,16 +190,16 @@ TEST_F(PerceptionCapabilityTest, NodeAndActionAreNamedPerception)
   EXPECT_EQ(capability_->get_robot_name(), "");
 }
 
-TEST_F(PerceptionCapabilityTest, ActivateWithoutCapabilitiesFileParameterFails)
+TEST_F(PerceptionFakeCapabilityTest, ActivateWithoutCapabilitiesFileParameterFails)
 {
   capability_->configure();
-  auto cb = PerceptionCapability::CallbackReturn::SUCCESS;
+  auto cb = PerceptionFakeCapability::CallbackReturn::SUCCESS;
   const auto & state = capability_->activate(cb);
-  EXPECT_EQ(cb, PerceptionCapability::CallbackReturn::FAILURE);
+  EXPECT_EQ(cb, PerceptionFakeCapability::CallbackReturn::FAILURE);
   EXPECT_EQ(state.id(), lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 }
 
-TEST_F(PerceptionCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonVerbatim)
+TEST_F(PerceptionFakeCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonVerbatim)
 {
   const auto path = write_sample_capabilities_file();
 
@@ -208,9 +208,9 @@ TEST_F(PerceptionCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonVer
 
   auto collector = subscribe_descriptions();
 
-  auto cb = PerceptionCapability::CallbackReturn::FAILURE;
+  auto cb = PerceptionFakeCapability::CallbackReturn::FAILURE;
   const auto & state = capability_->activate(cb);
-  EXPECT_EQ(cb, PerceptionCapability::CallbackReturn::SUCCESS);
+  EXPECT_EQ(cb, PerceptionFakeCapability::CallbackReturn::SUCCESS);
   EXPECT_EQ(state.id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
   ASSERT_TRUE(wait_until([&] {return collector->count() >= 1;}, 2s));
@@ -221,7 +221,7 @@ TEST_F(PerceptionCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonVer
   EXPECT_EQ(msg.action_name, "/perception");
 }
 
-TEST_F(PerceptionCapabilityTest, HeartbeatPublishesIdentityEverySecondWhileActive)
+TEST_F(PerceptionFakeCapabilityTest, HeartbeatPublishesIdentityEverySecondWhileActive)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
@@ -239,7 +239,7 @@ TEST_F(PerceptionCapabilityTest, HeartbeatPublishesIdentityEverySecondWhileActiv
   }
 }
 
-TEST_F(PerceptionCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
+TEST_F(PerceptionFakeCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
@@ -253,16 +253,16 @@ TEST_F(PerceptionCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
 
   auto collector = subscribe_descriptions();
 
-  auto cb = PerceptionCapability::CallbackReturn::FAILURE;
+  auto cb = PerceptionFakeCapability::CallbackReturn::FAILURE;
   capability_->configure();
   const auto & state = capability_->activate(cb);
-  EXPECT_EQ(cb, PerceptionCapability::CallbackReturn::SUCCESS);
+  EXPECT_EQ(cb, PerceptionFakeCapability::CallbackReturn::SUCCESS);
   EXPECT_EQ(state.id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
   ASSERT_TRUE(wait_until([&] {return collector->count() >= 1;}, 2s));
 }
 
-TEST_F(PerceptionCapabilityTest, ActiveCapabilityStreamsDetectionsUntilCanceled)
+TEST_F(PerceptionFakeCapabilityTest, ActiveCapabilityStreamsDetectionsUntilCanceled)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));

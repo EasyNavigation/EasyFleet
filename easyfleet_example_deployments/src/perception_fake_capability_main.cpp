@@ -18,24 +18,24 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-#include "easyfleet_capabilities/navigation_capability.hpp"
+#include "easyfleet_example_deployments/perception_fake_capability.hpp"
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<easyfleet_capabilities::NavigationCapability>();
+  auto node = std::make_shared<easyfleet_example_deployments::PerceptionFakeCapability>();
 
   node->configure();
   if (node->get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE) {
-    RCLCPP_FATAL(node->get_logger(), "navigation capability failed to configure, exiting.");
+    RCLCPP_FATAL(node->get_logger(), "perception fake capability failed to configure, exiting.");
     rclcpp::shutdown();
     return 1;
   }
 
   node->activate();
   if (node->get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
-    RCLCPP_FATAL(node->get_logger(), "navigation capability failed to activate, exiting.");
+    RCLCPP_FATAL(node->get_logger(), "perception fake capability failed to activate, exiting.");
     rclcpp::shutdown();
     return 1;
   }

@@ -28,7 +28,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "easyfleet_capabilities/manipulation_capability.hpp"
+#include "easyfleet_example_deployments/navigation_fake_capability.hpp"
 #include "easyfleet_interfaces/msg/capability_description.hpp"
 #include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "test_utils.hpp"
@@ -36,11 +36,11 @@
 using namespace std::chrono_literals;
 using easyfleet_interfaces::msg::CapabilityDescription;
 using easyfleet_interfaces::msg::CapabilityStatus;
-using Manipulation = easyfleet_interfaces::action::Manipulation;
-using easyfleet_capabilities::ManipulationCapability;
-using easyfleet_capabilities_test::spin_in_background;
-using easyfleet_capabilities_test::unique_test_name;
-using easyfleet_capabilities_test::wait_until;
+using Navigation = easyfleet_interfaces::action::Navigation;
+using easyfleet_example_deployments::NavigationFakeCapability;
+using easyfleet_example_deployments_test::spin_in_background;
+using easyfleet_example_deployments_test::unique_test_name;
+using easyfleet_example_deployments_test::wait_until;
 
 namespace
 {
@@ -51,20 +51,20 @@ namespace
 // publish-file-verbatim behavior against a JSON they write themselves.
 constexpr char kSampleCapabilitiesJson[] =
   R"json({
-  "name": "manipulation",
-  "display_name": "Reach a joint target",
+  "name": "navigation",
+  "display_name": "Navigate to a target pose",
   "action": {
-    "name": "/manipulation",
-    "type": "easyfleet_interfaces/action/Manipulation"
+    "name": "/navigation",
+    "type": "easyfleet_interfaces/action/Navigation"
   },
   "requirements": [
-    "The target joint configuration must already be free of collisions."
+    "The robot must already be localized within a known map."
   ],
   "effects": [
-    "On success, the manipulator's joints end up at the requested target."
+    "On success, the robot's physical location changes to the requested target pose."
   ],
   "parameters": {
-    "manipulation.allow_preemption": {
+    "navigation.allow_preemption": {
       "type": "bool",
       "default": true
     }
@@ -74,19 +74,10 @@ constexpr char kSampleCapabilitiesJson[] =
 
 std::string write_sample_capabilities_file()
 {
-  const auto path = "/tmp/" + unique_test_name("manipulation_capabilities") + ".json";
+  const auto path = "/tmp/" + unique_test_name("navigation_capabilities") + ".json";
   std::ofstream file(path);
   file << kSampleCapabilitiesJson;
   return path;
-}
-
-Manipulation::Goal make_joint_target_goal()
-{
-  Manipulation::Goal goal;
-  goal.mode = Manipulation::Goal::MODE_JOINT_TARGET;
-  goal.joint_target.name = {"joint1"};
-  goal.joint_target.position = {1.0};
-  return goal;
 }
 
 template<typename MsgT>
@@ -118,26 +109,26 @@ private:
 
 }  // namespace
 
-// ManipulationCapability's node/action name ("manipulation") is fixed by
-// design (it isn't parameterized), so unlike other fixtures in this project
-// the capability is created and fully torn down per test rather than shared
+// NavigationFakeCapability's node/action name ("navigation") is fixed by design
+// (it isn't parameterized), so unlike other fixtures in this project the
+// capability is created and fully torn down per test rather than shared
 // across the suite.
-class ManipulationCapabilityTest : public ::testing::Test
+class NavigationFakeCapabilityTest : public ::testing::Test
 {
 protected:
   void SetUp() override
   {
-    // ManipulationActionServer reads its mock timing parameters once, at
+    // NavigationFakeActionServer reads its mock timing parameters once, at
     // construction time, so they must be overridden via NodeOptions (not
     // set_parameter() afterwards) to actually take effect. Keeping the
     // whole suite on a short mock duration also keeps it fast.
     rclcpp::NodeOptions options;
     options.parameter_overrides(
     {
-      rclcpp::Parameter("manipulation.mock_execution_duration", 0.5),
-      rclcpp::Parameter("manipulation.mock_feedback_period", 0.1),
+      rclcpp::Parameter("navigation.mock_navigation_duration", 0.5),
+      rclcpp::Parameter("navigation.mock_feedback_period", 0.1),
     });
-    capability_ = std::make_shared<ManipulationCapability>(options);
+    capability_ = std::make_shared<NavigationFakeCapability>(options);
     sub_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_capability_subscriber"));
 
     executor_.add_node(capability_->get_node_base_interface());
@@ -179,7 +170,7 @@ protected:
     return collector;
   }
 
-  std::shared_ptr<ManipulationCapability> capability_;
+  std::shared_ptr<NavigationFakeCapability> capability_;
   rclcpp::Node::SharedPtr sub_node_;
   rclcpp::executors::SingleThreadedExecutor executor_;
   std::thread spin_thread_;
@@ -187,33 +178,33 @@ protected:
   std::vector<rclcpp::SubscriptionBase::SharedPtr> status_subs_;
 };
 
-TEST_F(ManipulationCapabilityTest, StartsUnconfigured)
+TEST_F(NavigationFakeCapabilityTest, StartsUnconfigured)
 {
   EXPECT_EQ(
     capability_->get_current_state().id(),
     lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 }
 
-TEST_F(ManipulationCapabilityTest, NodeAndActionAreNamedManipulation)
+TEST_F(NavigationFakeCapabilityTest, NodeAndActionAreNamedNavigation)
 {
-  EXPECT_EQ(std::string(capability_->get_name()), "manipulation");
-  EXPECT_EQ(capability_->get_capability_name(), "manipulation");
+  EXPECT_EQ(std::string(capability_->get_name()), "navigation");
+  EXPECT_EQ(capability_->get_capability_name(), "navigation");
   ASSERT_TRUE(capability_->get_action_server());
-  EXPECT_EQ(capability_->get_action_server()->get_action_name(), "manipulation");
-  EXPECT_EQ(capability_->get_resolved_action_name(), "/manipulation");
+  EXPECT_EQ(capability_->get_action_server()->get_action_name(), "navigation");
+  EXPECT_EQ(capability_->get_resolved_action_name(), "/navigation");
   EXPECT_EQ(capability_->get_robot_name(), "");
 }
 
-TEST_F(ManipulationCapabilityTest, ActivateWithoutCapabilitiesFileParameterFails)
+TEST_F(NavigationFakeCapabilityTest, ActivateWithoutCapabilitiesFileParameterFails)
 {
   capability_->configure();
-  auto cb = ManipulationCapability::CallbackReturn::SUCCESS;
+  auto cb = NavigationFakeCapability::CallbackReturn::SUCCESS;
   const auto & state = capability_->activate(cb);
-  EXPECT_EQ(cb, ManipulationCapability::CallbackReturn::FAILURE);
+  EXPECT_EQ(cb, NavigationFakeCapability::CallbackReturn::FAILURE);
   EXPECT_EQ(state.id(), lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 }
 
-TEST_F(ManipulationCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonVerbatim)
+TEST_F(NavigationFakeCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonVerbatim)
 {
   const auto path = write_sample_capabilities_file();
 
@@ -222,20 +213,20 @@ TEST_F(ManipulationCapabilityTest, ActivatePublishesTheProvidedCapabilitiesJsonV
 
   auto collector = subscribe_descriptions();
 
-  auto cb = ManipulationCapability::CallbackReturn::FAILURE;
+  auto cb = NavigationFakeCapability::CallbackReturn::FAILURE;
   const auto & state = capability_->activate(cb);
-  EXPECT_EQ(cb, ManipulationCapability::CallbackReturn::SUCCESS);
+  EXPECT_EQ(cb, NavigationFakeCapability::CallbackReturn::SUCCESS);
   EXPECT_EQ(state.id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
   ASSERT_TRUE(wait_until([&] {return collector->count() >= 1;}, 2s));
   const CapabilityDescription msg = collector->messages().front();
   EXPECT_EQ(msg.description_json, kSampleCapabilitiesJson);
-  EXPECT_EQ(msg.capability, "manipulation");
+  EXPECT_EQ(msg.capability, "navigation");
   EXPECT_EQ(msg.robot, "");
-  EXPECT_EQ(msg.action_name, "/manipulation");
+  EXPECT_EQ(msg.action_name, "/navigation");
 }
 
-TEST_F(ManipulationCapabilityTest, PublishedCapabilitiesJsonIsWellFormed)
+TEST_F(NavigationFakeCapabilityTest, PublishedCapabilitiesJsonIsWellFormed)
 {
   // Not a full JSON parser: checks the shape an LLM/planner consuming this
   // file would expect, without adding a JSON parsing dependency.
@@ -250,7 +241,7 @@ TEST_F(ManipulationCapabilityTest, PublishedCapabilitiesJsonIsWellFormed)
   const std::string json = collector->messages().front().description_json;
   EXPECT_NE(json.find("\"name\""), std::string::npos);
   EXPECT_NE(json.find("\"action\""), std::string::npos);
-  EXPECT_NE(json.find("Manipulation"), std::string::npos);
+  EXPECT_NE(json.find("Navigation"), std::string::npos);
   EXPECT_NE(json.find("\"requirements\""), std::string::npos);
   EXPECT_NE(json.find("\"effects\""), std::string::npos);
   EXPECT_NE(json.find("\"parameters\""), std::string::npos);
@@ -260,7 +251,7 @@ TEST_F(ManipulationCapabilityTest, PublishedCapabilitiesJsonIsWellFormed)
   EXPECT_EQ(json[last_non_space], '}');
 }
 
-TEST_F(ManipulationCapabilityTest, HeartbeatPublishesIdentityEverySecondWhileActive)
+TEST_F(NavigationFakeCapabilityTest, HeartbeatPublishesIdentityEverySecondWhileActive)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
@@ -271,14 +262,14 @@ TEST_F(ManipulationCapabilityTest, HeartbeatPublishesIdentityEverySecondWhileAct
 
   ASSERT_TRUE(wait_until([&] {return collector->count() >= 2;}, 3s));
   for (const auto & msg : collector->messages()) {
-    EXPECT_EQ(msg.capability, "manipulation");
+    EXPECT_EQ(msg.capability, "navigation");
     EXPECT_EQ(msg.robot, "");
-    EXPECT_EQ(msg.action_name, "/manipulation");
+    EXPECT_EQ(msg.action_name, "/navigation");
     EXPECT_FALSE(msg.busy);
   }
 }
 
-TEST_F(ManipulationCapabilityTest, DeactivateStopsTheHeartbeat)
+TEST_F(NavigationFakeCapabilityTest, DeactivateStopsTheHeartbeat)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
@@ -294,7 +285,7 @@ TEST_F(ManipulationCapabilityTest, DeactivateStopsTheHeartbeat)
   EXPECT_EQ(collector->count(), count_after_deactivate);
 }
 
-TEST_F(ManipulationCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
+TEST_F(NavigationFakeCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
@@ -308,26 +299,28 @@ TEST_F(ManipulationCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
 
   auto collector = subscribe_descriptions();
 
-  auto cb = ManipulationCapability::CallbackReturn::FAILURE;
+  auto cb = NavigationFakeCapability::CallbackReturn::FAILURE;
   capability_->configure();
   const auto & state = capability_->activate(cb);
-  EXPECT_EQ(cb, ManipulationCapability::CallbackReturn::SUCCESS);
+  EXPECT_EQ(cb, NavigationFakeCapability::CallbackReturn::SUCCESS);
   EXPECT_EQ(state.id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
   ASSERT_TRUE(wait_until([&] {return collector->count() >= 1;}, 2s));
 }
 
-TEST_F(ManipulationCapabilityTest, ActiveCapabilityCompletesARealJointTargetGoal)
+TEST_F(NavigationFakeCapabilityTest, ActiveCapabilityCompletesARealNavigationGoal)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
   capability_->configure();
   capability_->activate();
 
-  auto client = rclcpp_action::create_client<Manipulation>(sub_node_, "manipulation");
+  auto client = rclcpp_action::create_client<Navigation>(sub_node_, "navigation");
   ASSERT_TRUE(client->wait_for_action_server(5s));
 
-  auto goal = make_joint_target_goal();
+  Navigation::Goal goal;
+  goal.target_pose.header.frame_id = "map";
+  goal.target_pose.pose.orientation.w = 1.0;
 
   auto goal_handle_future = client->async_send_goal(goal);
   ASSERT_EQ(goal_handle_future.wait_for(2s), std::future_status::ready);
@@ -339,7 +332,7 @@ TEST_F(ManipulationCapabilityTest, ActiveCapabilityCompletesARealJointTargetGoal
   auto wrapped = result_future.get();
   EXPECT_EQ(wrapped.code, rclcpp_action::ResultCode::SUCCEEDED);
   ASSERT_TRUE(wrapped.result);
-  EXPECT_EQ(wrapped.result->error_code, Manipulation::Result::SUCCESS);
+  EXPECT_EQ(wrapped.result->error_code, Navigation::Result::SUCCESS);
 }
 
 int main(int argc, char ** argv)

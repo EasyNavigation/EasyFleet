@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("easyfleet_mission_manager_alone");
+  auto node = std::make_shared<rclcpp::Node>("alone_mission");
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node);
   auto spin_thread = spin_in_background(executor);

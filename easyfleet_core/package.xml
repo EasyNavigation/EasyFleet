@@ -8,7 +8,10 @@
     action server base class and a comfortable action client wrapper, including
     parameter-driven control of whether an action can be preempted. Also
     provides the Capability lifecycle-node base class every EasyFleet
-    capability builds on.
+    capability builds on, plus the per-domain NavigationActionServerBase /
+    ManipulationActionServerBase / PerceptionActionServerBase classes that fix
+    the action type for concrete backend implementations (Nav2, EasyNav, a
+    fake mock, ...) living in their own packages.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>

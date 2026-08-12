@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "easyfleet_capabilities/navigation_capability.hpp"
+#include "easyfleet_example_deployments/navigation_fake_capability.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -23,7 +23,7 @@
 
 #include "builtin_interfaces/msg/duration.hpp"
 
-namespace easyfleet_capabilities
+namespace easyfleet_example_deployments
 {
 
 namespace
@@ -37,10 +37,10 @@ builtin_interfaces::msg::Duration to_duration_msg(double seconds)
 }
 }  // namespace
 
-NavigationActionServer::NavigationActionServer(
+NavigationFakeActionServer::NavigationFakeActionServer(
   rclcpp_lifecycle::LifecycleNode * node,
   const std::string & action_name)
-: easyfleet_core::ActionServerBase<easyfleet_interfaces::action::Navigation>(node, action_name)
+: easyfleet_core::NavigationActionServerBase(node, action_name)
 {
   mock_navigation_duration_s_ =
     node->declare_parameter(action_name + ".mock_navigation_duration", 5.0);
@@ -50,7 +50,7 @@ NavigationActionServer::NavigationActionServer(
     node->declare_parameter(action_name + ".mock_initial_distance", 5.0);
 }
 
-rclcpp_action::GoalResponse NavigationActionServer::on_goal_received(
+rclcpp_action::GoalResponse NavigationFakeActionServer::on_goal_received(
   const rclcpp_action::GoalUUID & /*uuid*/,
   std::shared_ptr<const Goal> goal)
 {
@@ -60,7 +60,7 @@ rclcpp_action::GoalResponse NavigationActionServer::on_goal_received(
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
-void NavigationActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
+void NavigationFakeActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
 {
   const auto goal = goal_handle->get_goal();
 
@@ -117,9 +117,9 @@ void NavigationActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
   goal_handle->succeed(result);
 }
 
-NavigationCapability::NavigationCapability(const rclcpp::NodeOptions & options)
-: easyfleet_core::Capability<NavigationActionServer>("navigation", options)
+NavigationFakeCapability::NavigationFakeCapability(const rclcpp::NodeOptions & options)
+: easyfleet_core::Capability<NavigationFakeActionServer>("navigation", options)
 {
 }
 
-}  // namespace easyfleet_capabilities
+}  // namespace easyfleet_example_deployments

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "easyfleet_capabilities/perception_capability.hpp"
+#include "easyfleet_example_deployments/perception_fake_capability.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -23,7 +23,7 @@
 #include <thread>
 #include <vector>
 
-namespace easyfleet_capabilities
+namespace easyfleet_example_deployments
 {
 
 namespace
@@ -41,10 +41,10 @@ bool requests_target_class(
 }
 }  // namespace
 
-PerceptionActionServer::PerceptionActionServer(
+PerceptionFakeActionServer::PerceptionFakeActionServer(
   rclcpp_lifecycle::LifecycleNode * node,
   const std::string & action_name)
-: easyfleet_core::ActionServerBase<easyfleet_interfaces::action::Perception>(node, action_name),
+: easyfleet_core::PerceptionActionServerBase(node, action_name),
   random_engine_(std::random_device{}())
 {
   target_class_ = node->declare_parameter(action_name + ".target_class", std::string("gato"));
@@ -54,7 +54,7 @@ PerceptionActionServer::PerceptionActionServer(
   std::transform(target_class_.begin(), target_class_.end(), target_class_.begin(), ::tolower);
 }
 
-rclcpp_action::GoalResponse PerceptionActionServer::on_goal_received(
+rclcpp_action::GoalResponse PerceptionFakeActionServer::on_goal_received(
   const rclcpp_action::GoalUUID & /*uuid*/,
   std::shared_ptr<const Goal> goal)
 {
@@ -66,7 +66,7 @@ rclcpp_action::GoalResponse PerceptionActionServer::on_goal_received(
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
-PerceptionActionServer::Feedback PerceptionActionServer::make_random_detections()
+PerceptionFakeActionServer::Feedback PerceptionFakeActionServer::make_random_detections()
 {
   std::uniform_int_distribution<int> count_dist(1, 3);
   std::uniform_real_distribution<double> xy_dist(-3.0, 3.0);
@@ -117,7 +117,7 @@ PerceptionActionServer::Feedback PerceptionActionServer::make_random_detections(
   return feedback;
 }
 
-void PerceptionActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
+void PerceptionFakeActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
 {
   // `continuous`/`max_rate_hz` on the goal are accepted but not honored by
   // this mock: it always streams forever at detection_rate_hz_ until
@@ -153,9 +153,9 @@ void PerceptionActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
   }
 }
 
-PerceptionCapability::PerceptionCapability(const rclcpp::NodeOptions & options)
-: easyfleet_core::Capability<PerceptionActionServer>("perception", options)
+PerceptionFakeCapability::PerceptionFakeCapability(const rclcpp::NodeOptions & options)
+: easyfleet_core::Capability<PerceptionFakeActionServer>("perception", options)
 {
 }
 
-}  // namespace easyfleet_capabilities
+}  // namespace easyfleet_example_deployments

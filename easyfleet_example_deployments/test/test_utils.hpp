@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_CAPABILITIES__TEST__TEST_UTILS_HPP_
-#define EASYFLEET_CAPABILITIES__TEST__TEST_UTILS_HPP_
+#ifndef EASYFLEET_EXAMPLE_DEPLOYMENTS__TEST__TEST_UTILS_HPP_
+#define EASYFLEET_EXAMPLE_DEPLOYMENTS__TEST__TEST_UTILS_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -24,7 +24,7 @@
 
 #include "rclcpp/executor.hpp"
 
-namespace easyfleet_capabilities_test
+namespace easyfleet_example_deployments_test
 {
 
 /// Appends a process-wide unique suffix to `base`, so tests that create
@@ -67,6 +67,6 @@ inline std::thread spin_in_background(rclcpp::Executor & executor)
   return thread;
 }
 
-}  // namespace easyfleet_capabilities_test
+}  // namespace easyfleet_example_deployments_test
 
-#endif  // EASYFLEET_CAPABILITIES__TEST__TEST_UTILS_HPP_
+#endif  // EASYFLEET_EXAMPLE_DEPLOYMENTS__TEST__TEST_UTILS_HPP_

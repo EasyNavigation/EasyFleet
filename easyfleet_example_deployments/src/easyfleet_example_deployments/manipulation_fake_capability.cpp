@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "easyfleet_capabilities/manipulation_capability.hpp"
+#include "easyfleet_example_deployments/manipulation_fake_capability.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -21,12 +21,12 @@
 #include <string>
 #include <thread>
 
-namespace easyfleet_capabilities
+namespace easyfleet_example_deployments
 {
 
 namespace
 {
-bool goal_target_is_empty(const ManipulationActionServer::Goal & goal)
+bool goal_target_is_empty(const ManipulationFakeActionServer::Goal & goal)
 {
   switch (goal.mode) {
     case easyfleet_interfaces::action::Manipulation::Goal::MODE_JOINT_TARGET:
@@ -41,10 +41,10 @@ bool goal_target_is_empty(const ManipulationActionServer::Goal & goal)
 }
 }  // namespace
 
-ManipulationActionServer::ManipulationActionServer(
+ManipulationFakeActionServer::ManipulationFakeActionServer(
   rclcpp_lifecycle::LifecycleNode * node,
   const std::string & action_name)
-: easyfleet_core::ActionServerBase<easyfleet_interfaces::action::Manipulation>(node, action_name)
+: easyfleet_core::ManipulationActionServerBase(node, action_name)
 {
   mock_execution_duration_s_ =
     node->declare_parameter(action_name + ".mock_execution_duration", 3.0);
@@ -52,7 +52,7 @@ ManipulationActionServer::ManipulationActionServer(
     node->declare_parameter(action_name + ".mock_feedback_period", 0.3);
 }
 
-rclcpp_action::GoalResponse ManipulationActionServer::on_goal_received(
+rclcpp_action::GoalResponse ManipulationFakeActionServer::on_goal_received(
   const rclcpp_action::GoalUUID & /*uuid*/,
   std::shared_ptr<const Goal> goal)
 {
@@ -62,7 +62,7 @@ rclcpp_action::GoalResponse ManipulationActionServer::on_goal_received(
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
-void ManipulationActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
+void ManipulationFakeActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
 {
   const auto goal = goal_handle->get_goal();
 
@@ -107,9 +107,9 @@ void ManipulationActionServer::on_execute(const GoalHandleSharedPtr goal_handle)
   goal_handle->succeed(result);
 }
 
-ManipulationCapability::ManipulationCapability(const rclcpp::NodeOptions & options)
-: easyfleet_core::Capability<ManipulationActionServer>("manipulation", options)
+ManipulationFakeCapability::ManipulationFakeCapability(const rclcpp::NodeOptions & options)
+: easyfleet_core::Capability<ManipulationFakeActionServer>("manipulation", options)
 {
 }
 
-}  // namespace easyfleet_capabilities
+}  // namespace easyfleet_example_deployments

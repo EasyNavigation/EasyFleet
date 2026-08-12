@@ -20,5 +20,8 @@
 #include "easyfleet_core/action_server_base.hpp"
 #include "easyfleet_core/capability.hpp"
 #include "easyfleet_core/capability_client.hpp"
+#include "easyfleet_core/manipulation_action_server_base.hpp"
+#include "easyfleet_core/navigation_action_server_base.hpp"
+#include "easyfleet_core/perception_action_server_base.hpp"
 
 #endif  // EASYFLEET_CORE__EASYFLEET_CORE_HPP_

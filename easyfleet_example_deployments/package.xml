@@ -4,23 +4,41 @@
   <name>easyfleet_example_deployments</name>
   <version>0.1.0</version>
   <description>
-    Deployment scenarios that assemble robots out of the capabilities in
-    src/EasyFleet/easyfleet_capabilities. Contains no code of its own: only
-    launch files and the per-robot JSON/parameter configuration each
-    capability instance is started with.
+    Deployment scenarios that assemble robots out of capability
+    implementations. Ships the "fake"/mock navigation, manipulation and
+    perception capabilities (reference implementations of the
+    easyfleet_core NavigationActionServerBase / ManipulationActionServerBase
+    / PerceptionActionServerBase classes), the "alone" and "collaboration"
+    example mission scripts built on easyfleet_mission_manager, plus the
+    launch files and per-robot JSON/parameter configuration each capability
+    instance is started with. A real integrator would add their own backend
+    (Nav2, EasyNav, a vendor SDK, ...) as a sibling package following the
+    same pattern.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easyfleet_interfaces</depend>
+  <depend>easyfleet_mission_manager</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>builtin_interfaces</depend>
+
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>launch_yaml</exec_depend>
-  <exec_depend>easyfleet_capabilities</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
