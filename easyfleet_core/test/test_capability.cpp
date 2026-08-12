@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,21 +30,21 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "arch_mockup/capability.hpp"
-#include "arch_mockup_interfaces/msg/capability_description.hpp"
-#include "arch_mockup_interfaces/msg/capability_status.hpp"
+#include "easyfleet_core/capability.hpp"
+#include "easyfleet_interfaces/msg/capability_description.hpp"
+#include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "test_capability_server.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using arch_mockup_interfaces::msg::CapabilityDescription;
-using arch_mockup_interfaces::msg::CapabilityStatus;
-using arch_mockup_test::Fibonacci;
-using arch_mockup_test::spin_in_background;
-using arch_mockup_test::TestCapabilityActionServer;
-using arch_mockup_test::unique_test_name;
-using arch_mockup_test::wait_until;
-using TestCapability = arch_mockup::Capability<TestCapabilityActionServer>;
+using easyfleet_interfaces::msg::CapabilityDescription;
+using easyfleet_interfaces::msg::CapabilityStatus;
+using easyfleet_core_test::Fibonacci;
+using easyfleet_core_test::spin_in_background;
+using easyfleet_core_test::TestCapabilityActionServer;
+using easyfleet_core_test::unique_test_name;
+using easyfleet_core_test::wait_until;
+using TestCapability = easyfleet_core::Capability<TestCapabilityActionServer>;
 
 namespace
 {
@@ -81,7 +81,7 @@ private:
 std::string make_temp_file(const std::string & content)
 {
   static std::atomic<uint64_t> counter{0};
-  const std::string path = "/tmp/arch_mockup_test_capabilities_" +
+  const std::string path = "/tmp/easyfleet_core_test_capabilities_" +
     std::to_string(::getpid()) + "_" + std::to_string(counter.fetch_add(1)) + ".json";
   std::ofstream file(path);
   file << content;

@@ -1,0 +1,42 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# robot_3 in the "collaboration" scenario: equipped with navigation and
+# manipulation, namespaced under /robot_3 so its actions and /capabilities
+# identity never collide with robot_1 or robot_2. Can be run standalone.
+launch:
+  - group:
+      - push_ros_namespace:
+          namespace: "robot_3"
+
+      - node:
+          pkg: "easyfleet_capabilities"
+          exec: "navigation_capability_node"
+          name: "navigation"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_example_deployments)/config/collaboration/robot_3/navigation_params.yaml"
+            - name: "capabilities_file"
+              value: "$(find-pkg-share easyfleet_example_deployments)/config/collaboration/robot_3/navigation.json"
+
+      - node:
+          pkg: "easyfleet_capabilities"
+          exec: "manipulation_capability_node"
+          name: "manipulation"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_example_deployments)/config/collaboration/robot_3/manipulation_params.yaml"
+            - name: "capabilities_file"
+              value: "$(find-pkg-share easyfleet_example_deployments)/config/collaboration/robot_3/manipulation.json"

@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,7 @@
 // limitations under the License.
 
 // Mission control demo for the "alone" deployment scenario (see
-// src/arquimea_project/deployments/launch/alone): a single robot, robot_1,
+// src/EasyFleet/easyfleet_example_deployments/launch/alone): a single robot, robot_1,
 // carrying all three mock capabilities. Discovers them, prints their
 // description, and exercises them sequentially and in parallel.
 
@@ -25,14 +25,14 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "arch_mockup/capability_client.hpp"
-#include "control_center/capability_discovery.hpp"
-#include "control_center/capability_info.hpp"
-#include "control_center/mission_helpers.hpp"
-#include "control_center/output.hpp"
-#include "control_center/run_capability.hpp"
+#include "easyfleet_core/capability_client.hpp"
+#include "easyfleet_mission_manager/capability_discovery.hpp"
+#include "easyfleet_mission_manager/capability_info.hpp"
+#include "easyfleet_mission_manager/mission_helpers.hpp"
+#include "easyfleet_mission_manager/output.hpp"
+#include "easyfleet_mission_manager/run_capability.hpp"
 
-using namespace control_center;
+using namespace easyfleet_mission_manager;
 using namespace std::chrono_literals;
 
 namespace
@@ -40,7 +40,7 @@ namespace
 
 // This demo is specific to the "alone" deployment scenario, which defines
 // exactly one robot: robot_1 (see
-// src/arquimea_project/deployments/launch/alone/robot_1_launch.yaml).
+// src/EasyFleet/easyfleet_example_deployments/launch/alone/robot_1_launch.yaml).
 const std::string kRobot = "robot_1";
 
 }  // namespace
@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("control_center_alone");
+  auto node = std::make_shared<rclcpp::Node>("easyfleet_mission_manager_alone");
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node);
   auto spin_thread = spin_in_background(executor);
@@ -83,19 +83,19 @@ int main(int argc, char ** argv)
   // Each CapabilityClient is created against the *resolved* action name
   // (e.g. "/robot_1/navigation"), which is what robot_1 actually announced
   // itself under.
-  arch_mockup::CapabilityClient<NavigateToPose>::SharedPtr navigation_client;
+  easyfleet_core::CapabilityClient<Navigation>::SharedPtr navigation_client;
   if (navigation_info) {
-    navigation_client = arch_mockup::CapabilityClient<NavigateToPose>::create(
+    navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
       node.get(), navigation_info->action_name);
   }
-  arch_mockup::CapabilityClient<ExecuteTrajectory>::SharedPtr manipulation_client;
+  easyfleet_core::CapabilityClient<Manipulation>::SharedPtr manipulation_client;
   if (manipulation_info) {
-    manipulation_client = arch_mockup::CapabilityClient<ExecuteTrajectory>::create(
+    manipulation_client = easyfleet_core::CapabilityClient<Manipulation>::create(
       node.get(), manipulation_info->action_name);
   }
-  arch_mockup::CapabilityClient<Perception>::SharedPtr perception_client;
+  easyfleet_core::CapabilityClient<Perception>::SharedPtr perception_client;
   if (perception_info) {
-    perception_client = arch_mockup::CapabilityClient<Perception>::create(
+    perception_client = easyfleet_core::CapabilityClient<Perception>::create(
       node.get(), perception_info->action_name);
   }
 
@@ -106,7 +106,7 @@ int main(int argc, char ** argv)
     "each for up to " + std::to_string(kRunTimeout.count()) +
     "s or until it finishes on its own.");
   if (navigation_client) {
-    run_capability<NavigateToPose>(
+    run_capability<Navigation>(
       navigation_client, navigation_info->action_name, make_navigation_goal(), kRunTimeout,
       make_navigation_feedback_printer(navigation_info->action_name));
   } else {
@@ -114,7 +114,7 @@ int main(int argc, char ** argv)
   }
 
   if (manipulation_client) {
-    run_capability<ExecuteTrajectory>(
+    run_capability<Manipulation>(
       manipulation_client, manipulation_info->action_name, make_manipulation_goal(), kRunTimeout,
       make_manipulation_feedback_printer(manipulation_info->action_name));
   } else {
@@ -139,7 +139,7 @@ int main(int argc, char ** argv)
   if (navigation_client) {
     parallel_threads.emplace_back(
       [&navigation_client, &navigation_info] {
-        run_capability<NavigateToPose>(
+        run_capability<Navigation>(
           navigation_client, navigation_info->action_name, make_navigation_goal(), kRunTimeout,
           make_navigation_feedback_printer(navigation_info->action_name));
       });
@@ -147,7 +147,7 @@ int main(int argc, char ** argv)
   if (manipulation_client) {
     parallel_threads.emplace_back(
       [&manipulation_client, &manipulation_info] {
-        run_capability<ExecuteTrajectory>(
+        run_capability<Manipulation>(
           manipulation_client, manipulation_info->action_name, make_manipulation_goal(),
           kRunTimeout, make_manipulation_feedback_printer(manipulation_info->action_name));
       });

@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,40 +28,40 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "arch_mockup_interfaces/msg/capability_description.hpp"
-#include "arch_mockup_interfaces/msg/capability_status.hpp"
-#include "manipulation_capability/manipulation_capability.hpp"
+#include "easyfleet_capabilities/manipulation_capability.hpp"
+#include "easyfleet_interfaces/msg/capability_description.hpp"
+#include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using arch_mockup_interfaces::msg::CapabilityDescription;
-using arch_mockup_interfaces::msg::CapabilityStatus;
-using ExecuteTrajectory = moveit_msgs::action::ExecuteTrajectory;
-using manipulation_capability::ManipulationCapability;
-using manipulation_capability_test::spin_in_background;
-using manipulation_capability_test::unique_test_name;
-using manipulation_capability_test::wait_until;
+using easyfleet_interfaces::msg::CapabilityDescription;
+using easyfleet_interfaces::msg::CapabilityStatus;
+using Manipulation = easyfleet_interfaces::action::Manipulation;
+using easyfleet_capabilities::ManipulationCapability;
+using easyfleet_capabilities_test::spin_in_background;
+using easyfleet_capabilities_test::unique_test_name;
+using easyfleet_capabilities_test::wait_until;
 
 namespace
 {
 
 // Capability packages no longer ship a default capabilities JSON of their
-// own (that now lives only under the deployment scenarios in
-// src/arquimea_project/deployments), so tests exercise the
+// own (that lives under the deployment scenarios in
+// src/EasyFleet/easyfleet_example_deployments), so tests exercise the
 // publish-file-verbatim behavior against a JSON they write themselves.
 constexpr char kSampleCapabilitiesJson[] =
   R"json({
   "name": "manipulation",
-  "display_name": "Execute a manipulator trajectory",
+  "display_name": "Reach a joint target",
   "action": {
     "name": "/manipulation",
-    "type": "moveit_msgs/action/ExecuteTrajectory"
+    "type": "easyfleet_interfaces/action/Manipulation"
   },
   "requirements": [
-    "The trajectory must have already been planned and be free of collisions."
+    "The target joint configuration must already be free of collisions."
   ],
   "effects": [
-    "On success, the manipulator's joints end up at the final waypoint of the trajectory."
+    "On success, the manipulator's joints end up at the requested target."
   ],
   "parameters": {
     "manipulation.allow_preemption": {
@@ -80,17 +80,13 @@ std::string write_sample_capabilities_file()
   return path;
 }
 
-moveit_msgs::msg::RobotTrajectory make_trajectory()
+Manipulation::Goal make_joint_target_goal()
 {
-  moveit_msgs::msg::RobotTrajectory trajectory;
-  trajectory.joint_trajectory.joint_names = {"joint1"};
-
-  trajectory_msgs::msg::JointTrajectoryPoint point;
-  point.positions = {1.0};
-  point.time_from_start.sec = 1;
-  trajectory.joint_trajectory.points.push_back(point);
-
-  return trajectory;
+  Manipulation::Goal goal;
+  goal.mode = Manipulation::Goal::MODE_JOINT_TARGET;
+  goal.joint_target.name = {"joint1"};
+  goal.joint_target.position = {1.0};
+  return goal;
 }
 
 template<typename MsgT>
@@ -131,7 +127,7 @@ class ManipulationCapabilityTest : public ::testing::Test
 protected:
   void SetUp() override
   {
-    // ExecuteTrajectoryActionServer reads its mock timing parameters once, at
+    // ManipulationActionServer reads its mock timing parameters once, at
     // construction time, so they must be overridden via NodeOptions (not
     // set_parameter() afterwards) to actually take effect. Keeping the
     // whole suite on a short mock duration also keeps it fast.
@@ -254,7 +250,7 @@ TEST_F(ManipulationCapabilityTest, PublishedCapabilitiesJsonIsWellFormed)
   const std::string json = collector->messages().front().description_json;
   EXPECT_NE(json.find("\"name\""), std::string::npos);
   EXPECT_NE(json.find("\"action\""), std::string::npos);
-  EXPECT_NE(json.find("ExecuteTrajectory"), std::string::npos);
+  EXPECT_NE(json.find("Manipulation"), std::string::npos);
   EXPECT_NE(json.find("\"requirements\""), std::string::npos);
   EXPECT_NE(json.find("\"effects\""), std::string::npos);
   EXPECT_NE(json.find("\"parameters\""), std::string::npos);
@@ -321,18 +317,17 @@ TEST_F(ManipulationCapabilityTest, CleanupThenReconfigureAndActivateAgainWorks)
   ASSERT_TRUE(wait_until([&] {return collector->count() >= 1;}, 2s));
 }
 
-TEST_F(ManipulationCapabilityTest, ActiveCapabilityCompletesARealTrajectoryGoal)
+TEST_F(ManipulationCapabilityTest, ActiveCapabilityCompletesARealJointTargetGoal)
 {
   const auto path = write_sample_capabilities_file();
   capability_->set_parameter(rclcpp::Parameter("capabilities_file", path));
   capability_->configure();
   capability_->activate();
 
-  auto client = rclcpp_action::create_client<ExecuteTrajectory>(sub_node_, "manipulation");
+  auto client = rclcpp_action::create_client<Manipulation>(sub_node_, "manipulation");
   ASSERT_TRUE(client->wait_for_action_server(5s));
 
-  ExecuteTrajectory::Goal goal;
-  goal.trajectory = make_trajectory();
+  auto goal = make_joint_target_goal();
 
   auto goal_handle_future = client->async_send_goal(goal);
   ASSERT_EQ(goal_handle_future.wait_for(2s), std::future_status::ready);
@@ -344,7 +339,7 @@ TEST_F(ManipulationCapabilityTest, ActiveCapabilityCompletesARealTrajectoryGoal)
   auto wrapped = result_future.get();
   EXPECT_EQ(wrapped.code, rclcpp_action::ResultCode::SUCCEEDED);
   ASSERT_TRUE(wrapped.result);
-  EXPECT_EQ(wrapped.result->error_code.val, moveit_msgs::msg::MoveItErrorCodes::SUCCESS);
+  EXPECT_EQ(wrapped.result->error_code, Manipulation::Result::SUCCESS);
 }
 
 int main(int argc, char ** argv)

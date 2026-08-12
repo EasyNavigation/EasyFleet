@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ARCH_MOCKUP__TEST__TEST_FIBONACCI_SERVER_HPP_
-#define ARCH_MOCKUP__TEST__TEST_FIBONACCI_SERVER_HPP_
+#ifndef EASYFLEET_CORE__TEST__TEST_FIBONACCI_SERVER_HPP_
+#define EASYFLEET_CORE__TEST__TEST_FIBONACCI_SERVER_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -27,9 +27,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "arch_mockup/action_server_base.hpp"
+#include "easyfleet_core/action_server_base.hpp"
 
-namespace arch_mockup_test
+namespace easyfleet_core_test
 {
 
 using Fibonacci = example_interfaces::action::Fibonacci;
@@ -40,11 +40,11 @@ constexpr int32_t kOrderThrow = -100;
 constexpr int32_t kOrderForgetToSettle = -101;
 
 /// Minimal, fully test-controllable action server built on top of
-/// arch_mockup::ActionServerBase<Fibonacci>. `order` drives how many
+/// easyfleet_core::ActionServerBase<Fibonacci>. `order` drives how many
 /// feedback steps are published (and therefore how long the goal runs),
 /// which is what tests use to script preemption/cancellation races.
 class TestFibonacciServer
-  : public rclcpp::Node, public arch_mockup::ActionServerBase<Fibonacci>
+  : public rclcpp::Node, public easyfleet_core::ActionServerBase<Fibonacci>
 {
 public:
   explicit TestFibonacciServer(
@@ -53,7 +53,7 @@ public:
     const std::string & action_name = "fibonacci",
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node(node_name, options),
-    arch_mockup::ActionServerBase<Fibonacci>(this, action_name, default_allow_preemption)
+    easyfleet_core::ActionServerBase<Fibonacci>(this, action_name, default_allow_preemption)
   {
   }
 
@@ -150,6 +150,6 @@ private:
   std::atomic<int> on_preempted_calls_{0};
 };
 
-}  // namespace arch_mockup_test
+}  // namespace easyfleet_core_test
 
-#endif  // ARCH_MOCKUP__TEST__TEST_FIBONACCI_SERVER_HPP_
+#endif  // EASYFLEET_CORE__TEST__TEST_FIBONACCI_SERVER_HPP_

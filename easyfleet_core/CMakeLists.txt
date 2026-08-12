@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(arch_mockup)
+project(easyfleet_core)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -16,7 +16,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
-find_package(arch_mockup_interfaces REQUIRED)
+find_package(easyfleet_interfaces REQUIRED)
 
 add_library(${PROJECT_NAME}
   src/param_utils.cpp
@@ -32,7 +32,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   action_msgs::action_msgs
   rcl_interfaces::rcl_interfaces
   lifecycle_msgs::lifecycle_msgs
-  arch_mockup_interfaces::arch_mockup_interfaces
+  easyfleet_interfaces::easyfleet_interfaces
 )
 
 install(
@@ -55,7 +55,7 @@ ament_export_dependencies(
   action_msgs
   rcl_interfaces
   lifecycle_msgs
-  arch_mockup_interfaces
+  easyfleet_interfaces
 )
 
 if(BUILD_TESTING)

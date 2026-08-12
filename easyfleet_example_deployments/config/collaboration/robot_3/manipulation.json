@@ -1,0 +1,69 @@
+{
+  "name": "manipulation",
+  "display_name": "Execute a manipulator trajectory",
+  "description": "Executes a pre-planned joint-space (or Cartesian) trajectory on the robot's manipulator arm. This capability does not plan motions itself: the caller (typically a MoveIt planning step running elsewhere) must supply a complete, collision-free trajectory to execute. Use this once a target end-effector pose or joint configuration has already been resolved into concrete waypoints.",
+  "action": {
+    "name": "/robot_3/manipulation",
+    "type": "easyfleet_interfaces/action/Manipulation",
+    "goal": {
+      "mode": "uint8 - 0 MODE_JOINT_TARGET, 1 MODE_POSE_TARGET, 2 MODE_NAMED_TASK; selects which of the fields below is used.",
+      "joint_target": "sensor_msgs/JointState - target joint configuration, used when mode == MODE_JOINT_TARGET.",
+      "pose_target": "geometry_msgs/PoseStamped - target end-effector pose, used when mode == MODE_POSE_TARGET.",
+      "end_effector_link": "string - end-effector link name, used when mode == MODE_POSE_TARGET.",
+      "named_task": "string - name of a pre-programmed task to run, used when mode == MODE_NAMED_TASK.",
+      "parameters_json": "string - optional JSON escape hatch for stack-specific manipulation parameters (e.g. planner id, velocity scaling); empty for defaults."
+    },
+    "feedback": {
+      "state": "string - human-readable execution state (e.g. 'EXECUTING').",
+      "current_joint_state": "sensor_msgs/JointState - manipulator's current joint state while executing.",
+      "progress": "float32 - execution progress, from 0.0 to 1.0."
+    },
+    "result": {
+      "error_code": "uint16 - 0 SUCCESS, 1 REJECTED, 2 ABORTED, 3 CANCELED, 4 TIMEOUT, 10 PLANNING_FAILED, 11 COLLISION_DETECTED.",
+      "error_msg": "string - human-readable explanation, populated when error_code is non-zero.",
+      "final_joint_state": "sensor_msgs/JointState - manipulator's joint state when the goal ended."
+    }
+  },
+  "requirements": [
+    "The trajectory must have already been planned (e.g. by a MoveIt planning pipeline) and be free of collisions; this capability performs no planning or collision checking of its own.",
+    "The trajectory's joint names must match the robot's actual manipulator joints.",
+    "The start state of the trajectory must be reasonably close to the robot's current state."
+  ],
+  "effects": [
+    "On success (error_code == SUCCESS), the manipulator's joints end up at the requested target.",
+    "A currently executing trajectory can be preempted by a newer goal (see 'preemption' below): the previous goal is aborted and the manipulator starts executing the new trajectory instead."
+  ],
+  "preemption": {
+    "supported": true,
+    "controlled_by_parameter": "manipulation.allow_preemption",
+    "behavior_when_enabled": "Sending a new goal while one is active aborts the current trajectory execution and immediately starts executing the new one.",
+    "behavior_when_disabled": "Sending a new goal while one is active is rejected outright; the caller must wait for the current execution to finish, or explicitly cancel it, before sending another."
+  },
+  "parameters": {
+    "manipulation.allow_preemption": {
+      "type": "bool",
+      "default": true,
+      "description": "Whether a new trajectory goal is allowed to preempt (replace) one that is currently executing."
+    },
+    "manipulation.mock_execution_duration": {
+      "type": "double",
+      "unit": "seconds",
+      "default": 3.0,
+      "description": "Mock/simulated time it takes to execute a trajectory, regardless of its actual number of waypoints. This implementation does not drive a real manipulator: it simulates progress over this duration for integration testing of the wider system."
+    },
+    "manipulation.mock_feedback_period": {
+      "type": "double",
+      "unit": "seconds",
+      "default": 0.3,
+      "description": "How often feedback is published while a goal is executing."
+    },
+    "capabilities_file": {
+      "type": "string",
+      "description": "Path to this very capability description file; published verbatim on /capabilities when the node is activated."
+    }
+  },
+  "notes": [
+    "This is a mock implementation, part of the EasyFleet architecture, standing in for a real manipulator stack (MoveIt or otherwise) during integration testing of multi-capability systems. It does not perform real trajectory execution or controller interaction: 'state' feedback simply reports 'EXECUTING' while progress is simulated on a timer.",
+    "Deployment: 'collaboration' scenario, robot_3."
+  ]
+}

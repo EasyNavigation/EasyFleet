@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(control_center)
+project(easyfleet_mission_manager)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -12,12 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
-find_package(arch_mockup REQUIRED)
-find_package(arch_mockup_interfaces REQUIRED)
-find_package(nav2_msgs REQUIRED)
-find_package(moveit_msgs REQUIRED)
-find_package(trajectory_msgs REQUIRED)
-find_package(perception_interfaces REQUIRED)
+find_package(easyfleet_core REQUIRED)
+find_package(easyfleet_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 add_library(${PROJECT_NAME}
@@ -30,31 +29,29 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
   rclcpp::rclcpp
-  arch_mockup::arch_mockup
-  arch_mockup_interfaces::arch_mockup_interfaces
+  easyfleet_core::easyfleet_core
+  easyfleet_interfaces::easyfleet_interfaces
   nlohmann_json::nlohmann_json
 )
 
-add_executable(control_center_alone_node src/main_alone.cpp)
-target_link_libraries(control_center_alone_node
+add_executable(easyfleet_mission_manager_alone_node src/main_alone.cpp)
+target_link_libraries(easyfleet_mission_manager_alone_node
   ${PROJECT_NAME}
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
-  nav2_msgs::nav2_msgs
-  moveit_msgs::moveit_msgs
-  trajectory_msgs::trajectory_msgs
-  perception_interfaces::perception_interfaces
+  geometry_msgs::geometry_msgs
+  sensor_msgs::sensor_msgs
+  vision_msgs::vision_msgs
 )
 
-add_executable(control_center_collaboration_node src/main_collaboration.cpp)
-target_link_libraries(control_center_collaboration_node
+add_executable(easyfleet_mission_manager_collaboration_node src/main_collaboration.cpp)
+target_link_libraries(easyfleet_mission_manager_collaboration_node
   ${PROJECT_NAME}
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
-  nav2_msgs::nav2_msgs
-  moveit_msgs::moveit_msgs
-  trajectory_msgs::trajectory_msgs
-  perception_interfaces::perception_interfaces
+  geometry_msgs::geometry_msgs
+  sensor_msgs::sensor_msgs
+  vision_msgs::vision_msgs
 )
 
 install(
@@ -69,15 +66,15 @@ install(
   RUNTIME DESTINATION bin
 )
 install(
-  TARGETS control_center_alone_node control_center_collaboration_node
+  TARGETS easyfleet_mission_manager_alone_node easyfleet_mission_manager_collaboration_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
-  arch_mockup
-  arch_mockup_interfaces
+  easyfleet_core
+  easyfleet_interfaces
   nlohmann_json
 )
 

@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ARCH_MOCKUP__TEST__TEST_UTILS_HPP_
-#define ARCH_MOCKUP__TEST__TEST_UTILS_HPP_
+#ifndef EASYFLEET_CORE__TEST__TEST_UTILS_HPP_
+#define EASYFLEET_CORE__TEST__TEST_UTILS_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -24,7 +24,7 @@
 
 #include "rclcpp/executor.hpp"
 
-namespace arch_mockup_test
+namespace easyfleet_core_test
 {
 
 /// Starts `executor.spin()` on a background thread and blocks until it has
@@ -73,6 +73,6 @@ bool wait_until(
   return pred();
 }
 
-}  // namespace arch_mockup_test
+}  // namespace easyfleet_core_test
 
-#endif  // ARCH_MOCKUP__TEST__TEST_UTILS_HPP_
+#endif  // EASYFLEET_CORE__TEST__TEST_UTILS_HPP_

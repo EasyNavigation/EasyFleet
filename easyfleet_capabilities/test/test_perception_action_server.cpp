@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,23 +27,23 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "perception_capability/perception_action_server.hpp"
+#include "easyfleet_capabilities/perception_capability.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using Perception = perception_interfaces::action::Perception;
-using perception_capability::PerceptionActionServer;
-using perception_capability_test::spin_in_background;
-using perception_capability_test::unique_test_name;
-using perception_capability_test::wait_until;
+using Perception = easyfleet_interfaces::action::Perception;
+using easyfleet_capabilities::PerceptionActionServer;
+using easyfleet_capabilities_test::spin_in_background;
+using easyfleet_capabilities_test::unique_test_name;
+using easyfleet_capabilities_test::wait_until;
 
 namespace
 {
 
-Perception::Goal make_goal(const std::string & object = "gato")
+Perception::Goal make_goal(const std::string & object_class = "gato")
 {
   Perception::Goal goal;
-  goal.objects.push_back(object);
+  goal.object_classes.push_back(object_class);
   return goal;
 }
 
@@ -109,7 +109,7 @@ TEST_F(PerceptionActionServerTest, ExposesConfiguredActionName)
   EXPECT_EQ(action_server_->get_action_name(), action_name_);
 }
 
-TEST_F(PerceptionActionServerTest, RejectsGoalWithEmptyObjectsList)
+TEST_F(PerceptionActionServerTest, RejectsGoalWithEmptyObjectClassesList)
 {
   Perception::Goal goal;
   auto future = client_->async_send_goal(goal);
@@ -172,7 +172,7 @@ TEST_F(PerceptionActionServerTest, StreamsOneToThreeDetectionsInBoth2dAnd3dUntil
   auto wrapped = result_future.get();
   EXPECT_EQ(wrapped.code, rclcpp_action::ResultCode::CANCELED);
   ASSERT_TRUE(wrapped.result);
-  EXPECT_TRUE(wrapped.result->success);
+  EXPECT_EQ(wrapped.result->error_code, Perception::Result::CANCELED);
 
   std::lock_guard<std::mutex> lock(mutex);
   for (const auto & feedback : feedbacks) {
@@ -211,7 +211,7 @@ TEST_F(PerceptionActionServerTest, NewGoalPreemptsRunningGoalByDefault)
   auto first_wrapped = first_result_future.get();
   EXPECT_EQ(first_wrapped.code, rclcpp_action::ResultCode::ABORTED);
   ASSERT_TRUE(first_wrapped.result);
-  EXPECT_FALSE(first_wrapped.result->success);
+  EXPECT_EQ(first_wrapped.result->error_code, Perception::Result::ABORTED);
 
   ASSERT_TRUE(wait_until([this] {return action_server_->is_active();}, 1s));
   auto cancel_future = client_->async_cancel_goal(second_handle);

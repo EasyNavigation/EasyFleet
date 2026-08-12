@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,20 +28,20 @@
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using arch_mockup_test::Fibonacci;
-using arch_mockup_test::kOrderForgetToSettle;
-using arch_mockup_test::kOrderThrow;
-using arch_mockup_test::TestFibonacciServer;
-using arch_mockup_test::spin_in_background;
-using arch_mockup_test::unique_test_name;
-using arch_mockup_test::wait_until;
+using easyfleet_core_test::Fibonacci;
+using easyfleet_core_test::kOrderForgetToSettle;
+using easyfleet_core_test::kOrderThrow;
+using easyfleet_core_test::TestFibonacciServer;
+using easyfleet_core_test::spin_in_background;
+using easyfleet_core_test::unique_test_name;
+using easyfleet_core_test::wait_until;
 
 namespace
 {
 
 /// Blocking helper around rclcpp_action::Client, built only for these tests
 /// so ActionServerBase can be exercised without depending on
-/// arch_mockup::ActionClient (that class has its own dedicated test suite).
+/// easyfleet_core::ActionClient (that class has its own dedicated test suite).
 struct SyncGoalOutcome
 {
   bool accepted{false};

@@ -1,77 +1,92 @@
-# arquimea_project
+# EasyFleet
 
-A ROS 2 (Rolling) workspace exploring a **capability-oriented architecture** for
-multi-robot, multi-skill fleets. It provides:
+A ROS 2 (Rolling) workspace exploring a **capability-oriented architecture**
+for multi-robot, multi-skill fleets. It provides:
 
-- **`arch_mockup`** — a small, reusable C++ framework for building
+- **`easyfleet_core`** — a small, reusable C++ framework for building
   self-describing, lifecycle-managed ROS 2 actions ("capabilities"), plus a
   comfortable client-side API for calling them. A `Capability<ActionServerT>`
   resolves its own robot identity from its ROS namespace at construction
   time, so the same node binary announces itself correctly whether it's
   launched as `/robot1/navigation` or `/robot2/navigation`.
-- **`arch_mockup_interfaces`** — the architecture-level message contract
+- **`easyfleet_interfaces`** — the architecture-level message contract
   (`CapabilityDescription`, `CapabilityStatus`) every capability publishes on
   `/capabilities` and `/capabilities_status`, regardless of manufacturer or
-  implementation language.
-- Three **example mock capabilities** built on that framework: `navigation`
-  (wraps `nav2_msgs/action/NavigateToPose`), `manipulation` (wraps
-  `moveit_msgs/action/ExecuteTrajectory`), and `perception` (wraps a custom
-  `perception_interfaces/action/Perception`).
-- **`deployments`** — assembles concrete multi-robot scenarios out of the
-  capability packages above: which robot has which capabilities, under what
-  namespace, with what parameters. Contains no code of its own, only launch
-  files and per-robot JSON/parameter configuration.
-- **`control_center`** — mission scripts that discover whatever capabilities
-  are currently running, print their self-description, and exercise them
-  both sequentially and in parallel, showing live feedback as it happens.
-  One mission script per deployment scenario (see [Running](#running)).
+  implementation language, plus the **`Navigation`**, **`Manipulation`** and
+  **`Perception`** actions: general-purpose, framework-agnostic interfaces
+  any robot's implementation of those capability classes can be expressed
+  through (no dependency on Nav2, MoveIt, or any other specific stack — see
+  [Interfaces](#interfaces) below).
+- **`easyfleet_capabilities`** — three example mock capabilities built on
+  that framework, all in one package: `navigation`, `manipulation`, and
+  `perception`, each a single lifecycle node advertising the matching
+  `easyfleet_interfaces` action.
+- **`easyfleet_example_deployments`** — assembles concrete multi-robot
+  scenarios out of `easyfleet_capabilities`: which robot has which
+  capabilities, under what namespace, with what parameters. Contains no code
+  of its own, only launch files and per-robot JSON/parameter configuration.
+- **`easyfleet_mission_manager`** — mission scripts that discover whatever
+  capabilities are currently running, print their self-description, and
+  exercise them both sequentially and in parallel, showing live feedback as
+  it happens. One mission script per deployment scenario (see
+  [Running](#running)).
 
-Everything under `capabilities/` is a **mock**: it doesn't drive a real robot
-or run a real detector/manipulator. The goal of this repo is to validate the
-architecture and plumbing of a multi-robot, multi-capability system
-(discovery, namespacing, lifecycle, preemption, cancellation, feedback)
-before wiring in real navigation/perception/manipulation stacks. The
-intended real-world shape is a control computer running an LLM-generated
-Behavior Tree (via BehaviorTreeCPP) whose action nodes are
-`arch_mockup::CapabilityClient`s; `control_center` is a first approximation
-of that control computer.
+Everything under `easyfleet_capabilities/` is a **mock**: it doesn't drive a
+real robot or run a real detector/manipulator. The goal of this repo is to
+validate the architecture and plumbing of a multi-robot, multi-capability
+system (discovery, namespacing, lifecycle, preemption, cancellation,
+feedback) before wiring in real navigation/perception/manipulation stacks.
+The intended real-world shape is a control computer running an
+LLM-generated Behavior Tree (via BehaviorTreeCPP) whose action nodes are
+`easyfleet_core::CapabilityClient`s; `easyfleet_mission_manager` is a first
+approximation of that control computer.
 
 ## Repository layout
 
 ```
-arquimea_project/
-├── architecture/                    Core, reusable framework
-│   ├── arch_mockup/                 ActionServerBase, ActionClient, Capability, CapabilityClient
-│   ├── arch_mockup_interfaces/      CapabilityDescription / CapabilityStatus (the architecture's message contract)
-│   └── control/
-│       └── control_center/          Mission scripts (one per deployment scenario)
-├── capabilities/                    Concrete example capabilities built on arch_mockup
-│   ├── navigation/
-│   │   ├── nav2_common/             Vendored: not yet released as a binary package for Rolling
-│   │   ├── nav2_msgs/               Vendored: not yet released as a binary package for Rolling
-│   │   └── navigation_capability/   Mock nav2_msgs/NavigateToPose action
-│   ├── manipulation/
-│   │   └── manipulation_capability/ Mock moveit_msgs/ExecuteTrajectory action
-│   └── perception/
-│       ├── perception_interfaces/   Defines perception_interfaces/action/Perception
-│       └── perception_capability/   Mock perception_interfaces/Perception action
-└── deployments/                     Launch files + per-robot JSON/parameter config for full scenarios
+EasyFleet/
+├── easyfleet_core/                  ActionServerBase, ActionClient, Capability, CapabilityClient
+├── easyfleet_interfaces/            CapabilityDescription/CapabilityStatus + Navigation/Manipulation/Perception actions
+├── easyfleet_capabilities/          Mock navigation/manipulation/perception capabilities, one package
+│   ├── include/easyfleet_capabilities/{navigation,manipulation,perception}_capability.hpp
+│   └── src/easyfleet_capabilities/{navigation,manipulation,perception}_capability.cpp
+├── easyfleet_mission_manager/       Mission scripts (one per deployment scenario)
+└── easyfleet_example_deployments/     Launch files + per-robot JSON/parameter config for full scenarios
     ├── launch/{alone,collaboration}/
     └── config/{alone,collaboration}/
 ```
 
-Capability packages ship **only** a library and a node executable — no
-default launch file or JSON config of their own anymore. All of that (which
-robot, which namespace, which parameters, which capabilities-description
-JSON) lives in `deployments`, so a given capability's actual identity is
-entirely a property of how it's deployed, not of the package itself.
+Capability packages ship **only** a library and node executables — no
+default launch file or JSON config of their own. All of that (which robot,
+which namespace, which parameters, which capabilities-description JSON)
+lives in `easyfleet_example_deployments`, so a given capability's actual
+identity is entirely a property of how it's deployed, not of the package
+itself.
+
+## Interfaces
+
+`easyfleet_interfaces` defines three actions general enough that any robot's
+implementation of a capability class — any navigation stack, any
+manipulator, any perception modality — can express itself through the same
+interface, with a `parameters_json` escape hatch (same convention as
+`CapabilityDescription.description_json`) for stack-specific tuning:
+
+- **`Navigation`**: go to `target_pose`, optionally via ordered `waypoints`.
+- **`Manipulation`**: reach a `joint_target`, a `pose_target`, or run a
+  `named_task`, selected by `mode`.
+- **`Perception`**: detect/report `object_classes`, once or `continuous`ly.
+
+All three share a result-code convention (`SUCCESS=0`, `REJECTED=1`,
+`ABORTED=2`, `CANCELED=3`, `TIMEOUT=4`, with capability-specific codes
+starting at `10`) — a documented convention, not enforced by the type
+system, since `.action` files can't share constants across packages.
 
 ## What's a "capability"?
 
-A capability is a `rclcpp_lifecycle::LifecycleNode` (`arch_mockup::Capability<ActionServerT>`)
+A capability is a `rclcpp_lifecycle::LifecycleNode` (`easyfleet_core::Capability<ActionServerT>`)
 that wraps exactly one ROS 2 action and, once activated:
 
-- Publishes a `CapabilityDescription` (`arch_mockup_interfaces`) on the
+- Publishes a `CapabilityDescription` (`easyfleet_interfaces`) on the
   **reliable, transient-local** `/capabilities` topic, so anyone subscribing
   late still gets it. It carries `robot`, `capability`, `action_name` (all
   resolved from the node's actual ROS namespace at runtime) and the raw JSON
@@ -79,8 +94,8 @@ that wraps exactly one ROS 2 action and, once activated:
   its `capabilities_file` parameter.
 - Publishes a 1 Hz `CapabilityStatus` heartbeat (same `robot`/`capability`/
   `action_name` identity, plus a `busy` flag) on `/capabilities_status` for
-  as long as it stays active — this is how `control_center` knows a
-  capability is not just registered but actually alive, and whether it
+  as long as it stays active — this is how `easyfleet_mission_manager` knows
+  a capability is not just registered but actually alive, and whether it
   currently has a goal executing (`BUSY`) or is free to be called (`IDLE`),
   without having to send it a goal just to find out.
 - Exposes a `<action_name>.allow_preemption` parameter controlling whether a
@@ -99,55 +114,51 @@ that wraps exactly one ROS 2 action and, once activated:
 Because a capability resolves its `robot`/`action_name` identity from its
 own ROS namespace, the same node binary (e.g. `navigation_capability_node`)
 can be launched under any namespace and will announce itself correctly —
-`deployments` uses this to assemble two example scenarios:
+`easyfleet_example_deployments` uses this to assemble two example scenarios:
 
 | Scenario | Robot | Capabilities | Launch file |
 |---|---|---|---|
-| `alone` | `robot_1` | navigation, manipulation, perception | `deployments/launch/alone/alone_launch.yaml` |
-| `collaboration` | `robot_1` | navigation, perception | `deployments/launch/collaboration/collaboration_launch.yaml` |
+| `alone` | `robot_1` | navigation, manipulation, perception | `easyfleet_example_deployments/launch/alone/alone_launch.yaml` |
+| `collaboration` | `robot_1` | navigation, perception | `easyfleet_example_deployments/launch/collaboration/collaboration_launch.yaml` |
 | `collaboration` | `robot_2` | navigation, perception | (same) |
 | `collaboration` | `robot_3` | navigation, manipulation | (same) |
 
 Each robot has its own per-robot launch file (e.g.
-`deployments/launch/collaboration/robot_3_launch.yaml`) that can also be run
-standalone, and its own JSON/parameter files under
-`deployments/config/<scenario>/<robot>/`. Namespacing keeps two robots that
-share a capability type (e.g. `navigation` on both `robot_1` and `robot_3`)
-fully distinct: their resolved `action_name`s (`/robot_1/navigation` vs.
-`/robot_3/navigation`) never collide, and each can be discovered and called
-independently.
+`easyfleet_example_deployments/launch/collaboration/robot_3_launch.yaml`) that
+can also be run standalone, and its own JSON/parameter files under
+`easyfleet_example_deployments/config/<scenario>/<robot>/`. Namespacing keeps
+two robots that share a capability type (e.g. `navigation` on both
+`robot_1` and `robot_3`) fully distinct: their resolved `action_name`s
+(`/robot_1/navigation` vs. `/robot_3/navigation`) never collide, and each
+can be discovered and called independently.
 
 ## Packages
 
 | Package | Type | What it is |
 |---|---|---|
-| `arch_mockup` | C++ library | `ActionServerBase<ActionT>`, `ActionClient<ActionT>`, `Capability<ActionServerT>`, `CapabilityClient<ActionT>` |
-| `arch_mockup_interfaces` | Interface package | `CapabilityDescription`, `CapabilityStatus` — the message contract every capability must respect |
-| `control_center` | C++ executables | `control_center_alone_node`, `control_center_collaboration_node` — mission scripts, one per deployment scenario |
-| `nav2_common`, `nav2_msgs` | Vendored | Upstream Nav2 packages, included because they aren't released for Rolling yet |
-| `navigation_capability` | C++ library + executable | Mock `navigation` capability (`nav2_msgs/NavigateToPose`) |
-| `manipulation_capability` | C++ library + executable | Mock `manipulation` capability (`moveit_msgs/ExecuteTrajectory`) |
-| `perception_interfaces` | Interface package | Defines the `Perception` action |
-| `perception_capability` | C++ library + executable | Mock `perception` capability (`Perception`) |
-| `deployments` | Launch + config only | Assembles the `alone` and `collaboration` scenarios out of the packages above |
+| `easyfleet_core` | C++ library | `ActionServerBase<ActionT>`, `ActionClient<ActionT>`, `Capability<ActionServerT>`, `CapabilityClient<ActionT>` |
+| `easyfleet_interfaces` | Interface package | `CapabilityDescription`, `CapabilityStatus`, and the `Navigation`/`Manipulation`/`Perception` actions |
+| `easyfleet_capabilities` | C++ library + 3 executables | Mock `navigation`, `manipulation`, `perception` capabilities, one package |
+| `easyfleet_mission_manager` | C++ executables | `easyfleet_mission_manager_alone_node`, `easyfleet_mission_manager_collaboration_node` — mission scripts, one per deployment scenario |
+| `easyfleet_example_deployments` | Launch + config only | Assembles the `alone` and `collaboration` scenarios out of `easyfleet_capabilities` |
+
+Note: `easyfleet_example_deployments` intentionally keeps its `easynav_`
+prefix rather than `easyfleet_`, distinguishing it as an example/deployment
+package rather than core EasyFleet infrastructure.
 
 ## Prerequisites
 
-- Ubuntu with **ROS 2 Rolling** installed.
+- Ubuntu with **ROS 2 Rolling** installed (this workspace is pixi-managed;
+  enter the environment with e.g. `pixi-set-ros rolling` before building).
 - `colcon` and the usual ROS 2 build tooling.
-- `nlohmann-json3-dev` (used by `control_center` to parse capability JSON
-  descriptions) and `moveit_msgs` — both installed automatically by
-  `rosdep` below.
+- `nlohmann-json3-dev` (used by `easyfleet_mission_manager` to parse
+  capability JSON descriptions) — installed automatically by `rosdep` below.
 
 ## Building
 
 ```bash
-mkdir -p ~/arquimea_ws/src
-cd ~/arquimea_ws/src
-# place (or clone) this repository here as `arquimea_project`
-
-cd ~/arquimea_ws
-source /opt/ros/rolling/setup.bash
+cd ~/ros/ros2/easyfleet_ws
+pixi-set-ros rolling   # or: eval "$(pixi shell-hook -e rolling --frozen)"
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
 source install/setup.bash
@@ -157,7 +168,8 @@ source install/setup.bash
 
 Each capability node **activates itself on startup** — no external lifecycle
 manager or `ros2 lifecycle set` calls are needed. Bring up a scenario from
-`deployments`, then run the matching `control_center` mission script.
+`easyfleet_example_deployments`, then run the matching
+`easyfleet_mission_manager` mission script.
 
 ### `alone` scenario
 
@@ -167,17 +179,17 @@ under `/robot_1`.
 Terminal 1:
 
 ```bash
-ros2 launch deployments alone_launch.yaml
+ros2 launch easyfleet_example_deployments alone_launch.yaml
 ```
 
 Terminal 2, once it's up:
 
 ```bash
-ros2 run control_center control_center_alone_node
+ros2 run easyfleet_mission_manager easyfleet_mission_manager_alone_node
 ```
 
-`control_center_alone_node` will, in order, print what it's doing as it
-happens:
+`easyfleet_mission_manager_alone_node` will, in order, print what it's doing
+as it happens:
 
 1. **Discover** which of `robot_1`'s capabilities are currently active and
    print each one's full description (from its JSON on `/capabilities`).
@@ -195,16 +207,16 @@ Three robots: `robot_1` and `robot_2` (navigation + perception each), and
 Terminal 1:
 
 ```bash
-ros2 launch deployments collaboration_launch.yaml
+ros2 launch easyfleet_example_deployments collaboration_launch.yaml
 ```
 
 Terminal 2, once it's up:
 
 ```bash
-ros2 run control_center control_center_collaboration_node
+ros2 run easyfleet_mission_manager easyfleet_mission_manager_collaboration_node
 ```
 
-`control_center_collaboration_node` runs a two-phase mission:
+`easyfleet_mission_manager_collaboration_node` runs a two-phase mission:
 
 1. **Discover** all six active capabilities across the three robots and
    print each one's full description.
@@ -228,13 +240,13 @@ ros2 topic echo /capabilities --once
 ros2 topic echo /capabilities_status
 
 # Send a navigation goal
-ros2 action send_goal /robot_1/navigation nav2_msgs/action/NavigateToPose \
-  "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 1.0, y: 2.0, z: 0.0}}}}" \
+ros2 action send_goal /robot_1/navigation easyfleet_interfaces/action/Navigation \
+  "{target_pose: {header: {frame_id: 'map'}, pose: {position: {x: 1.0, y: 2.0, z: 0.0}}}}" \
   --feedback
 
 # Send a perception goal (only the 'gato' class is supported by the mock)
-ros2 action send_goal /robot_1/perception perception_interfaces/action/Perception \
-  "{objects: ['gato']}" --feedback
+ros2 action send_goal /robot_1/perception easyfleet_interfaces/action/Perception \
+  "{object_classes: ['gato']}" --feedback
 ```
 
 Perception (and any preempted/canceled goal) runs until stopped: press
@@ -245,7 +257,7 @@ early.
 ## Running the tests
 
 ```bash
-colcon test --packages-select arch_mockup arch_mockup_interfaces navigation_capability manipulation_capability perception_capability perception_interfaces control_center deployments
+colcon test --packages-select easyfleet_core easyfleet_interfaces easyfleet_capabilities easyfleet_mission_manager
 colcon test-result --verbose
 ```
 
@@ -258,11 +270,11 @@ on the shared `/capabilities` topics.
 
 ### Capability discovery is a one-shot snapshot, not a live view
 
-`control_center::discover_capabilities()` subscribes to `/capabilities` and
-`/capabilities_status`, waits for a fixed window (2.5s by default), and
-returns whatever it collected — a snapshot. That's good enough for the
-mission scripts in this repo: they discover once at startup and then run a
-short, scripted sequence against whatever they found.
+`easyfleet_mission_manager::discover_capabilities()` subscribes to
+`/capabilities` and `/capabilities_status`, waits for a fixed window (2.5s
+by default), and returns whatever it collected — a snapshot. That's good
+enough for the mission scripts in this repo: they discover once at startup
+and then run a short, scripted sequence against whatever they found.
 
 It is **not** good enough for the architecture this repo is a stand-in for:
 a control computer running a long-lived, LLM-generated Behavior Tree that
@@ -300,4 +312,4 @@ validate the plumbing for.
 
 ## License
 
-Apache-2.0 (see `architecture/arch_mockup/LICENSE`).
+Apache-2.0 (see `easyfleet_core/LICENSE`).

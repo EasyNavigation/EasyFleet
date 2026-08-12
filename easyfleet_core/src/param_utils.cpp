@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "arch_mockup/detail/param_utils.hpp"
+#include "easyfleet_core/detail/param_utils.hpp"
 
 #include <algorithm>
 #include <cctype>
 
-namespace arch_mockup
+namespace easyfleet_core
 {
 namespace detail
 {
@@ -48,4 +48,4 @@ std::string sanitize_identifier(const std::string & text)
 }
 
 }  // namespace detail
-}  // namespace arch_mockup
+}  // namespace easyfleet_core

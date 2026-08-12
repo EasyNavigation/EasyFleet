@@ -1,0 +1,70 @@
+{
+  "name": "perception",
+  "display_name": "Detect objects of a known class",
+  "description": "Runs a continuous object-detection stream for a requested object class, publishing detections (both 2D image-plane and 3D spatial) as feedback until the caller cancels the goal. This mock implementation only knows how to detect one class: cats ('gato'). Any goal that does not request that class is rejected outright.",
+  "action": {
+    "name": "/robot_1/perception",
+    "type": "easyfleet_interfaces/action/Perception",
+    "goal": {
+      "object_classes": "string[] - object classes to look for. Must include 'gato' (case-insensitive substring match); any other request is rejected since this mock does not detect other classes.",
+      "continuous": "bool - accepted but not honored by this mock: every goal streams until canceled/preempted regardless of this flag.",
+      "max_rate_hz": "float32 - accepted but not honored by this mock: the fixed 'perception.detection_rate_hz' parameter is used instead.",
+      "parameters_json": "string - optional JSON escape hatch for stack-specific perception parameters; empty for defaults."
+    },
+    "feedback": {
+      "detections_3d": "vision_msgs/Detection3DArray - 1 to 3 randomly placed 3D detections per message, published continuously while the goal is active.",
+      "detections_2d": "vision_msgs/Detection2DArray - the same detections' 2D image-plane bounding boxes, published alongside detections_3d."
+    },
+    "result": {
+      "error_code": "uint16 - 0 SUCCESS, 1 REJECTED, 2 ABORTED, 3 CANCELED, 4 TIMEOUT. CANCELED is the expected way this capability's goals end (this mock never completes on its own); ABORTED means the goal was preempted or the capability shut down.",
+      "error_msg": "string - populated when error_code is not SUCCESS/CANCELED, explaining why.",
+      "detections_3d": "vision_msgs/Detection3DArray - final detection snapshot; empty in this mock implementation.",
+      "detections_2d": "vision_msgs/Detection2DArray - final detection snapshot; empty in this mock implementation."
+    }
+  },
+  "requirements": [
+    "The requested 'object_classes' list must include the target class this mock supports (default 'gato'); otherwise the goal is rejected immediately.",
+    "This action never completes on its own: it streams feedback indefinitely until the caller cancels the goal (or it is preempted by a new one)."
+  ],
+  "effects": [
+    "None on the physical world: this is a perception-only capability that reports detections, it does not act on them.",
+    "While a goal is active, detections_3d/detections_2d feedback is published at a steady rate (see 'perception.detection_rate_hz')."
+  ],
+  "preemption": {
+    "supported": true,
+    "controlled_by_parameter": "perception.allow_preemption",
+    "behavior_when_enabled": "Sending a new goal while one is active aborts the previous goal (error_code=ABORTED) and starts detecting for the new request instead.",
+    "behavior_when_disabled": "Sending a new goal while one is active is rejected outright; the caller must cancel the current goal first."
+  },
+  "parameters": {
+    "perception.allow_preemption": {
+      "type": "bool",
+      "default": true,
+      "description": "Whether a new perception goal is allowed to preempt (replace) one that is currently executing."
+    },
+    "perception.target_class": {
+      "type": "string",
+      "default": "gato",
+      "description": "The only object class this mock can 'detect'. A goal is only accepted if its 'objects' list contains this string (case-insensitive substring match)."
+    },
+    "perception.detection_rate_hz": {
+      "type": "double",
+      "unit": "hertz",
+      "default": 20.0,
+      "description": "Rate at which detections_3d/detections_2d feedback is published while a goal is active."
+    },
+    "perception.frame_id": {
+      "type": "string",
+      "default": "camera_link",
+      "description": "Frame id stamped on the published detections."
+    },
+    "capabilities_file": {
+      "type": "string",
+      "description": "Path to this very capability description file; published verbatim on /capabilities when the node is activated."
+    }
+  },
+  "notes": [
+    "This is a mock implementation, part of the EasyFleet architecture, standing in for a real perception stack (a classic detector, a VLM-based one, or otherwise) during integration testing of multi-capability systems. Detections are random placeholder positions, not derived from any sensor data.",
+    "Deployment: 'alone' scenario, robot_1."
+  ]
+}

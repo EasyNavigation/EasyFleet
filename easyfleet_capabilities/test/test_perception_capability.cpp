@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <chrono>
 #include <fstream>
 #include <future>
@@ -28,26 +29,26 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "arch_mockup_interfaces/msg/capability_description.hpp"
-#include "arch_mockup_interfaces/msg/capability_status.hpp"
-#include "perception_capability/perception_capability.hpp"
+#include "easyfleet_capabilities/perception_capability.hpp"
+#include "easyfleet_interfaces/msg/capability_description.hpp"
+#include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using arch_mockup_interfaces::msg::CapabilityDescription;
-using arch_mockup_interfaces::msg::CapabilityStatus;
-using Perception = perception_interfaces::action::Perception;
-using perception_capability::PerceptionCapability;
-using perception_capability_test::spin_in_background;
-using perception_capability_test::unique_test_name;
-using perception_capability_test::wait_until;
+using easyfleet_interfaces::msg::CapabilityDescription;
+using easyfleet_interfaces::msg::CapabilityStatus;
+using Perception = easyfleet_interfaces::action::Perception;
+using easyfleet_capabilities::PerceptionCapability;
+using easyfleet_capabilities_test::spin_in_background;
+using easyfleet_capabilities_test::unique_test_name;
+using easyfleet_capabilities_test::wait_until;
 
 namespace
 {
 
 // Capability packages no longer ship a default capabilities JSON of their
-// own (that now lives only under the deployment scenarios in
-// src/arquimea_project/deployments), so tests exercise the
+// own (that lives under the deployment scenarios in
+// src/EasyFleet/easyfleet_example_deployments), so tests exercise the
 // publish-file-verbatim behavior against a JSON they write themselves.
 constexpr char kSampleCapabilitiesJson[] =
   R"json({
@@ -55,10 +56,10 @@ constexpr char kSampleCapabilitiesJson[] =
   "display_name": "Detect objects of a known class",
   "action": {
     "name": "/perception",
-    "type": "perception_interfaces/action/Perception"
+    "type": "easyfleet_interfaces/action/Perception"
   },
   "requirements": [
-    "The requested 'objects' list must include the target class this mock supports."
+    "The requested 'object_classes' list must include the target class this mock supports."
   ],
   "effects": [
     "None on the physical world: this is a perception-only capability."
@@ -272,7 +273,7 @@ TEST_F(PerceptionCapabilityTest, ActiveCapabilityStreamsDetectionsUntilCanceled)
   ASSERT_TRUE(client->wait_for_action_server(5s));
 
   Perception::Goal goal;
-  goal.objects.push_back("gato");
+  goal.object_classes.push_back("gato");
 
   std::atomic<int> feedback_count{0};
   rclcpp_action::Client<Perception>::SendGoalOptions options;
@@ -299,7 +300,7 @@ TEST_F(PerceptionCapabilityTest, ActiveCapabilityStreamsDetectionsUntilCanceled)
   auto wrapped = result_future.get();
   EXPECT_EQ(wrapped.code, rclcpp_action::ResultCode::CANCELED);
   ASSERT_TRUE(wrapped.result);
-  EXPECT_TRUE(wrapped.result->success);
+  EXPECT_EQ(wrapped.result->error_code, Perception::Result::CANCELED);
 }
 
 int main(int argc, char ** argv)

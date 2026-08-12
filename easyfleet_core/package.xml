@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>arch_mockup</name>
-  <version>0.0.0</version>
+  <name>easyfleet_core</name>
+  <version>0.1.0</version>
   <description>
     C++ library that wraps rclcpp_action to provide a clean, inheritance-based
     action server base class and a comfortable action client wrapper, including
-    parameter-driven control of whether an action can be preempted.
+    parameter-driven control of whether an action can be preempted. Also
+    provides the Capability lifecycle-node base class every EasyFleet
+    capability builds on.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
@@ -19,7 +21,7 @@
   <depend>action_msgs</depend>
   <depend>rcl_interfaces</depend>
   <depend>lifecycle_msgs</depend>
-  <depend>arch_mockup_interfaces</depend>
+  <depend>easyfleet_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

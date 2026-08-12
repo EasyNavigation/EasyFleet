@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,24 +18,24 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-#include "navigation_capability/navigation_capability.hpp"
+#include "easyfleet_capabilities/navigation_capability.hpp"
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<navigation_capability::NavigationCapability>();
+  auto node = std::make_shared<easyfleet_capabilities::NavigationCapability>();
 
   node->configure();
   if (node->get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE) {
-    RCLCPP_FATAL(node->get_logger(), "navigation_capability failed to configure, exiting.");
+    RCLCPP_FATAL(node->get_logger(), "navigation capability failed to configure, exiting.");
     rclcpp::shutdown();
     return 1;
   }
 
   node->activate();
   if (node->get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
-    RCLCPP_FATAL(node->get_logger(), "navigation_capability failed to activate, exiting.");
+    RCLCPP_FATAL(node->get_logger(), "navigation capability failed to activate, exiting.");
     rclcpp::shutdown();
     return 1;
   }

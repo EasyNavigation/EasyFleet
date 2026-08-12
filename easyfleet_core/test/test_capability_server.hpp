@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ARCH_MOCKUP__TEST__TEST_CAPABILITY_SERVER_HPP_
-#define ARCH_MOCKUP__TEST__TEST_CAPABILITY_SERVER_HPP_
+#ifndef EASYFLEET_CORE__TEST__TEST_CAPABILITY_SERVER_HPP_
+#define EASYFLEET_CORE__TEST__TEST_CAPABILITY_SERVER_HPP_
 
 #include <chrono>
 #include <memory>
@@ -25,15 +25,15 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "arch_mockup/action_server_base.hpp"
+#include "easyfleet_core/action_server_base.hpp"
 
-namespace arch_mockup_test
+namespace easyfleet_core_test
 {
 
 using Fibonacci = example_interfaces::action::Fibonacci;
 
 /// Minimal ActionServerBase<Fibonacci> subclass usable as the ActionServerT
-/// of arch_mockup::Capability<T>: constructible from a LifecycleNode pointer
+/// of easyfleet_core::Capability<T>: constructible from a LifecycleNode pointer
 /// plus an action name, as Capability<T> requires.
 ///
 /// Settles goals instantly by default (`<action_name>.mock_delay_seconds`
@@ -41,13 +41,13 @@ using Fibonacci = example_interfaces::action::Fibonacci;
 /// observe a goal while it is still executing (e.g. to check
 /// `CapabilityStatus.busy`) can override that parameter to hold the goal
 /// open for a bit before it succeeds.
-class TestCapabilityActionServer : public arch_mockup::ActionServerBase<Fibonacci>
+class TestCapabilityActionServer : public easyfleet_core::ActionServerBase<Fibonacci>
 {
 public:
   TestCapabilityActionServer(
     rclcpp_lifecycle::LifecycleNode * node,
     const std::string & action_name)
-  : arch_mockup::ActionServerBase<Fibonacci>(node, action_name)
+  : easyfleet_core::ActionServerBase<Fibonacci>(node, action_name)
   {
     mock_delay_s_ = node->declare_parameter(action_name + ".mock_delay_seconds", 0.0);
   }
@@ -77,6 +77,6 @@ private:
   double mock_delay_s_{0.0};
 };
 
-}  // namespace arch_mockup_test
+}  // namespace easyfleet_core_test
 
-#endif  // ARCH_MOCKUP__TEST__TEST_CAPABILITY_SERVER_HPP_
+#endif  // EASYFLEET_CORE__TEST__TEST_CAPABILITY_SERVER_HPP_

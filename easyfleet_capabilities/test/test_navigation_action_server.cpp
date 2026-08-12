@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,15 +27,15 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "navigation_capability/navigate_to_pose_action_server.hpp"
+#include "easyfleet_capabilities/navigation_capability.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using NavigateToPose = nav2_msgs::action::NavigateToPose;
-using navigation_capability::NavigateToPoseActionServer;
-using navigation_capability_test::spin_in_background;
-using navigation_capability_test::unique_test_name;
-using navigation_capability_test::wait_until;
+using Navigation = easyfleet_interfaces::action::Navigation;
+using easyfleet_capabilities::NavigationActionServer;
+using easyfleet_capabilities_test::spin_in_background;
+using easyfleet_capabilities_test::unique_test_name;
+using easyfleet_capabilities_test::wait_until;
 
 namespace
 {
@@ -55,7 +55,7 @@ geometry_msgs::msg::PoseStamped make_pose(const std::string & frame_id = "map")
 // Mock timing is fixed short and fine-grained for the whole suite (via
 // parameter overrides at node construction) so tests run quickly while
 // still leaving enough steps to observe intermediate feedback reliably.
-class NavigateToPoseActionServerTest : public ::testing::Test
+class NavigationActionServerTest : public ::testing::Test
 {
 protected:
   static void SetUpTestSuite()
@@ -71,11 +71,11 @@ protected:
     });
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_nav_server"), options);
-    action_server_ = std::make_shared<NavigateToPoseActionServer>(
+    action_server_ = std::make_shared<NavigationActionServer>(
       server_node_.get(), action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_nav_client"));
-    client_ = rclcpp_action::create_client<NavigateToPose>(client_node_, action_name_);
+    client_ = rclcpp_action::create_client<Navigation>(client_node_, action_name_);
 
     executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
     executor_->add_node(server_node_->get_node_base_interface());
@@ -102,32 +102,32 @@ protected:
 
   inline static std::string action_name_;
   inline static rclcpp_lifecycle::LifecycleNode::SharedPtr server_node_;
-  inline static std::shared_ptr<NavigateToPoseActionServer> action_server_;
+  inline static std::shared_ptr<NavigationActionServer> action_server_;
   inline static rclcpp::Node::SharedPtr client_node_;
-  inline static rclcpp_action::Client<NavigateToPose>::SharedPtr client_;
+  inline static rclcpp_action::Client<Navigation>::SharedPtr client_;
   inline static rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
   inline static std::thread spin_thread_;
 };
 
-TEST_F(NavigateToPoseActionServerTest, ExposesConfiguredActionName)
+TEST_F(NavigationActionServerTest, ExposesConfiguredActionName)
 {
   EXPECT_EQ(action_server_->get_action_name(), action_name_);
 }
 
-TEST_F(NavigateToPoseActionServerTest, RejectsGoalWithEmptyFrameId)
+TEST_F(NavigationActionServerTest, RejectsGoalWithEmptyFrameId)
 {
-  NavigateToPose::Goal goal;
-  goal.pose = make_pose("");
+  Navigation::Goal goal;
+  goal.target_pose = make_pose("");
 
   auto future = client_->async_send_goal(goal);
   ASSERT_EQ(future.wait_for(2s), std::future_status::ready);
   EXPECT_FALSE(future.get());
 }
 
-TEST_F(NavigateToPoseActionServerTest, AcceptsGoalAndSucceedsWithNoError)
+TEST_F(NavigationActionServerTest, AcceptsGoalAndSucceedsWithNoError)
 {
-  NavigateToPose::Goal goal;
-  goal.pose = make_pose();
+  Navigation::Goal goal;
+  goal.target_pose = make_pose();
 
   auto goal_handle_future = client_->async_send_goal(goal);
   ASSERT_EQ(goal_handle_future.wait_for(2s), std::future_status::ready);
@@ -139,21 +139,21 @@ TEST_F(NavigateToPoseActionServerTest, AcceptsGoalAndSucceedsWithNoError)
   auto wrapped = result_future.get();
   EXPECT_EQ(wrapped.code, rclcpp_action::ResultCode::SUCCEEDED);
   ASSERT_TRUE(wrapped.result);
-  EXPECT_EQ(wrapped.result->error_code, NavigateToPose::Result::NONE);
+  EXPECT_EQ(wrapped.result->error_code, Navigation::Result::SUCCESS);
 }
 
-TEST_F(NavigateToPoseActionServerTest, FeedbackReportsDecreasingDistanceRemaining)
+TEST_F(NavigationActionServerTest, FeedbackReportsDecreasingDistanceRemaining)
 {
-  NavigateToPose::Goal goal;
-  goal.pose = make_pose();
+  Navigation::Goal goal;
+  goal.target_pose = make_pose();
 
   std::mutex mutex;
   std::vector<float> distances;
-  rclcpp_action::Client<NavigateToPose>::SendGoalOptions options;
+  rclcpp_action::Client<Navigation>::SendGoalOptions options;
   options.feedback_callback =
     [&mutex, &distances](
-    rclcpp_action::ClientGoalHandle<NavigateToPose>::SharedPtr,
-    const std::shared_ptr<const NavigateToPose::Feedback> feedback)
+    rclcpp_action::ClientGoalHandle<Navigation>::SharedPtr,
+    const std::shared_ptr<const Navigation::Feedback> feedback)
     {
       std::lock_guard<std::mutex> lock(mutex);
       distances.push_back(feedback->distance_remaining);
@@ -176,10 +176,10 @@ TEST_F(NavigateToPoseActionServerTest, FeedbackReportsDecreasingDistanceRemainin
   EXPECT_NEAR(distances.back(), 0.0f, 1e-3f);
 }
 
-TEST_F(NavigateToPoseActionServerTest, ClientCancelResultsInCanceled)
+TEST_F(NavigationActionServerTest, ClientCancelResultsInCanceled)
 {
-  NavigateToPose::Goal goal;
-  goal.pose = make_pose();
+  Navigation::Goal goal;
+  goal.target_pose = make_pose();
 
   auto goal_handle_future = client_->async_send_goal(goal);
   ASSERT_EQ(goal_handle_future.wait_for(2s), std::future_status::ready);
@@ -196,12 +196,12 @@ TEST_F(NavigateToPoseActionServerTest, ClientCancelResultsInCanceled)
   EXPECT_EQ(result_future.get().code, rclcpp_action::ResultCode::CANCELED);
 }
 
-TEST_F(NavigateToPoseActionServerTest, NewGoalPreemptsRunningGoalByDefault)
+TEST_F(NavigationActionServerTest, NewGoalPreemptsRunningGoalByDefault)
 {
   EXPECT_TRUE(action_server_->is_preemptable());
 
-  NavigateToPose::Goal first_goal;
-  first_goal.pose = make_pose();
+  Navigation::Goal first_goal;
+  first_goal.target_pose = make_pose();
   auto first_handle_future = client_->async_send_goal(first_goal);
   ASSERT_EQ(first_handle_future.wait_for(2s), std::future_status::ready);
   auto first_handle = first_handle_future.get();
@@ -210,8 +210,8 @@ TEST_F(NavigateToPoseActionServerTest, NewGoalPreemptsRunningGoalByDefault)
 
   auto first_result_future = client_->async_get_result(first_handle);
 
-  NavigateToPose::Goal second_goal;
-  second_goal.pose = make_pose();
+  Navigation::Goal second_goal;
+  second_goal.target_pose = make_pose();
   auto second_handle_future = client_->async_send_goal(second_goal);
   ASSERT_EQ(second_handle_future.wait_for(2s), std::future_status::ready);
   auto second_handle = second_handle_future.get();
@@ -225,7 +225,7 @@ TEST_F(NavigateToPoseActionServerTest, NewGoalPreemptsRunningGoalByDefault)
   EXPECT_EQ(second_result_future.get().code, rclcpp_action::ResultCode::SUCCEEDED);
 }
 
-TEST(NavigateToPoseActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileBusy)
+TEST(NavigationActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWhileBusy)
 {
   const auto action_name = unique_test_name("navigation_np");
   rclcpp::NodeOptions options;
@@ -237,11 +237,11 @@ TEST(NavigateToPoseActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWh
   });
   auto server_node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
     unique_test_name("test_nav_server_np"), options);
-  auto action_server = std::make_shared<NavigateToPoseActionServer>(server_node.get(), action_name);
+  auto action_server = std::make_shared<NavigationActionServer>(server_node.get(), action_name);
   ASSERT_FALSE(action_server->is_preemptable());
 
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_nav_client_np"));
-  auto client = rclcpp_action::create_client<NavigateToPose>(client_node, action_name);
+  auto client = rclcpp_action::create_client<Navigation>(client_node, action_name);
 
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(server_node->get_node_base_interface());
@@ -250,16 +250,16 @@ TEST(NavigateToPoseActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWh
 
   ASSERT_TRUE(client->wait_for_action_server(5s));
 
-  NavigateToPose::Goal first_goal;
-  first_goal.pose = make_pose();
+  Navigation::Goal first_goal;
+  first_goal.target_pose = make_pose();
   auto first_handle_future = client->async_send_goal(first_goal);
   ASSERT_EQ(first_handle_future.wait_for(2s), std::future_status::ready);
   auto first_handle = first_handle_future.get();
   ASSERT_TRUE(first_handle);
   ASSERT_TRUE(wait_until([&] {return action_server->is_active();}, 1s));
 
-  NavigateToPose::Goal second_goal;
-  second_goal.pose = make_pose();
+  Navigation::Goal second_goal;
+  second_goal.target_pose = make_pose();
   auto second_handle_future = client->async_send_goal(second_goal);
   ASSERT_EQ(second_handle_future.wait_for(2s), std::future_status::ready);
   EXPECT_FALSE(second_handle_future.get())

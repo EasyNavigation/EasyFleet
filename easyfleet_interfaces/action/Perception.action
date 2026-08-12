@@ -1,9 +1,25 @@
-# Goal: names of the object classes to look for
-string[] objects
+# Goal: detect/report objects belonging to object_classes, once (default)
+# or continuously until canceled/preempted if `continuous` is true. Any
+# perception stack (a classic detector, a VLM-based one, ...) expresses
+# itself through this same interface; stack-specific knobs go in
+# parameters_json.
+string[] object_classes
+bool continuous
+float32 max_rate_hz
+string parameters_json
 ---
 # Result
-bool success
+# Shared result-code convention across Navigation/Manipulation/Perception
+# (0-9 reserved for the shared block, capability-specific codes start at 10).
+uint16 SUCCESS=0
+uint16 REJECTED=1
+uint16 ABORTED=2
+uint16 CANCELED=3
+uint16 TIMEOUT=4
+uint16 error_code
 string error_msg
+vision_msgs/Detection3DArray detections_3d
+vision_msgs/Detection2DArray detections_2d
 ---
 # Feedback
 vision_msgs/Detection3DArray detections_3d

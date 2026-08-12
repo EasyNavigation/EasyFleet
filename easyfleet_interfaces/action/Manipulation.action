@@ -1,10 +1,33 @@
-# Goal: names of the object classes to look for
-string[] objects
+# Goal: reach an end-effector pose, a joint configuration, or run a
+# named/pre-programmed task, depending on `mode`. Any manipulator stack
+# (MoveIt, a vendor SDK, a simple joint controller, ...) expresses itself
+# through this same interface; stack-specific knobs (planner id, velocity
+# scaling, ...) go in parameters_json.
+uint8 MODE_JOINT_TARGET=0
+uint8 MODE_POSE_TARGET=1
+uint8 MODE_NAMED_TASK=2
+uint8 mode
+sensor_msgs/JointState joint_target
+geometry_msgs/PoseStamped pose_target
+string end_effector_link
+string named_task
+string parameters_json
 ---
 # Result
-bool success
+# Shared result-code convention across Navigation/Manipulation/Perception
+# (0-9 reserved for the shared block, capability-specific codes start at 10).
+uint16 SUCCESS=0
+uint16 REJECTED=1
+uint16 ABORTED=2
+uint16 CANCELED=3
+uint16 TIMEOUT=4
+uint16 PLANNING_FAILED=10
+uint16 COLLISION_DETECTED=11
+uint16 error_code
 string error_msg
+sensor_msgs/JointState final_joint_state
 ---
 # Feedback
-vision_msgs/Detection3DArray detections_3d
-vision_msgs/Detection2DArray detections_2d
+string state
+sensor_msgs/JointState current_joint_state
+float32 progress

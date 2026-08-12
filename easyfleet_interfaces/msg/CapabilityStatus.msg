@@ -1,8 +1,8 @@
 # Published at a steady rate on /capabilities_status by every active
-# capability. Part of the arch_mockup architecture contract: its presence,
-# not its content, is the "this capability is alive" signal a control
-# center relies on -- a capability that stops publishing this is considered
-# inactive even if it once announced itself on /capabilities.
+# capability. Part of the EasyFleet architecture contract: its presence,
+# not its content, is the "this capability is alive" signal a mission
+# manager relies on -- a capability that stops publishing this is
+# considered inactive even if it once announced itself on /capabilities.
 
 # Namespace this capability is running under (e.g. "robot1"). Empty if the
 # capability was launched without a namespace.

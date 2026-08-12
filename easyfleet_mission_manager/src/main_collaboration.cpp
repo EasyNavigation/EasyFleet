@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +14,7 @@
 // limitations under the License.
 
 // Mission control demo for the "collaboration" deployment scenario (see
-// src/arquimea_project/deployments/launch/collaboration): three robots --
+// src/EasyFleet/easyfleet_example_deployments/launch/collaboration): three robots --
 //   - robot_1: perception, navigation
 //   - robot_2: perception, navigation
 //   - robot_3: navigation, manipulation
@@ -30,14 +30,14 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "arch_mockup/capability_client.hpp"
-#include "control_center/capability_discovery.hpp"
-#include "control_center/capability_info.hpp"
-#include "control_center/mission_helpers.hpp"
-#include "control_center/output.hpp"
-#include "control_center/run_capability.hpp"
+#include "easyfleet_core/capability_client.hpp"
+#include "easyfleet_mission_manager/capability_discovery.hpp"
+#include "easyfleet_mission_manager/capability_info.hpp"
+#include "easyfleet_mission_manager/mission_helpers.hpp"
+#include "easyfleet_mission_manager/output.hpp"
+#include "easyfleet_mission_manager/run_capability.hpp"
 
-using namespace control_center;
+using namespace easyfleet_mission_manager;
 using namespace std::chrono_literals;
 
 namespace
@@ -45,7 +45,7 @@ namespace
 
 // This demo is specific to the "collaboration" deployment scenario, which
 // defines exactly these three robots (see
-// src/arquimea_project/deployments/launch/collaboration/).
+// src/EasyFleet/easyfleet_example_deployments/launch/collaboration/).
 const std::string kRobot1 = "robot_1";
 const std::string kRobot2 = "robot_2";
 const std::string kRobot3 = "robot_3";
@@ -55,7 +55,7 @@ const std::string kRobot3 = "robot_3";
 /// outcome as text -- used to narrate sequential phases of the mission.
 template<typename ActionT>
 std::string run_and_describe(
-  typename arch_mockup::CapabilityClient<ActionT>::SharedPtr client,
+  typename easyfleet_core::CapabilityClient<ActionT>::SharedPtr client,
   const std::string & label,
   const typename ActionT::Goal & goal,
   std::function<void(const typename ActionT::Feedback &)> on_feedback)
@@ -70,7 +70,7 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<rclcpp::Node>("control_center_collaboration");
+  auto node = std::make_shared<rclcpp::Node>("easyfleet_mission_manager_collaboration");
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node);
   auto spin_thread = spin_in_background(executor);
@@ -108,34 +108,34 @@ int main(int argc, char ** argv)
   // Each CapabilityClient is created against the *resolved* action name
   // (e.g. "/robot_1/navigation"), which is what each robot actually
   // announced itself under.
-  arch_mockup::CapabilityClient<NavigateToPose>::SharedPtr robot1_navigation_client;
+  easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot1_navigation_client;
   if (robot1_navigation) {
-    robot1_navigation_client = arch_mockup::CapabilityClient<NavigateToPose>::create(
+    robot1_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
       node.get(), robot1_navigation->action_name);
   }
-  arch_mockup::CapabilityClient<Perception>::SharedPtr robot1_perception_client;
+  easyfleet_core::CapabilityClient<Perception>::SharedPtr robot1_perception_client;
   if (robot1_perception) {
-    robot1_perception_client = arch_mockup::CapabilityClient<Perception>::create(
+    robot1_perception_client = easyfleet_core::CapabilityClient<Perception>::create(
       node.get(), robot1_perception->action_name);
   }
-  arch_mockup::CapabilityClient<NavigateToPose>::SharedPtr robot2_navigation_client;
+  easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot2_navigation_client;
   if (robot2_navigation) {
-    robot2_navigation_client = arch_mockup::CapabilityClient<NavigateToPose>::create(
+    robot2_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
       node.get(), robot2_navigation->action_name);
   }
-  arch_mockup::CapabilityClient<Perception>::SharedPtr robot2_perception_client;
+  easyfleet_core::CapabilityClient<Perception>::SharedPtr robot2_perception_client;
   if (robot2_perception) {
-    robot2_perception_client = arch_mockup::CapabilityClient<Perception>::create(
+    robot2_perception_client = easyfleet_core::CapabilityClient<Perception>::create(
       node.get(), robot2_perception->action_name);
   }
-  arch_mockup::CapabilityClient<NavigateToPose>::SharedPtr robot3_navigation_client;
+  easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot3_navigation_client;
   if (robot3_navigation) {
-    robot3_navigation_client = arch_mockup::CapabilityClient<NavigateToPose>::create(
+    robot3_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
       node.get(), robot3_navigation->action_name);
   }
-  arch_mockup::CapabilityClient<ExecuteTrajectory>::SharedPtr robot3_manipulation_client;
+  easyfleet_core::CapabilityClient<Manipulation>::SharedPtr robot3_manipulation_client;
   if (robot3_manipulation) {
-    robot3_manipulation_client = arch_mockup::CapabilityClient<ExecuteTrajectory>::create(
+    robot3_manipulation_client = easyfleet_core::CapabilityClient<Manipulation>::create(
       node.get(), robot3_manipulation->action_name);
   }
 
@@ -149,7 +149,7 @@ int main(int argc, char ** argv)
   if (robot1_navigation_client) {
     phase1_threads.emplace_back(
       [&robot1_navigation_client, &robot1_navigation] {
-        run_capability<NavigateToPose>(
+        run_capability<Navigation>(
           robot1_navigation_client, robot1_navigation->action_name, make_navigation_goal(),
           kRunTimeout, make_navigation_feedback_printer(robot1_navigation->action_name));
       });
@@ -169,7 +169,7 @@ int main(int argc, char ** argv)
   if (robot2_navigation_client) {
     phase1_threads.emplace_back(
       [&robot2_navigation_client, &robot2_navigation] {
-        run_capability<NavigateToPose>(
+        run_capability<Navigation>(
           robot2_navigation_client, robot2_navigation->action_name, make_navigation_goal(),
           kRunTimeout, make_navigation_feedback_printer(robot2_navigation->action_name));
       });
@@ -198,7 +198,7 @@ int main(int argc, char ** argv)
   print_section("Phase 2: " + kRobot3 + " -- navigation, then manipulation");
   if (robot3_navigation_client) {
     print_step("starting " + kRobot3 + "'s navigation; manipulation will follow once it ends.");
-    const auto outcome = run_and_describe<NavigateToPose>(
+    const auto outcome = run_and_describe<Navigation>(
       robot3_navigation_client, robot3_navigation->action_name, make_navigation_goal(),
       make_navigation_feedback_printer(robot3_navigation->action_name));
     print_step(
@@ -208,7 +208,7 @@ int main(int argc, char ** argv)
   }
 
   if (robot3_manipulation_client) {
-    run_capability<ExecuteTrajectory>(
+    run_capability<Manipulation>(
       robot3_manipulation_client, robot3_manipulation->action_name, make_manipulation_goal(),
       kRunTimeout, make_manipulation_feedback_printer(robot3_manipulation->action_name));
   } else {

@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,26 +28,26 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
-#include "arch_mockup_interfaces/msg/capability_description.hpp"
-#include "arch_mockup_interfaces/msg/capability_status.hpp"
-#include "navigation_capability/navigation_capability.hpp"
+#include "easyfleet_capabilities/navigation_capability.hpp"
+#include "easyfleet_interfaces/msg/capability_description.hpp"
+#include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "test_utils.hpp"
 
 using namespace std::chrono_literals;
-using arch_mockup_interfaces::msg::CapabilityDescription;
-using arch_mockup_interfaces::msg::CapabilityStatus;
-using NavigateToPose = nav2_msgs::action::NavigateToPose;
-using navigation_capability::NavigationCapability;
-using navigation_capability_test::spin_in_background;
-using navigation_capability_test::unique_test_name;
-using navigation_capability_test::wait_until;
+using easyfleet_interfaces::msg::CapabilityDescription;
+using easyfleet_interfaces::msg::CapabilityStatus;
+using Navigation = easyfleet_interfaces::action::Navigation;
+using easyfleet_capabilities::NavigationCapability;
+using easyfleet_capabilities_test::spin_in_background;
+using easyfleet_capabilities_test::unique_test_name;
+using easyfleet_capabilities_test::wait_until;
 
 namespace
 {
 
 // Capability packages no longer ship a default capabilities JSON of their
-// own (that now lives only under the deployment scenarios in
-// src/arquimea_project/deployments), so tests exercise the
+// own (that lives under the deployment scenarios in
+// src/EasyFleet/easyfleet_example_deployments), so tests exercise the
 // publish-file-verbatim behavior against a JSON they write themselves.
 constexpr char kSampleCapabilitiesJson[] =
   R"json({
@@ -55,7 +55,7 @@ constexpr char kSampleCapabilitiesJson[] =
   "display_name": "Navigate to a target pose",
   "action": {
     "name": "/navigation",
-    "type": "nav2_msgs/action/NavigateToPose"
+    "type": "easyfleet_interfaces/action/Navigation"
   },
   "requirements": [
     "The robot must already be localized within a known map."
@@ -118,7 +118,7 @@ class NavigationCapabilityTest : public ::testing::Test
 protected:
   void SetUp() override
   {
-    // NavigateToPoseActionServer reads its mock timing parameters once, at
+    // NavigationActionServer reads its mock timing parameters once, at
     // construction time, so they must be overridden via NodeOptions (not
     // set_parameter() afterwards) to actually take effect. Keeping the
     // whole suite on a short mock duration also keeps it fast.
@@ -241,7 +241,7 @@ TEST_F(NavigationCapabilityTest, PublishedCapabilitiesJsonIsWellFormed)
   const std::string json = collector->messages().front().description_json;
   EXPECT_NE(json.find("\"name\""), std::string::npos);
   EXPECT_NE(json.find("\"action\""), std::string::npos);
-  EXPECT_NE(json.find("NavigateToPose"), std::string::npos);
+  EXPECT_NE(json.find("Navigation"), std::string::npos);
   EXPECT_NE(json.find("\"requirements\""), std::string::npos);
   EXPECT_NE(json.find("\"effects\""), std::string::npos);
   EXPECT_NE(json.find("\"parameters\""), std::string::npos);
@@ -315,12 +315,12 @@ TEST_F(NavigationCapabilityTest, ActiveCapabilityCompletesARealNavigationGoal)
   capability_->configure();
   capability_->activate();
 
-  auto client = rclcpp_action::create_client<NavigateToPose>(sub_node_, "navigation");
+  auto client = rclcpp_action::create_client<Navigation>(sub_node_, "navigation");
   ASSERT_TRUE(client->wait_for_action_server(5s));
 
-  NavigateToPose::Goal goal;
-  goal.pose.header.frame_id = "map";
-  goal.pose.pose.orientation.w = 1.0;
+  Navigation::Goal goal;
+  goal.target_pose.header.frame_id = "map";
+  goal.target_pose.pose.orientation.w = 1.0;
 
   auto goal_handle_future = client->async_send_goal(goal);
   ASSERT_EQ(goal_handle_future.wait_for(2s), std::future_status::ready);
@@ -332,7 +332,7 @@ TEST_F(NavigationCapabilityTest, ActiveCapabilityCompletesARealNavigationGoal)
   auto wrapped = result_future.get();
   EXPECT_EQ(wrapped.code, rclcpp_action::ResultCode::SUCCEEDED);
   ASSERT_TRUE(wrapped.result);
-  EXPECT_EQ(wrapped.result->error_code, NavigateToPose::Result::NONE);
+  EXPECT_EQ(wrapped.result->error_code, Navigation::Result::SUCCESS);
 }
 
 int main(int argc, char ** argv)

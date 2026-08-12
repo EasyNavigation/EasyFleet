@@ -1,6 +1,6 @@
 // Copyright 2026 Intelligent Robotics Lab
 //
-// This file is part of the projects Arquimea-URJC and AURORAS
+// This file is part of the project EasyFleet
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,26 +13,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MANIPULATION_CAPABILITY__MANIPULATION_CAPABILITY_HPP_
-#define MANIPULATION_CAPABILITY__MANIPULATION_CAPABILITY_HPP_
+#ifndef EASYFLEET_CAPABILITIES__MANIPULATION_CAPABILITY_HPP_
+#define EASYFLEET_CAPABILITIES__MANIPULATION_CAPABILITY_HPP_
 
+#include <string>
+
+#include "easyfleet_interfaces/action/manipulation.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "arch_mockup/capability.hpp"
-#include "manipulation_capability/execute_trajectory_action_server.hpp"
+#include "easyfleet_core/action_server_base.hpp"
+#include "easyfleet_core/capability.hpp"
 
-namespace manipulation_capability
+namespace easyfleet_capabilities
 {
 
+/// Mock implementation of the easyfleet_interfaces/Manipulation action.
+/**
+ * Part of the EasyFleet architecture: it does not drive a real
+ * manipulator or interact with real controllers. It simulates trajectory
+ * execution progress over a configurable duration, publishing feedback at a
+ * configurable rate, so that the rest of a multi-capability system can be
+ * integrated and tested before a real manipulator stack is wired in.
+ */
+class ManipulationActionServer
+  : public easyfleet_core::ActionServerBase<easyfleet_interfaces::action::Manipulation>
+{
+public:
+  ManipulationActionServer(
+    rclcpp_lifecycle::LifecycleNode * node,
+    const std::string & action_name);
+
+protected:
+  rclcpp_action::GoalResponse on_goal_received(
+    const rclcpp_action::GoalUUID & uuid,
+    std::shared_ptr<const Goal> goal) override;
+
+  void on_execute(const GoalHandleSharedPtr goal_handle) override;
+
+private:
+  double mock_execution_duration_s_;
+  double mock_feedback_period_s_;
+};
+
 /// The "manipulation" capability: a lifecycle node advertising a (mock)
-/// moveit_msgs/ExecuteTrajectory action, described by
-/// config/manipulation_capability.json.
-class ManipulationCapability : public arch_mockup::Capability<ExecuteTrajectoryActionServer>
+/// easyfleet_interfaces/Manipulation action, described by
+/// config/manipulation.json.
+class ManipulationCapability : public easyfleet_core::Capability<ManipulationActionServer>
 {
 public:
   explicit ManipulationCapability(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 };
 
-}  // namespace manipulation_capability
+}  // namespace easyfleet_capabilities
 
-#endif  // MANIPULATION_CAPABILITY__MANIPULATION_CAPABILITY_HPP_
+#endif  // EASYFLEET_CAPABILITIES__MANIPULATION_CAPABILITY_HPP_

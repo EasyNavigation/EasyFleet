@@ -1,10 +1,33 @@
-# Goal: names of the object classes to look for
-string[] objects
+# Goal: navigate to target_pose, optionally passing through waypoints (in
+# order) first. Any concrete navigation stack (Nav2, a custom planner, a
+# simple point-and-shoot driver, ...) expresses itself through this same
+# interface; stack-specific knobs (behavior tree file, planner/controller
+# plugin id, ...) go in parameters_json.
+geometry_msgs/PoseStamped target_pose
+geometry_msgs/PoseStamped[] waypoints
+string parameters_json
 ---
 # Result
-bool success
+# Shared result-code convention across Navigation/Manipulation/Perception
+# (0-9 reserved for the shared block, capability-specific codes start at 10;
+# documented convention, not enforced by the type system, since actions
+# cannot share constants across files).
+uint16 SUCCESS=0
+uint16 REJECTED=1
+uint16 ABORTED=2
+uint16 CANCELED=3
+uint16 TIMEOUT=4
+uint16 NO_PATH_FOUND=10
+uint16 LOCALIZATION_LOST=11
+uint16 error_code
 string error_msg
+geometry_msgs/PoseStamped final_pose
+builtin_interfaces/Duration total_time
 ---
 # Feedback
-vision_msgs/Detection3DArray detections_3d
-vision_msgs/Detection2DArray detections_2d
+geometry_msgs/PoseStamped current_pose
+builtin_interfaces/Duration navigation_time
+builtin_interfaces/Duration estimated_time_remaining
+float32 distance_remaining
+int16 number_of_recoveries
+uint32 current_waypoint_index

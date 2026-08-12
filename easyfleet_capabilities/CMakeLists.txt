@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(manipulation_capability)
+project(easyfleet_capabilities)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -13,14 +13,17 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(arch_mockup REQUIRED)
-find_package(moveit_msgs REQUIRED)
-find_package(trajectory_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
+find_package(easyfleet_core REQUIRED)
+find_package(easyfleet_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 
 add_library(${PROJECT_NAME}
-  src/${PROJECT_NAME}/execute_trajectory_action_server.cpp
+  src/${PROJECT_NAME}/navigation_capability.cpp
   src/${PROJECT_NAME}/manipulation_capability.cpp
+  src/${PROJECT_NAME}/perception_capability.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -30,17 +33,21 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
   rclcpp_lifecycle::rclcpp_lifecycle
-  arch_mockup::arch_mockup
-  moveit_msgs::moveit_msgs
-  trajectory_msgs::trajectory_msgs
+  easyfleet_core::easyfleet_core
+  easyfleet_interfaces::easyfleet_interfaces
+  geometry_msgs::geometry_msgs
+  sensor_msgs::sensor_msgs
+  vision_msgs::vision_msgs
 )
 
-add_executable(manipulation_capability_node src/main.cpp)
-target_link_libraries(manipulation_capability_node
-  ${PROJECT_NAME}
-  rclcpp::rclcpp
-  lifecycle_msgs::lifecycle_msgs
-)
+foreach(capability navigation manipulation perception)
+  add_executable(${capability}_capability_node src/${capability}_capability_main.cpp)
+  target_link_libraries(${capability}_capability_node
+    ${PROJECT_NAME}
+    rclcpp::rclcpp
+    lifecycle_msgs::lifecycle_msgs
+  )
+endforeach()
 
 install(
   DIRECTORY include/
@@ -54,7 +61,7 @@ install(
   RUNTIME DESTINATION bin
 )
 install(
-  TARGETS manipulation_capability_node
+  TARGETS navigation_capability_node manipulation_capability_node perception_capability_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -63,9 +70,12 @@ ament_export_dependencies(
   rclcpp
   rclcpp_action
   rclcpp_lifecycle
-  arch_mockup
-  moveit_msgs
-  trajectory_msgs
+  lifecycle_msgs
+  easyfleet_core
+  easyfleet_interfaces
+  geometry_msgs
+  sensor_msgs
+  vision_msgs
 )
 
 if(BUILD_TESTING)

@@ -7,7 +7,7 @@ target_link_libraries(test_param_utils ${PROJECT_NAME})
 # Confine DDS discovery to localhost (subnet-wide traffic is noticeably
 # slower and, on loaded/shared machines, occasionally flaky) and give each
 # test binary its own ROS_DOMAIN_ID. The latter matters because several of
-# these tests exercise arch_mockup::Capability, which publishes on the
+# these tests exercise easyfleet_core::Capability, which publishes on the
 # *global* topics /capabilities and /capabilities_status: without domain
 # isolation, two test binaries running concurrently (colcon test's default),
 # or even an unrelated capability node someone happens to have running
