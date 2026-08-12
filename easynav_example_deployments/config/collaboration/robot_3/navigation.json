@@ -1,0 +1,75 @@
+{
+  "name": "navigation",
+  "display_name": "Navigate to a target pose",
+  "description": "Moves the robot from its current location to a specified target pose within a known map, using point-to-point mobile navigation. Use this capability once a target location has already been resolved to concrete map coordinates (this capability does not perform semantic place lookup, e.g. it does not know where 'the kitchen' is; a separate planning step must resolve that to a pose first).",
+  "action": {
+    "name": "/robot_3/navigation",
+    "type": "nav2_msgs/action/NavigateToPose",
+    "goal": {
+      "pose": "geometry_msgs/PoseStamped - target pose (position + orientation) the robot should navigate to, expressed in a frame that is part of the robot's TF tree (typically 'map').",
+      "behavior_tree": "string - optional path to an alternate navigation behavior tree XML file; leave empty to use the default navigation behavior."
+    },
+    "feedback": {
+      "current_pose": "geometry_msgs/PoseStamped - robot's current estimated pose while navigating.",
+      "navigation_time": "builtin_interfaces/Duration - time elapsed since this navigation goal started.",
+      "estimated_time_remaining": "builtin_interfaces/Duration - estimated time left to reach the goal.",
+      "number_of_recoveries": "int16 - number of recovery behaviors (e.g. backing up, spinning in place) triggered so far.",
+      "distance_remaining": "float32 - straight-line distance left to the goal, in meters.",
+      "position_tracking_error": "float32 - lateral path-tracking error, in meters.",
+      "heading_tracking_error": "float32 - heading tracking error, in radians."
+    },
+    "result": {
+      "error_code": "uint16 - 0 (NONE) on success. Non-zero: 9000 UNKNOWN, 9001 FAILED_TO_LOAD_BEHAVIOR_TREE, 9002 TF_ERROR, 9003 TIMEOUT.",
+      "error_msg": "string - human-readable explanation, populated when error_code is non-zero."
+    }
+  },
+  "requirements": [
+    "The robot must already be localized within a known map (a valid map -> base_link transform must be available).",
+    "The target pose must be expressed in a frame that is part of the robot's TF tree.",
+    "The path between the robot and the target must only require locomotion; this capability does not open doors, use elevators, or perform any manipulation."
+  ],
+  "effects": [
+    "On success (error_code == NONE), the robot's physical location changes to be at (or very near) the requested target pose.",
+    "The action may trigger recovery behaviors if the robot gets stuck; these are reported via 'number_of_recoveries' in the feedback and do not require caller intervention.",
+    "A currently executing goal can be preempted by a newer navigation goal (see 'preemption' below): the previous goal is aborted and the robot starts moving toward the new target instead."
+  ],
+  "preemption": {
+    "supported": true,
+    "controlled_by_parameter": "navigation.allow_preemption",
+    "behavior_when_enabled": "Sending a new goal while one is active aborts the current goal and immediately starts navigating to the new target.",
+    "behavior_when_disabled": "Sending a new goal while one is active is rejected outright; the caller must wait for the current navigation to finish, or explicitly cancel it, before sending another."
+  },
+  "parameters": {
+    "navigation.allow_preemption": {
+      "type": "bool",
+      "default": true,
+      "description": "Whether a new navigation goal is allowed to preempt (replace) one that is currently executing."
+    },
+    "navigation.mock_navigation_duration": {
+      "type": "double",
+      "unit": "seconds",
+      "default": 5.0,
+      "description": "Mock/simulated time it takes to complete a navigation goal. This implementation does not drive a real robot: it simulates progress over this duration for integration testing of the wider system."
+    },
+    "navigation.mock_feedback_period": {
+      "type": "double",
+      "unit": "seconds",
+      "default": 0.5,
+      "description": "How often feedback is published while a goal is executing."
+    },
+    "navigation.mock_initial_distance": {
+      "type": "double",
+      "unit": "meters",
+      "default": 5.0,
+      "description": "Simulated starting distance to the goal, reported via feedback.distance_remaining and linearly decreased to 0 as the mock navigation progresses."
+    },
+    "capabilities_file": {
+      "type": "string",
+      "description": "Path to this very capability description file; published verbatim on /capabilities when the node is activated."
+    }
+  },
+  "notes": [
+    "This is a mock implementation, part of the arch_mockup architecture, standing in for a real Nav2 navigation stack during integration testing of multi-capability systems. It does not perform real path planning, obstacle avoidance, or localization: 'current_pose' feedback simply reports the goal pose, and progress is simulated on a timer.",
+    "Deployment: 'collaboration' scenario, robot_3."
+  ]
+}

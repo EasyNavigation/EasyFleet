@@ -1,0 +1,10 @@
+# Goal: names of the object classes to look for
+string[] objects
+---
+# Result
+bool success
+string error_msg
+---
+# Feedback
+vision_msgs/Detection3DArray detections_3d
+vision_msgs/Detection2DArray detections_2d
