@@ -1,0 +1,77 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# robot_2 in this scenario: real EasyNav navigation (easynav_system
+# system_main + easyfleet_easynav_deployment's own
+# easynav_navigation_capability_node, reused directly -- not duplicated in
+# this package) plus a fake manipulation capability (this package's own
+# robot_node), all namespaced under /robot_2 so they never collide with
+# robot_1's identically-shaped setup. Can be run standalone, against
+# easynav_playground_kobuki's playgorund_multirobot_kobuki.launch.py
+# already running (robot_2's Kobuki is spawned there, namespaced the same
+# way -- see multirobot_config.yaml).
+#
+# See robot_1_launch.yaml for why "tf_prefix" is set to match the
+# namespace, and why it -- and the namespace itself -- are hardcoded here
+# rather than exposed as an argument. Also see that file for why rviz2
+# below loads its own pre-resolved rviz/robot_2.rviz config instead of a
+# remapped copy of the shared easynav_costmap.rviz.
+launch:
+  - group:
+      - push_ros_namespace:
+          namespace: "robot_2"
+
+      - node:
+          pkg: "easynav_system"
+          exec: "system_main"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/robot_2/easynav_system.costmap_rpp.params.yaml"
+            - name: "tf_prefix"
+              value: "robot_2"
+
+      - node:
+          pkg: "easyfleet_easynav_deployment"
+          exec: "easynav_navigation_capability_node"
+          name: "navigation"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/navigation_params.yaml"
+            - name: "behavior_tree_xml"
+              value: "$(find-pkg-share easyfleet_easynav_deployment)/behavior_trees/navigate.xml"
+            - name: "bt_plugins"
+              value:
+                - "$(find-pkg-prefix easyfleet_easynav_navigation)/lib/libeasynav_navigate_bt_node.so"
+                - "$(find-pkg-prefix easyfleet_easynav_deployment)/lib/libstart_off_bt_node.so"
+                - "$(find-pkg-prefix easyfleet_easynav_deployment)/lib/libfinish_bt_node.so"
+            - name: "capabilities_file"
+              value: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/navigation.json"
+
+      - node:
+          pkg: "easyfleet_easynav_collaboration_deployment"
+          exec: "robot_node"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/robot_2/robot_params.yaml"
+            - from: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/robot_2/manipulation_params.yaml"
+
+      - node:
+          pkg: "rviz2"
+          exec: "rviz2"
+          output: "screen"
+          args: "-d $(find-pkg-share easyfleet_easynav_collaboration_deployment)/rviz/robot_2.rviz"
+          param:
+            - name: "use_sim_time"
+              value: true

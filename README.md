@@ -89,7 +89,7 @@ EasyFleet/
 ├── easyfleet_mission_manager/       Capability discovery + mission-scripting helper library (no executables)
 ├── easyfleet_easynav_navigation/    Navigate BT.CPP node (plugin) -- the one resource EasyFleet provides for EasyNav
 │   └── include|src/easyfleet_easynav_navigation/bt_nodes/navigate.hpp|cpp  -> libeasynav_navigate_bt_node.so
-└── easyfleet_example_deployments/   Not a package -- a container for 3 example deployment packages
+└── easyfleet_example_deployments/   Not a package -- a container for 4 example deployment packages
     ├── easyfleet_fake_alone_deployment/            "alone" scenario: robot_1, all 3 fake capabilities
     │   ├── include|src/easyfleet_fake_alone_deployment/{navigation,manipulation,perception}_fake_capability.hpp|cpp
     │   ├── src/robot_node.cpp                       -> robot_node (the robot: hosts robot_1's capabilities)
@@ -101,18 +101,25 @@ EasyFleet/
     │   ├── src/robot_node.cpp                       -> robot_node (reused unchanged across all 3 robots)
     │   ├── src/main_collaboration.cpp               -> collaboration_mission_node
     │   └── config/{robot_1,robot_2,robot_3}/
-    └── easyfleet_easynav_deployment/                "easynav" scenario: real navigation capability
-        ├── include|src/easyfleet_easynav_deployment/easynav_navigation_capability.hpp|cpp -> easynav_navigation_capability_node
-        ├── include|src/easyfleet_easynav_deployment/bt_nodes/{start_off,finish}.hpp|cpp    -> libstart_off_bt_node.so / libfinish_bt_node.so
-        ├── behavior_trees/navigate.xml                 references StartOff/Navigate/Finish by name
-        ├── src/main_easynav.cpp                        -> easynav_mission_node (mission control)
-        ├── launch/{easynav_gazebo_launch.yaml -> easynav_robot_gazebo_launch.yaml}
-        └── config/easynav_robot/
+    ├── easyfleet_easynav_deployment/                "easynav" scenario: real navigation capability
+    │   ├── include|src/easyfleet_easynav_deployment/easynav_navigation_capability.hpp|cpp -> easynav_navigation_capability_node
+    │   ├── include|src/easyfleet_easynav_deployment/bt_nodes/{start_off,finish}.hpp|cpp    -> libstart_off_bt_node.so / libfinish_bt_node.so
+    │   ├── behavior_trees/navigate.xml                 references StartOff/Navigate/Finish by name
+    │   ├── src/main_easynav.cpp                        -> easynav_mission_node (mission control)
+    │   ├── launch/{easynav_gazebo_launch.yaml -> easynav_robot_gazebo_launch.yaml}
+    │   └── config/easynav_robot/
+    └── easyfleet_easynav_collaboration_deployment/  "easynav_collaboration" scenario: robot_1 + robot_2, both real EasyNav
+        ├── include|src/easyfleet_easynav_collaboration_deployment/{perception,manipulation}_fake_capability.hpp|cpp
+        ├── src/robot_node.cpp                       -> robot_node (hosts each robot's one mock capability only -- navigation is a separate process, reused from easyfleet_easynav_deployment)
+        ├── src/main_easynav_collaboration.cpp       -> easynav_collaboration_mission_node
+        ├── launch/{easynav_collaboration_launch.yaml, robot_1_launch.yaml, robot_2_launch.yaml}
+        └── config/{navigation_params.yaml, navigation.json, robot_1/, robot_2/}
 ```
 
 Every scenario's top-level launch file (`alone_launch.yaml`, `collaboration_launch.yaml`,
-`easynav_gazebo_launch.yaml`) launches **both** halves
-of the deployment: the robot (one process per robot, hosting its
+`easynav_gazebo_launch.yaml`, `easynav_collaboration_launch.yaml`) launches
+**both** halves
+of the deployment: the robot(s) (one process per robot, hosting its
 capabilities) and mission control (the example mission script), the latter
 delayed a few seconds so the robot has finished activating first — see
 [Robot vs. mission control](#robot-vs-mission-control) below.
@@ -298,7 +305,7 @@ Because a capability resolves its `robot`/`action_name` identity from its
 own ROS namespace, the same `robot_node` binary can be launched under any
 namespace (with different `capabilities`/`config_subdir` parameters) and
 will announce itself correctly —
-each of the three packages under `easyfleet_example_deployments/` uses this
+each of the four packages under `easyfleet_example_deployments/` uses this
 to assemble one example scenario, self-contained under its own `launch/` +
 `config/`:
 
@@ -309,6 +316,8 @@ to assemble one example scenario, self-contained under its own `launch/` +
 | `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_2` | navigation, perception (mock) | (same) |
 | `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_3` | navigation, manipulation (mock) | (same) |
 | `easynav` | `easyfleet_easynav_deployment` | *(unnamespaced by default, via `robot_namespace`)* | navigation (real EasyNav backend, real costmap/localizer/planner/controller) + `easynav_system system_main` + `rviz2` | `launch/easynav_gazebo_launch.yaml` |
+| `easynav_collaboration` | `easyfleet_easynav_collaboration_deployment` | `robot_1` | navigation (real EasyNav, same backend as `easynav`) + perception (mock) + `easynav_system system_main` + `rviz2` | `launch/easynav_collaboration_launch.yaml` |
+| `easynav_collaboration` | `easyfleet_easynav_collaboration_deployment` | `robot_2` | navigation (real EasyNav) + manipulation (mock) + `easynav_system system_main` + `rviz2` | (same) |
 
 Each robot has its own per-robot launch file (e.g.
 `easyfleet_fake_collaboration_deployment/launch/robot_3_launch.yaml`) that
@@ -336,19 +345,45 @@ robot coexist on the same `ros2` graph as, say, an `alone`/`collaboration`
 support (see [easynav_playground_kobuki](../easynav_playground_kobuki))
 will build on.
 
+`easyfleet_easynav_collaboration_deployment` is that next step: two robots,
+`robot_1` and `robot_2`, **both** running real EasyNav navigation at once
+(two separate `system_main` + `easynav_navigation_capability_node`
+processes, one per robot, both executables reused directly from
+`easyfleet_easynav_deployment` — no code duplicated for navigation), each
+also carrying one mock capability (`robot_1` perception, `robot_2`
+manipulation — own copies of the reference mock implementations, mirroring
+`easyfleet_fake_collaboration_deployment`'s own duplication rather than a
+cross-deployment dependency). Each robot's own `rviz2` window loads a
+pre-resolved `rviz/robot_1.rviz`/`robot_2.rviz` (every topic and the Fixed
+Frame already written as the actual `/robot_1/...`/`/robot_2/...` path)
+rather than a remapped copy of `easynav_costmap.rviz` — since this
+package's namespaces are fixed at authoring time (not a runtime argument,
+unlike `easynav`'s own `robot_namespace`), pre-resolving them outright is
+simpler and sidesteps a real, reproduced issue where RViz's own
+topic-selector/status UI didn't reliably reflect a display that needed a
+launch-time remap to resolve its saved (unremapped) Topic value — the map
+just didn't render until manually retyped in the GUI, even though the
+underlying subscription, per `ros2 topic info -v`, was already correctly
+connected via the remap. See
+[the `easynav_collaboration` scenario](#easynav_collaboration-scenario)
+below for how to run it against
+[easynav_playground_kobuki](../easynav_playground_kobuki)'s own two-robot
+Gazebo launch.
+
 ## Packages
 
 | Package | Type | What it is |
 |---|---|---|
 | `easyfleet_core` | C++ library | `ActionServerBase<ActionT>`, `ActionClient<ActionT>`, `Capability<ActionServerT>`, `CapabilityClient<ActionT>`, plus `Navigation`/`Manipulation`/`PerceptionActionServerBase` |
 | `easyfleet_interfaces` | Interface package | `CapabilityDescription`, `CapabilityStatus`, and the `Navigation`/`Manipulation`/`Perception` actions |
-| `easyfleet_mission_manager` | C++ library | Capability discovery/print helpers and the generic `run_capability<ActionT>()` helper — no executables of its own |
+| `easyfleet_mission_manager` | C++ library | Capability discovery/print helpers, the generic `run_capability<ActionT>()` helper, and `StatusMarkerPublisher` (per-robot RViz status text) — no executables of its own |
 | `easyfleet_easynav_navigation` | BT.CPP plugin library | The `Navigate` BT node (`libeasynav_navigate_bt_node.so`), loaded by path — no executable of its own |
 | `easyfleet_fake_alone_deployment` | C++ library + executables + launch/config | The `alone` scenario: all 3 fake capabilities hosted by `robot_node` on `robot_1`, + `alone_mission_node` (mission control) |
 | `easyfleet_fake_collaboration_deployment` | C++ library + executables + launch/config | The `collaboration` scenario: its own copy of the same 3 fake capabilities, `robot_node` reused across `robot_1`/`robot_2`/`robot_3`, + `collaboration_mission_node` |
 | `easyfleet_easynav_deployment` | C++ library + executables + launch/config | The `easynav` scenario: `easynav_navigation_capability_node` (this package's own capability class, reusing `easyfleet_easynav_navigation`'s `Navigate` plugin) + `easynav_mission_node`, plus `libstart_off_bt_node.so`/`libfinish_bt_node.so` and the launch/config assembly for real navigation against a real robot or Gazebo |
+| `easyfleet_easynav_collaboration_deployment` | C++ library + executables + launch/config | The `easynav_collaboration` scenario: two robots each running real EasyNav navigation (executables reused from `easyfleet_easynav_deployment`, not duplicated) plus its own mock capability — `robot_node` hosting its own copies of `PerceptionFakeCapability`/`ManipulationFakeCapability` (one per robot, mirroring `easyfleet_fake_collaboration_deployment`'s own duplication) — + `easynav_collaboration_mission_node` |
 
-All three live under `easyfleet_example_deployments/`, a plain container
+All four live under `easyfleet_example_deployments/`, a plain container
 directory (no `package.xml` of its own) rather than a package.
 
 ## Prerequisites
@@ -370,6 +405,11 @@ directory (no `package.xml` of its own) rather than a package.
   `easynav_costmap_maps_manager`, `easynav_costmap_planner`,
   `easynav_regulated_pp_controller`), `rviz2`, and a real robot or Gazebo
   simulation publishing `scan_raw`/odometry/TF, started separately.
+- For the `easynav_collaboration` scenario specifically: the same
+  `easynav_indoor_testcase` prerequisites above, plus
+  [easynav_playground_kobuki](../easynav_playground_kobuki) built in the
+  same workspace, started separately (`playgorund_multirobot_kobuki.launch.py`)
+  to spawn both robots.
 
 ## Building
 
@@ -532,6 +572,90 @@ name with `/robot_1` too if you launched it namespaced):
 ros2 action send_goal /navigation easyfleet_interfaces/action/Navigation \
   "{parameters_json: '{\"goal_id\": \"dock\"}'}" --feedback
 ```
+
+### `easynav_collaboration` scenario
+
+Two robots, `robot_1` and `robot_2`, both running real EasyNav navigation
+at once on the same shared `home2` map — `robot_1` also carries a mock
+`perception` capability, `robot_2` a mock `manipulation` one (see
+[Multi-robot deployments](#multi-robot-deployments) above for why). Unlike
+`easynav`, this scenario needs an actual two-robot Gazebo world, since two
+`system_main` instances need two real (or Gazebo-simulated) robots to
+localize against — start
+[easynav_playground_kobuki](../easynav_playground_kobuki)'s own two-robot
+launch first, in its own terminal:
+
+```bash
+ros2 launch easynav_playground_kobuki playgorund_multirobot_kobuki.launch.py
+```
+
+This spawns two Kobukis under `/robot_1` and `/robot_2` (see that
+package's `config/multirobot_config.yaml` for their spawn poses — `robot_1`
+at the origin, `robot_2` at `(2.0, 1.0)`), matching the `localizer_node`
+`initial_pose` each robot's own
+`config/robot_1|robot_2/easynav_system.costmap_rpp.params.yaml` is seeded
+with. Then, in another terminal:
+
+```bash
+ros2 launch easyfleet_easynav_collaboration_deployment easynav_collaboration_launch.yaml
+```
+
+This launches both robots (`system_main` + the navigation capability +
+the robot's own mock capability + its own `rviz2` window, one per robot,
+each loading its own `rviz/robot_1.rviz`/`robot_2.rviz` — pre-resolved
+copies of `easynav_costmap.rviz` with every topic/Fixed Frame already
+written as the fully-qualified `/robot_1/...`/`/robot_2/...` path, rather
+than a remapped copy of the shared file, see
+[Multi-robot deployments](#multi-robot-deployments) for why) and, a few
+seconds later, `easynav_collaboration_mission_node`, which runs a longer,
+five-phase choreography. Every navigation goal is left to actually
+**succeed** (a generous 180s safety-net timeout, not the 10s
+`easyfleet_mission_manager::kRunTimeout` other mission scripts use), except
+where a phase deliberately cancels one:
+
+1. `robot_1` → `kitchen` (perceiving throughout) while `robot_2` → `dock`,
+   simultaneously — waits for both navigations to actually finish.
+2. `robot_1` → `kitchen_standby` (1m short of `kitchen`, still facing it,
+   perception still running from phase 1) to clear space, while `robot_2` →
+   `kitchen`, simultaneously. `robot_1`'s perception is stopped once it
+   reaches `kitchen_standby`.
+3. `robot_2`, now at `kitchen`, runs manipulation for up to 10s.
+4. `robot_1` → `dock` while `robot_2` → `dock` too (a real move: `robot_2`
+   was still at `kitchen` from phase 3), simultaneously; 10s into
+   `robot_1`'s navigation it's explicitly stopped and redirected to
+   `charging_station` instead.
+5. Once both navigations from phase 4 finish, both robots return to their
+   own starting pose (`robot_1_home`/`robot_2_home`, matching their actual
+   Gazebo spawn poses).
+
+At every one of those transitions, `easynav_collaboration_mission_node`
+also updates a floating text marker above each robot in RViz — "Navigating
+-> kitchen / Perceiving", "Manipulating", "Mission complete", etc. — via
+`easyfleet_mission_manager::StatusMarkerPublisher` (a small reusable
+helper: one `TEXT_VIEW_FACING` marker per robot, positioned at that
+robot's own `<robot>/base_link` origin plus a fixed height, so it rides
+along as the robot moves). Each `rviz/robot_1.rviz`/`robot_2.rviz` already
+has a `MarkerArray` display subscribed to the shared `/mission_status_markers`
+topic (transient-local, so opening/reopening RViz mid-mission shows each
+robot's *current* status immediately, not just future updates) — so
+watching RViz alone, with no terminal, is enough to follow which
+capability each robot is using and what it's doing or its result.
+
+(To run just the robots, without mission control automatically following,
+or a single robot standalone, see
+`easyfleet_easynav_collaboration_deployment/launch/robot_1_launch.yaml` /
+`robot_2_launch.yaml`.)
+
+> **Note:** verified in this repo's own sandbox that both robots spawn
+> correctly namespaced (`/robot_1/...`/`/robot_2/...` topics, both
+> reachable, `ros2 node list` showing every expected node under each
+> namespace) and that `robot_1` navigates and localizes correctly end to
+> end. `robot_2`'s lidar/camera produced no data in that same sandbox run
+> (no GPU, software rendering) — likely a rendering-capacity limit on
+> running two simultaneous Gazebo sensor instances without a GPU, not a
+> bug in this launch setup (which is structurally identical between the
+> two robots). Confirm both robots move on a machine with a GPU before
+> relying on this for a real two-robot demo.
 
 ### Poking at a capability by hand
 

@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_easynav_collaboration_deployment</name>
+  <version>0.1.0</version>
+  <description>
+    A two-robot deployment scenario combining the "easynav" and
+    "collaboration" ones: robot_1 and robot_2 each run a real EasyNav
+    navigation stack (easynav_system system_main + this workspace's
+    easyfleet_easynav_deployment navigation capability, reused as-is --
+    two instances, one per robot, namespaced), plus one fake/mock
+    capability each -- robot_1 carries perception, robot_2 carries
+    manipulation (own copies of the PerceptionFakeCapability/
+    ManipulationFakeCapability reference implementations, mirroring
+    easyfleet_fake_collaboration_deployment's own duplication of these
+    classes rather than sharing them). Both robots run against the same
+    Gazebo world/map (easynav_playground_kobuki's
+    playgorund_multirobot_kobuki.launch.py + src/easynav_indoor_testcase's
+    home2 map), each namespaced to match its actual spawn namespace and
+    initial pose. Also ships the example mission script built on
+    easyfleet_mission_manager and the launch files and JSON/parameter
+    configuration each robot is started with.
+  </description>
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easyfleet_interfaces</depend>
+  <depend>easyfleet_mission_manager</depend>
+  <depend>vision_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>ament_index_cpp</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch_yaml</exec_depend>
+  <exec_depend>easyfleet_easynav_deployment</exec_depend>
+  <exec_depend>easyfleet_easynav_navigation</exec_depend>
+  <exec_depend>easynav_system</exec_depend>
+  <exec_depend>easynav_indoor_testcase</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>geometry_msgs</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

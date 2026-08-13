@@ -14,6 +14,7 @@ find_package(rclcpp REQUIRED)
 find_package(easyfleet_core REQUIRED)
 find_package(easyfleet_interfaces REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/capability_discovery.cpp
@@ -28,6 +29,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   easyfleet_core::easyfleet_core
   easyfleet_interfaces::easyfleet_interfaces
   nlohmann_json::nlohmann_json
+  ${visualization_msgs_TARGETS}
 )
 
 install(
@@ -48,6 +50,7 @@ ament_export_dependencies(
   easyfleet_core
   easyfleet_interfaces
   nlohmann_json
+  visualization_msgs
 )
 
 if(BUILD_TESTING)
