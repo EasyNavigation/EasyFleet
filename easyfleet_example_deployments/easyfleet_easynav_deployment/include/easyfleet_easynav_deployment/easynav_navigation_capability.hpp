@@ -91,7 +91,7 @@ private:
 
 /// The "navigation" capability, backed by EasyNav: a lifecycle node
 /// advertising a real easyfleet_interfaces/Navigation action, described by
-/// config/easynav/navigation.json.
+/// config/easynav_robot/navigation_gazebo.json.
 class EasynavNavigationCapability
   : public easyfleet_core::Capability<EasynavNavigationActionServer>
 {

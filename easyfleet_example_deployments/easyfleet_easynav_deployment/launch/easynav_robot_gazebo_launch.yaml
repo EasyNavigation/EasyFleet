@@ -21,45 +21,116 @@
 # simulation of one, started separately (this file does not launch Gazebo
 # itself, same as easynav_costmap_rpp.launch.py doesn't).
 #
-# Deliberately unnamespaced (no push_ros_namespace), matching
-# easynav_costmap_rpp.launch.py's own convention: system_main's
-# sensors_node/localizer_node/controller_node need to see the same
-# (unnamespaced) scan_raw topic and TF frames the robot/Gazebo publishes.
-# The navigation capability is launched unnamespaced alongside it so its
-# GoalManagerClient's relative "easynav_control" topic still resolves to
-# system_main's own GoalManager. As a result this launches at most one
-# robot at a time -- unlike the "alone"/"collaboration"/(Dummy-plugin)
-# "easynav" scenarios, which namespace per robot.
+# Namespaced under /$(var robot_namespace), default "" (unnamespaced),
+# matching easynav_costmap_rpp.launch.py's own convention for a single real
+# robot: system_main's sensors_node/localizer_node/controller_node need to
+# see the same scan_raw topic the robot/Gazebo publishes, which
+# kobuki_description namespaces the same way (relative topic names). TF
+# frame *names*, unlike topics, are prefixed by kobuki_description
+# unconditionally (its urdf.xacro applies its "namespace" xacro arg to
+# every frame_id regardless of the separate "do_tf_remapping"/"tf_namespace"
+# arg, which only controls whether /tf itself gets remapped to a per-robot
+# topic) -- e.g. a Kobuki spawned under "robot_1" publishes
+# "robot_1/base_link", not "base_link". system_main's own "tf_prefix"
+# parameter (declared on system_node, applied to every TFInfo frame
+# including map_frame -- see easynav_common/RTTFBuffer.hpp) is set below to
+# the same robot_namespace value so its TF lookups match; empty by default,
+# a no-op, so the unnamespaced case is unaffected. Set
+# robot_namespace:="robot_1" (matching easynav_playground_kobuki's
+# playground_monorobot_kobuki.launch.py, whose monorobot_config.yaml spawns
+# the Kobuki under that same namespace) to exercise EasyFleet's
+# namespace-based robot-id handling here too.
+#
+# rviz2 is inside the same namespace group, with an explicit "remap" entry
+# per absolute ("/foo") topic reference baked into
+# easynav_costmap.rviz's Display/Tool "Topic: Value:" fields (that .rviz
+# file has no <robot_namespace>-style placeholder to template, unlike
+# easynav_playground_kobuki's own nav2_namespaced_view.rviz) -- each remap
+# just turns the absolute topic into a *relative* one, which then resolves
+# under whatever namespace push_ros_namespace above pushed (nothing, when
+# robot_namespace is empty, so this is a no-op in the unnamespaced case).
+# This is the same "remap absolute to relative, then namespace the node"
+# trick easynav_playground_kobuki's rviz_namespaced.launch.py already uses
+# for Nav2's own topic set. Also covers "2D Goal Pose": rviz2's SetGoal
+# tool publishes PoseStamped on (relative, once remapped) "goal_pose",
+# which is exactly the relative topic easynav_system's GoalManager
+# subscribes to (GoalManager.cpp) -- so once both are in the same
+# namespace, the RViz arrow drives EasyNav directly, no GoalManagerClient
+# needed. /tf and /tf_static are deliberately *not* remapped: this scenario
+# uses tf_prefix (a shared /tf topic, namespace-prefixed frame *names*),
+# not kobuki_description's separate do_tf_remapping (per-robot /tf
+# *topics*) -- see the tf_prefix comment above -- so rviz2 needs to see the
+# same shared /tf topic system_main/Kobuki do. Fixed Frame is overridden
+# via rviz2's own "-f" CLI flag rather than editing the .rviz file, using
+# "$(path-join ...)" so it comes out as "map" when unnamespaced and
+# "<robot_namespace>/map" when namespaced (path-join drops an empty first
+# segment, unlike plain string concatenation, which would produce a
+# leading-slash "/map" -- not a valid unprefixed frame id -- in the
+# unnamespaced case).
 launch:
-  - node:
-      pkg: "easynav_system"
-      exec: "system_main"
-      output: "screen"
-      param:
-        - from: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/easynav_system.costmap_rpp.params.yaml"
+  - arg:
+      name: "robot_namespace"
+      default: ""
+      description: "Namespace system_main + the navigation capability are pushed under. Empty (default) for a single unnamespaced real robot/Gazebo instance."
 
-  - node:
-      pkg: "easyfleet_easynav_deployment"
-      exec: "easynav_navigation_capability_node"
-      name: "navigation"
-      output: "screen"
-      param:
-        - from: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/navigation_params.yaml"
-        - name: "behavior_tree_xml"
-          value: "$(find-pkg-share easyfleet_easynav_deployment)/behavior_trees/navigate.xml"
-        - name: "bt_plugins"
-          value:
-            - "$(find-pkg-prefix easyfleet_easynav_navigation)/lib/libeasynav_navigate_bt_node.so"
-            - "$(find-pkg-prefix easyfleet_easynav_deployment)/lib/libstart_off_bt_node.so"
-            - "$(find-pkg-prefix easyfleet_easynav_deployment)/lib/libfinish_bt_node.so"
-        - name: "capabilities_file"
-          value: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/navigation_gazebo.json"
+  - group:
+      - push_ros_namespace:
+          namespace: "$(var robot_namespace)"
 
-  - node:
-      pkg: "rviz2"
-      exec: "rviz2"
-      output: "screen"
-      args: "-d $(find-pkg-share easynav_indoor_testcase)/rviz_config/easynav_costmap.rviz"
-      param:
-        - name: "use_sim_time"
-          value: true
+      - node:
+          pkg: "easynav_system"
+          exec: "system_main"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/easynav_system.costmap_rpp.params.yaml"
+            - name: "tf_prefix"
+              value: "$(var robot_namespace)"
+
+      - node:
+          pkg: "easyfleet_easynav_deployment"
+          exec: "easynav_navigation_capability_node"
+          name: "navigation"
+          output: "screen"
+          param:
+            - from: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/navigation_params.yaml"
+            - name: "behavior_tree_xml"
+              value: "$(find-pkg-share easyfleet_easynav_deployment)/behavior_trees/navigate.xml"
+            - name: "bt_plugins"
+              value:
+                - "$(find-pkg-prefix easyfleet_easynav_navigation)/lib/libeasynav_navigate_bt_node.so"
+                - "$(find-pkg-prefix easyfleet_easynav_deployment)/lib/libstart_off_bt_node.so"
+                - "$(find-pkg-prefix easyfleet_easynav_deployment)/lib/libfinish_bt_node.so"
+            - name: "capabilities_file"
+              value: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/navigation_gazebo.json"
+
+      - node:
+          pkg: "rviz2"
+          exec: "rviz2"
+          output: "screen"
+          args: "-d $(find-pkg-share easynav_indoor_testcase)/rviz_config/easynav_costmap.rviz -f $(path-join $(var robot_namespace) map)"
+          param:
+            - name: "use_sim_time"
+              value: true
+          remap:
+            - from: "/maps_manager_node/costmap/dynamic_map"
+              to: "maps_manager_node/costmap/dynamic_map"
+            - from: "/maps_manager_node/costmap/dynamic_map_updates"
+              to: "maps_manager_node/costmap/dynamic_map_updates"
+            - from: "/scan_raw"
+              to: "scan_raw"
+            - from: "/localizer_node/costmap/particles"
+              to: "localizer_node/costmap/particles"
+            - from: "/planner_node/simple/path"
+              to: "planner_node/simple/path"
+            - from: "/curvature_lookahead_point"
+              to: "curvature_lookahead_point"
+            - from: "/lookahead_point"
+              to: "lookahead_point"
+            - from: "/robot_description"
+              to: "robot_description"
+            - from: "/initialpose"
+              to: "initialpose"
+            - from: "/goal_pose"
+              to: "goal_pose"
+            - from: "/clicked_point"
+              to: "clicked_point"

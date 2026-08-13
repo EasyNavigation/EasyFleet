@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "easyfleet_core/detail/namespace_utils.hpp"
 #include "nlohmann/json.hpp"
 
 namespace easyfleet_easynav_deployment
@@ -31,6 +32,21 @@ namespace easyfleet_easynav_deployment
 
 namespace
 {
+
+/// Prefixes `frame_id` with `tf_prefix` the same way EasyNav's own
+/// RTTFBuffer::set_tf_info() prefixes every TFInfo frame (map_frame
+/// included) -- see easynav_common/RTTFBuffer.hpp. Waypoint poses are built
+/// once at configure time from plain YAML parameters (e.g. "map"), which
+/// have no way to know the node's own namespace; without this, a goal built
+/// from them carries an unprefixed frame_id that easynav_costmap_planner
+/// silently rejects (`goals.header.frame_id != tf_info.map_frame`) once
+/// system_main is namespaced and given a matching "tf_prefix" (see
+/// launch/easynav_robot_gazebo_launch.yaml's own "tf_prefix" parameter,
+/// which is exactly this same value).
+std::string apply_tf_prefix(const std::string & frame_id, const std::string & tf_prefix)
+{
+  return tf_prefix.empty() ? frame_id : tf_prefix + "/" + frame_id;
+}
 
 std::string sanitize_identifier(const std::string & text)
 {
@@ -74,11 +90,17 @@ EasynavNavigationActionServer::EasynavNavigationActionServer(
   const auto waypoint_ids = node->declare_parameter(
     action_name + ".waypoint_ids", std::vector<std::string>());
 
+  // Matches whatever "tf_prefix" system_main was launched with (both driven
+  // by the same "robot_namespace" launch argument -- see
+  // launch/easynav_robot_launch.yaml / easynav_robot_gazebo_launch.yaml).
+  const std::string tf_prefix = easyfleet_core::detail::strip_leading_slash(node->get_namespace());
+
   auto waypoints = std::make_shared<std::map<std::string, geometry_msgs::msg::PoseStamped>>();
   for (const auto & id : waypoint_ids) {
     const std::string prefix = action_name + ".waypoints." + id + ".";
     geometry_msgs::msg::PoseStamped pose;
-    pose.header.frame_id = node->declare_parameter(prefix + "frame_id", std::string("map"));
+    pose.header.frame_id = apply_tf_prefix(
+      node->declare_parameter(prefix + "frame_id", std::string("map")), tf_prefix);
     pose.pose.position.x = node->declare_parameter(prefix + "x", 0.0);
     pose.pose.position.y = node->declare_parameter(prefix + "y", 0.0);
     const double yaw = node->declare_parameter(prefix + "yaw", 0.0);

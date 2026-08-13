@@ -15,17 +15,18 @@
 
 // Mission control demo for the "easynav" deployment scenario (see
 // src/EasyFleet/easyfleet_example_deployments/easyfleet_easynav_deployment/launch):
-// whichever robot's navigation capability is the real EasyNav-backed one. Discovers
-// it, prints its description, sends it to a named waypoint, then
-// demonstrates EasyNav-level preemption by sending a second goal to a
-// different waypoint while the first is still running.
+// discovers the real EasyNav-backed navigation capability, prints its
+// description, sends it to a named waypoint, then demonstrates
+// EasyNav-level preemption by sending a second goal to a different
+// waypoint while the first is still running.
 //
-// Deliberately does *not* hardcode a robot name: this scenario has two
-// launch variants that both advertise a "navigation" capability but under
-// different identities -- easynav_robot_launch.yaml (Dummy* plugins) names
-// its robot "easynav_robot", while easynav_robot_gazebo_launch.yaml (real
-// navigation) runs unnamespaced (robot ""). Whichever one is actually up
-// is the one this mission talks to.
+// Deliberately does *not* hardcode a robot name: the robot id is derived
+// from a "robot_namespace" launch argument (see
+// easynav_robot_gazebo_launch.yaml -- default "" i.e. unnamespaced,
+// overridable), and easyfleet_core::Capability derives the announced robot
+// id from whatever that namespace turns out to be. This is also what lets
+// this same control program keep working once several robots are
+// namespaced and active at once.
 
 #include <chrono>
 #include <memory>
@@ -49,8 +50,7 @@ namespace
 {
 
 // Named waypoints configured on the navigation capability, see
-// config/easynav_robot/navigation_params.yaml -- shared by both launch
-// variants.
+// config/easynav_robot/navigation_params.yaml.
 const std::string kFirstWaypoint = "dock";
 const std::string kSecondWaypoint = "kitchen";
 
@@ -66,9 +66,9 @@ Navigation::Goal make_easynav_goal(const std::string & waypoint_id)
 
 /// Finds the single active "navigation" capability, regardless of which
 /// robot (or lack thereof) it's announced under. If more than one is
-/// active at once -- e.g. both easynav launch variants running
-/// simultaneously -- warns and picks the first, since only one is meant to
-/// be up at a time for this scenario.
+/// active at once -- e.g. two namespaced robots both running this
+/// deployment -- warns and picks the first, since this demo mission only
+/// ever drives one robot.
 const CapabilityInfo * find_navigation_capability(
   const std::vector<CapabilityInfo> & capabilities)
 {
@@ -128,22 +128,18 @@ int main(int argc, char ** argv)
   }
 
   // The CapabilityClient is created against the *resolved* action name
-  // (e.g. "/easynav_robot/navigation" for the Dummy-plugin launch, or
-  // "/navigation" for the real-navigation one), whichever this capability
-  // actually announced itself under.
+  // (e.g. "/navigation" unnamespaced, or "/robot_1/navigation"), whichever
+  // this capability actually announced itself under.
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr navigation_client;
   if (navigation_info) {
     navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
       node.get(), navigation_info->action_name);
   }
 
-  // 3: navigate to a waypoint. Against the Dummy-plugin launch (see
-  // config/easynav_robot/easynav_system.dummy.params.yaml),
-  // DummyLocalizer never reports a robot pose and the goal never finishes
-  // on its own -- run_capability() stops it once kRunTimeout elapses, same
-  // "runs until stopped" pattern as perception_fake_capability. Against
-  // the real-navigation launch, the goal actually completes once the
-  // robot reaches the waypoint.
+  // 3: navigate to a waypoint. The goal actually completes once the robot
+  // reaches it (within system_node's position_tolerance/angle_tolerance);
+  // run_capability() still enforces kRunTimeout as a safety net in case it
+  // doesn't (e.g. the robot gets stuck).
   print_section("Phase 2: Navigate to \"" + kFirstWaypoint + "\"");
   if (navigation_client) {
     run_capability<Navigation>(
@@ -151,8 +147,8 @@ int main(int argc, char ** argv)
       kRunTimeout, make_navigation_feedback_printer(navigation_info->action_name));
   } else {
     print_step(
-      "no active 'navigation' capability found -- is easynav_launch.yaml or "
-      "easynav_gazebo_launch.yaml running? Skipping.");
+      "no active 'navigation' capability found -- is easynav_gazebo_launch.yaml "
+      "running? Skipping.");
   }
 
   // 4: send a second goal to a different waypoint while the capability is
@@ -183,8 +179,8 @@ int main(int argc, char ** argv)
     first_goal.join();
   } else {
     print_step(
-      "no active 'navigation' capability found -- is easynav_launch.yaml or "
-      "easynav_gazebo_launch.yaml running? Skipping.");
+      "no active 'navigation' capability found -- is easynav_gazebo_launch.yaml "
+      "running? Skipping.");
   }
   print_step("Phase 3 done.");
 

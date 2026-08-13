@@ -67,7 +67,7 @@ target_link_libraries(easynav_navigation_capability_node
 # StartOff/Finish: the fake bookend BT nodes for this scenario's
 # navigate.xml tree, each built as its own BT.CPP plugin (BT_REGISTER_NODES,
 # loaded by path via the navigation capability's `bt_plugins` parameter --
-# see launch/easynav_robot_launch.yaml). Kept here, not in
+# see launch/easynav_robot_gazebo_launch.yaml). Kept here, not in
 # easyfleet_easynav_navigation, since they are fake/deployment-specific,
 # unlike that package's real Navigate node.
 add_library(start_off_bt_node SHARED

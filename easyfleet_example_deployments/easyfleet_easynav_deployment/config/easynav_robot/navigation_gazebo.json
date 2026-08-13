@@ -71,7 +71,7 @@
     }
   },
   "notes": [
-    "This backend drives a real EasyNav navigation stack (easynav_system system_main) with a real navigation configuration -- see config/easynav_robot/easynav_system.costmap_rpp.params.yaml (AMCLLocalizer + CostmapMapsManager + RegulatedPurePursuitController, copied from src/easynav_indoor_testcase/robots_params/costmap.rpp.params.yaml), not the Dummy* plugins used by this same package's 'easynav' scenario (see navigation.json there). Goals actually complete once the robot reaches the waypoint (within system_node's position_tolerance/angle_tolerance).",
-    "Deployment: real-robot/Gazebo test launched via launch/easynav_robot_gazebo_launch.yaml -- system_main and this capability run unnamespaced (no push_ros_namespace), matching easynav_costmap_rpp.launch.py's own convention, so sensors_node's scan_raw topic and the localizer/controller's TF frames match an unnamespaced Gazebo robot."
+    "This backend drives a real EasyNav navigation stack (easynav_system system_main) with a real navigation configuration -- see config/easynav_robot/easynav_system.costmap_rpp.params.yaml (AMCLLocalizer + CostmapMapsManager + RegulatedPurePursuitController, copied from src/easynav_indoor_testcase/robots_params/costmap.rpp.params.yaml). Goals actually complete once the robot reaches the waypoint (within system_node's position_tolerance/angle_tolerance).",
+    "Deployment: real-robot/Gazebo test launched via launch/easynav_robot_gazebo_launch.yaml -- unnamespaced by default (action name \"/navigation\", matching this file's own action.name above), or namespaced via that launch file's \"robot_namespace\" argument (e.g. \"/robot_1/navigation\"), which also pushes a matching \"tf_prefix\" onto system_main so TF/goal frames stay consistent."
   ]
 }

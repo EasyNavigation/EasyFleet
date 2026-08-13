@@ -23,17 +23,15 @@
 # the start: swapping to a real navigation stack is just pointing at a
 # different EasyNav params file, no code change on the EasyFleet side).
 #
-# Deliberately kept UNNAMESPACED (bare "<node_name>:" keys, unlike
-# easynav_system.dummy.params.yaml's "/**/<node_name>" pattern), mirroring
-# easynav_costmap_rpp.launch.py exactly: easynav_robot_gazebo_launch.yaml
-# does not push a ROS namespace for system_main, because sensors_node's
-# "scan_raw" topic and the localizer/controller's TF frames need to match
-# Gazebo's own (unnamespaced) topics/frames. easynav_navigation_capability_node
-# is launched unnamespaced alongside it for the same reason: its
-# GoalManagerClient talks to system_node over the relative
-# "easynav_control" topic, which must resolve to the same node as
-# system_main's own GoalManager.
-controller_node:
+# Uses "/**/<node_name>" (rather than a bare "<node_name>:" key, as the
+# upstream easynav_costmap_rpp.launch.py reference file does) so every
+# sub-node's parameters still load whether or not
+# easynav_robot_gazebo_launch.yaml pushes system_main under a ROS namespace
+# (see that file's own "robot_namespace" launch argument) -- a bare node
+# name only matches that node's *unqualified* name and silently drops every
+# parameter under it once namespaced (see navigation_params.yaml's own
+# comment for how this exact class of bug was first found).
+/**/controller_node:
   ros__parameters:
     use_sim_time: true
     colision_checker:
@@ -86,7 +84,7 @@ controller_node:
       xy_goal_tolerance: 0.1
       yaw_goal_tolerance: 0.105
 
-localizer_node:
+/**/localizer_node:
   ros__parameters:
     use_sim_time: true
     localizer_types: [costmap]
@@ -106,7 +104,7 @@ localizer_node:
         std_dev_xy: 0.1
         std_dev_yaw: 0.01
 
-maps_manager_node:
+/**/maps_manager_node:
   ros__parameters:
     use_sim_time: true
     map_types: [costmap]
@@ -124,7 +122,7 @@ maps_manager_node:
         inscribed_radius: 0.25
         cost_scaling_factor: 3.0
 
-planner_node:
+/**/planner_node:
   ros__parameters:
     use_sim_time: true
     planner_types: [simple]
@@ -134,7 +132,7 @@ planner_node:
       cost_factor: 10.0
       continuous_replan: true
 
-sensors_node:
+/**/sensors_node:
   ros__parameters:
     use_sim_time: true
     forget_time: 0.5
@@ -143,7 +141,7 @@ sensors_node:
       topic: scan_raw
       type: sensor_msgs/msg/LaserScan
 
-system_node:
+/**/system_node:
   ros__parameters:
     use_sim_time: true
     use_real_time: true

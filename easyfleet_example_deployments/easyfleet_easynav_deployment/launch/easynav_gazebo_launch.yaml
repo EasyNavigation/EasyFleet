@@ -26,9 +26,22 @@
 # finished activating (and published its /capabilities announcement)
 # before mission control's discovery window (see
 # easyfleet_mission_manager::discover_capabilities()) opens.
+#
+# robot_namespace forwards to easynav_robot_gazebo_launch.yaml's own
+# argument of the same name (default "", unnamespaced, for a single real
+# robot); pass robot_namespace:="robot_1" to match
+# easynav_playground_kobuki's playground_monorobot_kobuki.launch.py.
 launch:
+  - arg:
+      name: "robot_namespace"
+      default: ""
+      description: "Namespace the robot is pushed under. Empty (default) for a single unnamespaced real robot/Gazebo instance."
+
   - include:
       file: "$(find-pkg-share easyfleet_easynav_deployment)/launch/easynav_robot_gazebo_launch.yaml"
+      arg:
+        - name: "robot_namespace"
+          value: "$(var robot_namespace)"
 
   - timer:
       period: 3.0

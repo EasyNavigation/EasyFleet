@@ -62,10 +62,11 @@ for multi-robot, multi-skill fleets. It provides:
     driving EasyNav through a BehaviorTree.CPP tree (`StartOff` →
     `Navigate` → `Finish`) — the real `Navigate` node reused from
     `easyfleet_easynav_navigation` as a plugin, `StartOff`/`Finish` (fake
-    bookends) supplied by this package the same way. Either against
-    EasyNav's own `Dummy*` plugins or, via a second launch variant,
-    against a real EasyNav navigation stack for use with a real robot or
-    Gazebo simulation.
+    bookends) supplied by this package the same way. Runs against a real
+    EasyNav navigation stack (costmap localizer/maps-manager/planner +
+    regulated pure-pursuit controller) for use with a real robot or a
+    Gazebo simulation of one, unnamespaced by default or namespaced via a
+    launch argument.
 
 `easyfleet_fake_alone_deployment`/`easyfleet_fake_collaboration_deployment`
 are, capability-wise, entirely **mocks**: they don't drive a real robot or
@@ -105,13 +106,12 @@ EasyFleet/
         ├── include|src/easyfleet_easynav_deployment/bt_nodes/{start_off,finish}.hpp|cpp    -> libstart_off_bt_node.so / libfinish_bt_node.so
         ├── behavior_trees/navigate.xml                 references StartOff/Navigate/Finish by name
         ├── src/main_easynav.cpp                        -> easynav_mission_node (mission control)
-        ├── launch/{easynav_launch.yaml -> easynav_robot_launch.yaml,             Dummy* plugins
-        │           easynav_gazebo_launch.yaml -> easynav_robot_gazebo_launch.yaml}  real navigation
+        ├── launch/{easynav_gazebo_launch.yaml -> easynav_robot_gazebo_launch.yaml}
         └── config/easynav_robot/
 ```
 
 Every scenario's top-level launch file (`alone_launch.yaml`, `collaboration_launch.yaml`,
-`easynav_launch.yaml`, `easynav_gazebo_launch.yaml`) launches **both** halves
+`easynav_gazebo_launch.yaml`) launches **both** halves
 of the deployment: the robot (one process per robot, hosting its
 capabilities) and mission control (the example mission script), the latter
 delayed a few seconds so the robot has finished activating first — see
@@ -178,7 +178,7 @@ linked at compile time. This is what lets `easyfleet_easynav_deployment`
 reuse `easyfleet_easynav_navigation`'s `Navigate` node with zero
 compile-time coupling: the capability class never `#include`s it, it just
 loads whatever `.so` paths the `bt_plugins` parameter lists (see
-`launch/easynav_robot_launch.yaml`) — the same mechanism a *different*
+`launch/easynav_robot_gazebo_launch.yaml`) — the same mechanism a *different*
 deployment package would use to reuse `Navigate` with its *own* bookend
 nodes and tree.
 
@@ -207,9 +207,8 @@ A genuine cancellation (or capability shutdown), on the other hand, calls
 stops, rather than continuing to navigate toward an abandoned goal.
 
 The `easynav` scenario, in `easyfleet_easynav_deployment`, runs this
-capability against real EasyNav (`easynav_system system_main`) configured
-with its own `Dummy*` plugins — see
-[Multi-robot deployments](#multi-robot-deployments).
+capability against a real EasyNav navigation stack (`easynav_system
+system_main`) — see [Multi-robot deployments](#multi-robot-deployments).
 
 ## Interfaces
 
@@ -309,8 +308,7 @@ to assemble one example scenario, self-contained under its own `launch/` +
 | `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_1` | navigation, perception (mock) | `launch/collaboration_launch.yaml` |
 | `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_2` | navigation, perception (mock) | (same) |
 | `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_3` | navigation, manipulation (mock) | (same) |
-| `easynav` | `easyfleet_easynav_deployment` | `easynav_robot` | navigation (real EasyNav backend, `Dummy*` plugins) + `easynav_system system_main` | `launch/easynav_launch.yaml` |
-| `easynav` (real navigation) | `easyfleet_easynav_deployment` | *(unnamespaced)* | navigation (real EasyNav backend, real costmap/localizer/planner/controller) + `easynav_system system_main` + `rviz2` | `launch/easynav_gazebo_launch.yaml` |
+| `easynav` | `easyfleet_easynav_deployment` | *(unnamespaced by default, via `robot_namespace`)* | navigation (real EasyNav backend, real costmap/localizer/planner/controller) + `easynav_system system_main` + `rviz2` | `launch/easynav_gazebo_launch.yaml` |
 
 Each robot has its own per-robot launch file (e.g.
 `easyfleet_fake_collaboration_deployment/launch/robot_3_launch.yaml`) that
@@ -319,10 +317,24 @@ package's `config/<robot>/`. Namespacing keeps two robots that share a
 capability type (e.g. `navigation` on both `robot_1` and `robot_3`) fully
 distinct: their resolved `action_name`s (`/robot_1/navigation` vs.
 `/robot_3/navigation`) never collide, and each can be discovered and called
-independently. The real-navigation `easynav` variant is the one exception:
-it is deliberately **not** namespaced (see
-[below](#easynav-real-navigation-scenario)), so it only ever runs one robot
-at a time.
+independently.
+
+The `easynav` scenario takes this a step further: rather than hardcoding a
+robot id, `easynav_robot_gazebo_launch.yaml` exposes it as a
+`robot_namespace` launch argument (`push_ros_namespace`, plus a matching
+`tf_prefix` override on `system_main` and namespace-prefixed waypoint
+`frame_id`s — see [below](#easynav-scenario)), forwarded through the
+top-level `easynav_gazebo_launch.yaml`. `system_main`'s own
+`config/easynav_robot/easynav_system.costmap_rpp.params.yaml` uses the
+`/**/<node_name>` wildcard key, so it loads correctly whichever namespace
+(or none) `system_main` ends up under — the same pattern
+`config/easynav_robot/navigation_params.yaml` already used. This is one
+robot at a time, not true multi-robot yet (only one `GoalManagerClient` per
+capability, one waypoint set) — but it's what lets a namespaced `easynav`
+robot coexist on the same `ros2` graph as, say, an `alone`/`collaboration`
+`robot_1`, and is the namespace-per-robot convention full multi-robot
+support (see [easynav_playground_kobuki](../easynav_playground_kobuki))
+will build on.
 
 ## Packages
 
@@ -334,7 +346,7 @@ at a time.
 | `easyfleet_easynav_navigation` | BT.CPP plugin library | The `Navigate` BT node (`libeasynav_navigate_bt_node.so`), loaded by path — no executable of its own |
 | `easyfleet_fake_alone_deployment` | C++ library + executables + launch/config | The `alone` scenario: all 3 fake capabilities hosted by `robot_node` on `robot_1`, + `alone_mission_node` (mission control) |
 | `easyfleet_fake_collaboration_deployment` | C++ library + executables + launch/config | The `collaboration` scenario: its own copy of the same 3 fake capabilities, `robot_node` reused across `robot_1`/`robot_2`/`robot_3`, + `collaboration_mission_node` |
-| `easyfleet_easynav_deployment` | C++ library + executables + launch/config | The `easynav` scenario: `easynav_navigation_capability_node` (this package's own capability class, reusing `easyfleet_easynav_navigation`'s `Navigate` plugin) + `easynav_mission_node`, plus `libstart_off_bt_node.so`/`libfinish_bt_node.so` and the launch/config assembly for both the `Dummy*`-plugin and real-navigation variants |
+| `easyfleet_easynav_deployment` | C++ library + executables + launch/config | The `easynav` scenario: `easynav_navigation_capability_node` (this package's own capability class, reusing `easyfleet_easynav_navigation`'s `Navigate` plugin) + `easynav_mission_node`, plus `libstart_off_bt_node.so`/`libfinish_bt_node.so` and the launch/config assembly for real navigation against a real robot or Gazebo |
 
 All three live under `easyfleet_example_deployments/`, a plain container
 directory (no `package.xml` of its own) rather than a package.
@@ -351,7 +363,7 @@ directory (no `package.xml` of its own) rather than a package.
 - [EasyNavigation](../EasyNavigation) (specifically `easynav_system`) built
   in the same workspace — required by `easyfleet_easynav_deployment` and
   the `easynav` example scenario.
-- For the `easynav` (real navigation) scenario specifically:
+- For the `easynav` scenario specifically:
   [easynav_indoor_testcase](../easynav_indoor_testcase) built in the same
   workspace (its `home2` map and the EasyNav plugins used by
   `costmap.rpp.params.yaml` — `easynav_costmap_localizer`,
@@ -430,54 +442,8 @@ or a single robot standalone — e.g.
 
 ### `easynav` scenario
 
-A single robot, `easynav_robot`, whose `navigation` capability is the real
-EasyNav-backed one (`easyfleet_easynav_deployment`), not the mock — EasyNav
-itself (`easynav_system system_main`) runs configured with its own
-`Dummy*` plugins (see
-[The EasyNav-backed navigation capability](#the-easynav-backed-navigation-capability)).
-
-```bash
-ros2 launch easyfleet_easynav_deployment easynav_launch.yaml
-```
-
-This launches both the robot (`easynav_system system_main` +
-`easynav_navigation_capability_node`) and, a few seconds later,
-`easynav_mission_node`. It doesn't hardcode a robot name — it finds
-whichever `navigation` capability is currently active (see
-[below](#easynav-real-navigation-scenario) for the other, unnamespaced
-variant it also works against), then, in order, prints what it's doing as
-it happens:
-
-1. **Discover** the active `navigation` capability and print its full
-   description (from its JSON on `/capabilities`).
-2. Send it to the `dock` waypoint (one of the three configured in
-   `config/easynav_robot/navigation_params.yaml` — `dock`,
-   `kitchen`, `charging_station`) for up to 10 seconds. With the `Dummy*`
-   EasyNav plugins, the goal is accepted and feedback keeps arriving, but —
-   same as `perception_fake_capability` — it never completes on its own
-   (`DummyLocalizer` never reports a robot pose), so the mission stops it
-   once the 10s elapse, which sends EasyNav an explicit cancellation.
-3. Send a goal to `dock` again, then, 3 seconds later, a second goal to
-   `kitchen` while the first is still running: the first goal is aborted at
-   the ROS level (preempted), but EasyNav itself is redirected to `kitchen`
-   without stopping first — demonstrating EasyNav-level preemption via the
-   capability's persistent `GoalManagerClient`.
-
-To poke at it by hand instead, from another terminal:
-
-```bash
-ros2 action send_goal /easynav_robot/navigation easyfleet_interfaces/action/Navigation \
-  "{parameters_json: '{\"goal_id\": \"dock\"}'}" --feedback
-```
-
-`Ctrl-C` or `ros2 action cancel` stops it (sends EasyNav an explicit
-cancellation); sending a second goal while the first is still running
-preempts it the same way `easynav_mission_node`'s Phase 3 does.
-
-### `easynav` (real navigation) scenario
-
-The same `navigation` capability, but with EasyNav itself configured for
-*real* navigation instead of the `Dummy*` plugins: `AMCLLocalizer` +
+A single robot whose `navigation` capability is the real EasyNav-backed
+one (`easyfleet_easynav_deployment`), not the mock: `AMCLLocalizer` +
 `CostmapMapsManager` (on `src/easynav_indoor_testcase`'s `home2` map) +
 `CostmapPlanner` + `RegulatedPurePursuitController` (see
 `config/easynav_robot/easynav_system.costmap_rpp.params.yaml`,
@@ -487,31 +453,80 @@ real robot, or a Gazebo simulation of one — **start that separately**
 (this launch file doesn't bring up Gazebo, the same way
 `easynav_indoor_testcase`'s own `easynav_costmap_rpp.launch.py` doesn't).
 
-Unlike every other scenario, this one is **deliberately unnamespaced**:
-`system_main`'s `sensors_node`/`localizer_node`/`controller_node` need to
-see the same `scan_raw` topic and TF frames the robot/Gazebo publishes
-(typically unnamespaced), and the navigation capability is launched
-unnamespaced alongside it so its `GoalManagerClient`'s relative
+Defaults to **unnamespaced** (`robot_namespace:=""`): `system_main`'s
+`sensors_node`/`localizer_node`/
+`controller_node` need to see the same `scan_raw` topic and TF frames the
+robot/Gazebo publishes, which are themselves unnamespaced by default for a
+single real robot, and the navigation capability is launched in the same
+namespace alongside it so its `GoalManagerClient`'s relative
 `easynav_control` topic still resolves to `system_main`'s own
-`GoalManager`. That also means it only ever runs one robot at a time.
+`GoalManager`. Pass `robot_namespace:=robot_1` to run it namespaced instead
+— e.g. against [easynav_playground_kobuki](../easynav_playground_kobuki)'s
+`playground_monorobot_kobuki.launch.py`, which spawns its Kobuki under that
+same namespace (`config/monorobot_config.yaml`). Gazebo's namespaced
+*topics* (`scan_raw`, `odom`, ...) resolve correctly either way since
+`push_ros_namespace` handles that automatically — but `kobuki_description`
+also unconditionally prefixes every TF *frame name* with the robot's
+namespace (`robot_1/base_link`, not `base_link`), independently of whether
+topics are namespaced, so `system_main`'s own `tf_prefix` parameter is set
+to the same `robot_namespace` value to match (it prefixes every `TFInfo`
+frame, `map_frame` included — see `easynav_common/RTTFBuffer.hpp`); empty
+by default, so the unnamespaced case is unaffected. Either way this only
+ever runs one robot at a time (one `GoalManagerClient`, one waypoint set)
+— true multi-robot support is future work (see
+[Multi-robot deployments](#multi-robot-deployments)).
 
 The three configured waypoints (`dock`, `kitchen`, `charging_station`, in
 `config/easynav_robot/navigation_params.yaml`) are real, reachable
-points on the `home2` map, not placeholders.
+points on the `home2` map, not placeholders. Their `frame_id` (`"map"` in
+the YAML) is namespace-prefixed the same way `tf_prefix` prefixes
+`system_main`'s own `map_frame` (`EasynavNavigationActionServer`'s
+constructor, using the capability's own resolved namespace) — without
+this, `easynav_costmap_planner` silently rejects every goal whose frame
+doesn't match `tf_info.map_frame` once namespaced, which is exactly the
+failure mode if this ever gets out of sync (a `"Goals frame is not 'map':
+..."` WARN from `system_main`, easy to miss among the rest of the launch
+output).
 
 With the robot/Gazebo simulation already running and publishing
 `scan_raw`/odometry/TF:
 
 ```bash
 ros2 launch easyfleet_easynav_deployment easynav_gazebo_launch.yaml
+# or, namespaced to match a Gazebo robot spawned under "robot_1":
+# ... robot_namespace:=robot_1
 ```
 
 This launches the robot (`system_main` + the navigation capability),
 opens an RViz window (same config as `easynav_costmap_rpp.launch.py`'s),
-and, a few seconds later, `easynav_mission_node` (same executable as
-above; it auto-detects which variant is running).
+and, a few seconds later, `easynav_mission_node`. It doesn't hardcode a
+robot name — it finds whichever `navigation` capability is currently
+active — then, in order, prints what it's doing as it happens:
 
-To poke at it by hand instead, from another terminal:
+1. **Discover** the active `navigation` capability and print its full
+   description (from its JSON on `/capabilities`).
+2. Send it to the `dock` waypoint (one of the three configured in
+   `config/easynav_robot/navigation_params.yaml` — `dock`, `kitchen`,
+   `charging_station`), printing live feedback until it completes (or
+   `kRunTimeout` elapses as a safety net).
+3. Send a goal to `dock` again, then, 3 seconds later, a second goal to
+   `kitchen` while the first is still running: the first goal is aborted at
+   the ROS level (preempted), but EasyNav itself is redirected to `kitchen`
+   without stopping first — demonstrating EasyNav-level preemption via the
+   capability's persistent `GoalManagerClient`.
+
+RViz is launched inside the same `robot_namespace` group, with every
+absolute topic that `easynav_costmap.rviz` references remapped to its
+relative equivalent (so it resolves under `robot_1` too when namespaced)
+and its Fixed Frame overridden to match — no manual topic editing needed
+either way. This also means RViz's **2D Goal Pose** arrow tool works
+directly: it publishes to (the now-namespaced) `goal_pose`, the same
+relative topic `easynav_system`'s `GoalManager` subscribes to, so dragging
+a goal in RViz drives the robot exactly like `send_goal` below, no code
+involved.
+
+To poke at it by hand instead, from another terminal (prefix the action
+name with `/robot_1` too if you launched it namespaced):
 
 ```bash
 ros2 action send_goal /navigation easyfleet_interfaces/action/Navigation \

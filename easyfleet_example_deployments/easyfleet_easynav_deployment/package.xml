@@ -12,15 +12,14 @@
     plugins into a running ROS action is a manufacturer/integrator choice
     -- reusing only easyfleet_easynav_navigation's Navigate BT.CPP plugin
     (loaded by path via the `bt_plugins` parameter, alongside this
-    package's own fake StartOff/Finish plugins). Two launch variants:
-    easynav_launch.yaml runs EasyNav (easynav_system system_main)
-    configured with its own Dummy* plugins, namespaced under easynav_robot;
-    easynav_gazebo_launch.yaml runs it configured for real navigation
-    (costmap localizer/maps-manager/planner + regulated pure-pursuit
-    controller), unnamespaced, for use with a real robot or a Gazebo
-    simulation of one. Also ships the example mission script built on
-    easyfleet_mission_manager and the launch files and JSON/parameter
-    configuration each variant is started with.
+    package's own fake StartOff/Finish plugins). easynav_gazebo_launch.yaml
+    runs EasyNav (easynav_system system_main) configured for real
+    navigation (costmap localizer/maps-manager/planner + regulated
+    pure-pursuit controller), for use with a real robot or a Gazebo
+    simulation of one -- unnamespaced by default, or namespaced via its
+    "robot_namespace" launch argument. Also ships the example mission
+    script built on easyfleet_mission_manager and the launch files and
+    JSON/parameter configuration it is started with.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
