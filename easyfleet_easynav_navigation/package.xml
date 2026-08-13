@@ -4,33 +4,32 @@
   <name>easyfleet_easynav_navigation</name>
   <version>0.1.0</version>
   <description>
-    Real navigation capability implementation, backed by the EasyNav
-    navigation stack (easynav_system::GoalManagerClient) and structured as a
-    BehaviorTree.CPP tree (StartOff, Navigate, Finish). Resolves the named
-    waypoints configured as ROS parameters to poses before handing them to
-    EasyNav -- EasyNav itself has no named-waypoint concept. The reference
-    example of a real easyfleet_core::NavigationActionServerBase backend
-    (the "fake" one in easyfleet_example_deployments is a mock; this one
-    drives a real EasyNav system).
+    The resources EasyFleet provides for building a navigation capability
+    backed by EasyNav (easynav_system::GoalManagerClient). For now, just
+    the Navigate BT.CPP node: drives EasyNav to the waypoint named by its
+    "goal_id" input port, resolved against a fixed id-&gt;pose registry read
+    from the blackboard (EasyNav itself has no named-waypoint concept).
+    Built as a BT.CPP plugin (BT_REGISTER_NODES), loaded by path -- not a
+    library a capability links against at compile time -- so any
+    manufacturer/integrator can build their own EasyNav-backed capability
+    (their own tree, their own bookend nodes, their own action-server
+    class) around it without a compile-time dependency on this package
+    beyond this one node. See easyfleet_easynav_deployment for a full
+    reference capability implementation built this way.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>rclcpp</depend>
-  <depend>rclcpp_action</depend>
-  <depend>rclcpp_lifecycle</depend>
-  <depend>lifecycle_msgs</depend>
-  <depend>easyfleet_core</depend>
   <depend>easynav_system</depend>
   <depend>behaviortree_cpp</depend>
   <depend>geometry_msgs</depend>
-  <depend>nlohmann-json-dev</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>rclcpp</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

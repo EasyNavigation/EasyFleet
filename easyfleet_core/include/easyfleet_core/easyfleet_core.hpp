@@ -23,5 +23,6 @@
 #include "easyfleet_core/manipulation_action_server_base.hpp"
 #include "easyfleet_core/navigation_action_server_base.hpp"
 #include "easyfleet_core/perception_action_server_base.hpp"
+#include "easyfleet_core/spin_utils.hpp"
 
 #endif  // EASYFLEET_CORE__EASYFLEET_CORE_HPP_

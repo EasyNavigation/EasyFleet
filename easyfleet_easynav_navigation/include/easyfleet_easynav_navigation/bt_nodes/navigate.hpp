@@ -31,26 +31,10 @@ namespace easyfleet_easynav_navigation
 /// the "goal_id" input port, resolved against a fixed id->pose registry
 /// (EasyNav itself has no named-waypoint concept -- this node is where
 /// that resolution happens).
-/**
- * The GoalManagerClient is injected (owned by the capability, one instance
- * for its whole lifetime, shared across every tree/goal this node runs
- * in) rather than created here: this is what lets a *new* ROS navigation
- * goal preempt an in-flight one at the EasyNav level even though each ROS
- * goal ticks a brand-new tree from StartOff -- the new tree's Navigate
- * still calls send_goal() on the same client, and EasyNav treats that as
- * a preemption of the goal it already has from that client. Because of
- * this, onHalted() intentionally does nothing: only the capability itself
- * decides when to actually cancel() the shared client (real cancellation
- * or shutdown), never a plain preemption/halt of this node.
- */
 class Navigate : public BT::StatefulActionNode
 {
 public:
-  Navigate(
-    const std::string & name,
-    const BT::NodeConfig & config,
-    std::shared_ptr<const std::map<std::string, geometry_msgs::msg::PoseStamped>> waypoints,
-    easynav::GoalManagerClient::SharedPtr gm_client);
+  Navigate(const std::string & name, const BT::NodeConfig & config);
 
   static BT::PortsList providedPorts();
 

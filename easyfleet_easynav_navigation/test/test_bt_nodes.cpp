@@ -28,9 +28,7 @@
 #include "easynav_system/GoalManagerClient.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-#include "easyfleet_easynav_navigation/bt_nodes/finish.hpp"
 #include "easyfleet_easynav_navigation/bt_nodes/navigate.hpp"
-#include "easyfleet_easynav_navigation/bt_nodes/start_off.hpp"
 
 using namespace std::chrono_literals;
 
@@ -66,38 +64,6 @@ BT::NodeStatus tick_until_done(BT::Tree & tree, std::chrono::milliseconds timeou
 
 }  // namespace
 
-TEST(StartOffTest, TakesAboutTwoSecondsAndSucceeds)
-{
-  BT::BehaviorTreeFactory factory;
-  factory.registerNodeType<easyfleet_easynav_navigation::StartOff>("StartOff");
-  auto tree = factory.createTreeFromText(
-    R"(<root BTCPP_format="4"><BehaviorTree ID="Test"><StartOff/></BehaviorTree></root>)");
-
-  const auto start = std::chrono::steady_clock::now();
-  const auto status = tick_until_done(tree, 5s);
-  const auto elapsed = std::chrono::steady_clock::now() - start;
-
-  EXPECT_EQ(status, BT::NodeStatus::SUCCESS);
-  EXPECT_GE(elapsed, 1900ms);
-  EXPECT_LT(elapsed, 4s);
-}
-
-TEST(FinishTest, TakesAboutTwoSecondsAndSucceeds)
-{
-  BT::BehaviorTreeFactory factory;
-  factory.registerNodeType<easyfleet_easynav_navigation::Finish>("Finish");
-  auto tree = factory.createTreeFromText(
-    R"(<root BTCPP_format="4"><BehaviorTree ID="Test"><Finish/></BehaviorTree></root>)");
-
-  const auto start = std::chrono::steady_clock::now();
-  const auto status = tick_until_done(tree, 5s);
-  const auto elapsed = std::chrono::steady_clock::now() - start;
-
-  EXPECT_EQ(status, BT::NodeStatus::SUCCESS);
-  EXPECT_GE(elapsed, 1900ms);
-  EXPECT_LT(elapsed, 4s);
-}
-
 class NavigateTest : public ::testing::Test
 {
 protected:
@@ -112,14 +78,14 @@ protected:
 
     gm_client_ = easynav::GoalManagerClient::make_shared(client_node_);
 
-    waypoints_ = std::make_shared<std::map<std::string, geometry_msgs::msg::PoseStamped>>();
+    auto waypoints = std::make_shared<std::map<std::string, geometry_msgs::msg::PoseStamped>>();
     geometry_msgs::msg::PoseStamped dock;
     dock.header.frame_id = "map";
     dock.pose.position.x = 1.0;
-    (*waypoints_)["dock"] = dock;
+    (*waypoints)["dock"] = dock;
+    waypoints_ = waypoints;
 
-    factory_.registerNodeType<easyfleet_easynav_navigation::Navigate>(
-      "Navigate", waypoints_, gm_client_);
+    factory_.registerNodeType<easyfleet_easynav_navigation::Navigate>("Navigate");
   }
 
   void TearDown() override
@@ -130,6 +96,17 @@ protected:
     }
     executor_.remove_node(client_node_);
     executor_.remove_node(server_node_);
+  }
+
+  /// Creates a blackboard with "waypoints"/"gm_client" already set, since
+  /// Navigate (a BT.CPP plugin) reads both from there rather than from
+  /// constructor arguments -- see bt_nodes/navigate.hpp.
+  BT::Blackboard::Ptr make_blackboard()
+  {
+    auto blackboard = BT::Blackboard::create();
+    blackboard->set("waypoints", waypoints_);
+    blackboard->set("gm_client", gm_client_);
+    return blackboard;
   }
 
   /// Mocks the EasyNav GoalManager: accepts any REQUEST addressed to
@@ -166,7 +143,7 @@ protected:
   std::thread spin_thread_;
 
   easynav::GoalManagerClient::SharedPtr gm_client_;
-  std::shared_ptr<std::map<std::string, geometry_msgs::msg::PoseStamped>> waypoints_;
+  std::shared_ptr<const std::map<std::string, geometry_msgs::msg::PoseStamped>> waypoints_;
   BT::BehaviorTreeFactory factory_;
 
   rclcpp::Subscription<easynav_interfaces::msg::NavigationControl>::SharedPtr server_sub_;
@@ -176,13 +153,14 @@ protected:
 TEST_F(NavigateTest, FailsImmediatelyWithoutGoalIdPort)
 {
   auto tree = factory_.createTreeFromText(
-    R"(<root BTCPP_format="4"><BehaviorTree ID="Test"><Navigate/></BehaviorTree></root>)");
+    R"(<root BTCPP_format="4"><BehaviorTree ID="Test"><Navigate/></BehaviorTree></root>)",
+    make_blackboard());
   EXPECT_EQ(tree.tickOnce(), BT::NodeStatus::FAILURE);
 }
 
 TEST_F(NavigateTest, FailsImmediatelyForUnknownWaypoint)
 {
-  auto blackboard = BT::Blackboard::create();
+  auto blackboard = make_blackboard();
   blackboard->set("goal_id", std::string("no_such_waypoint"));
   auto tree = factory_.createTreeFromText(
     R"(<root BTCPP_format="4"><BehaviorTree ID="Test">)"
@@ -195,7 +173,7 @@ TEST_F(NavigateTest, SucceedsWhenEasyNavReportsFinished)
 {
   start_mock_goal_manager();
 
-  auto blackboard = BT::Blackboard::create();
+  auto blackboard = make_blackboard();
   blackboard->set("goal_id", std::string("dock"));
   auto tree = factory_.createTreeFromText(
     R"(<root BTCPP_format="4"><BehaviorTree ID="Test">)"

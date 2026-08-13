@@ -22,7 +22,7 @@ jobs:
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.4.8
         with:
-          package-name: easyfleet_interfaces easyfleet_core easyfleet_mission_manager easyfleet_example_deployments
+          package-name: easyfleet_interfaces easyfleet_core easyfleet_mission_manager easyfleet_fake_alone_deployment easyfleet_fake_collaboration_deployment
           target-ros2-distro: rolling
           colcon-defaults: |
             {

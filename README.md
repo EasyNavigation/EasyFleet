@@ -35,32 +35,48 @@ for multi-robot, multi-skill fleets. It provides:
   `run_capability<ActionT>()` helper built on `easyfleet_core::CapabilityClient`.
   Ships no executables of its own — it's meant to grow into the shared logic
   behind any mission manager, demo or otherwise.
-- **`easyfleet_easynav_navigation`** — the first **real** capability backend:
-  drives an actual [EasyNav](../EasyNavigation) navigation stack (via
-  `easynav::GoalManagerClient`), structured internally as a
-  BehaviorTree.CPP tree (`StartOff` → `Navigate` → `Finish`). The reference
-  example of a real `easyfleet_core::NavigationActionServerBase` subclass —
-  see [Extending EasyFleet](#extending-easyfleet) below.
-- **`easyfleet_example_deployments`** — the example deployments: a
-  "fake"/mock implementation of each capability (`navigation`,
-  `manipulation`, `perception`, each a subclass of the matching
-  `easyfleet_core` `*ActionServerBase`), the `alone`/`collaboration` example
-  mission scripts built on `easyfleet_mission_manager`, and the launch files
-  + per-robot JSON/parameter configuration that assemble them into concrete
-  multi-robot scenarios — plus an `easynav` scenario that swaps the mock
-  navigation capability for `easyfleet_easynav_navigation` against a real
-  (if `Dummy`-plugin-configured) EasyNav stack.
+- **`easyfleet_easynav_navigation`** — the resources EasyFleet itself
+  provides for building a capability backed by an actual
+  [EasyNav](../EasyNavigation) navigation stack (via
+  `easynav::GoalManagerClient`). For now, just the **`Navigate`**
+  BehaviorTree.CPP node: resolves a named waypoint and drives EasyNav to
+  it. Built as a BT.CPP plugin (`BT_REGISTER_NODES`, loaded by path at
+  runtime) rather than a library a capability links against at compile
+  time, so any manufacturer/integrator can build their own EasyNav-backed
+  capability — their own tree, bookend nodes, action-server class — around
+  it, without a compile-time dependency on this package beyond this one
+  node. See [Extending EasyFleet](#extending-easyfleet) below.
+- **`easyfleet_example_deployments/`** — not a package itself, but a
+  container directory for three example deployment packages, each a
+  self-contained scenario (own launch/config/mission script):
+  - **`easyfleet_fake_alone_deployment`** — a single robot, `robot_1`,
+    carrying "fake"/mock implementations of all three capabilities
+    (`navigation`, `manipulation`, `perception`, each a subclass of the
+    matching `easyfleet_core` `*ActionServerBase`), plus the `alone`
+    example mission script built on `easyfleet_mission_manager`.
+  - **`easyfleet_fake_collaboration_deployment`** — three robots sharing
+    the same fake capability implementations, collaborating on a mission,
+    plus the `collaboration` example mission script.
+  - **`easyfleet_easynav_deployment`** — the `easynav` scenario: this
+    package's own `easyfleet_core::NavigationActionServerBase` subclass,
+    driving EasyNav through a BehaviorTree.CPP tree (`StartOff` →
+    `Navigate` → `Finish`) — the real `Navigate` node reused from
+    `easyfleet_easynav_navigation` as a plugin, `StartOff`/`Finish` (fake
+    bookends) supplied by this package the same way. Either against
+    EasyNav's own `Dummy*` plugins or, via a second launch variant,
+    against a real EasyNav navigation stack for use with a real robot or
+    Gazebo simulation.
 
-Everything under `easyfleet_example_deployments/` capability-wise is a
-**mock**: it doesn't drive a real robot or run a real detector/manipulator.
-The goal of this repo is to validate the architecture and plumbing of a
-multi-robot, multi-capability system (discovery, namespacing, lifecycle,
-preemption, cancellation, feedback) before wiring in real
-navigation/perception/manipulation stacks. The intended real-world shape is
-a control computer running an LLM-generated Behavior Tree (via
-BehaviorTreeCPP) whose action nodes are `easyfleet_core::CapabilityClient`s;
-the example mission scripts here are a first approximation of that control
-computer.
+`easyfleet_fake_alone_deployment`/`easyfleet_fake_collaboration_deployment`
+are, capability-wise, entirely **mocks**: they don't drive a real robot or
+run a real detector/manipulator. The goal of this repo is to validate the
+architecture and plumbing of a multi-robot, multi-capability system
+(discovery, namespacing, lifecycle, preemption, cancellation, feedback)
+before wiring in real navigation/perception/manipulation stacks. The
+intended real-world shape is a control computer running an LLM-generated
+Behavior Tree (via BehaviorTreeCPP) whose action nodes are
+`easyfleet_core::CapabilityClient`s; the example mission scripts here are a
+first approximation of that control computer.
 
 ## Repository layout
 
@@ -70,26 +86,49 @@ EasyFleet/
 │                                     Navigation/Manipulation/PerceptionActionServerBase
 ├── easyfleet_interfaces/            CapabilityDescription/CapabilityStatus + Navigation/Manipulation/Perception actions
 ├── easyfleet_mission_manager/       Capability discovery + mission-scripting helper library (no executables)
-├── easyfleet_easynav_navigation/    Real navigation capability, backed by EasyNav + BehaviorTree.CPP
-│   ├── include|src/easyfleet_easynav_navigation/bt_nodes/{start_off,navigate,finish}.hpp|cpp
-│   ├── include|src/easyfleet_easynav_navigation/easynav_navigation_capability.hpp|cpp
-│   └── behavior_trees/navigate.xml
-└── easyfleet_example_deployments/   Fake capability implementations, example missions, launch/config
-    ├── include|src/easyfleet_example_deployments/{navigation,manipulation,perception}_fake_capability.hpp|cpp
-    ├── src/{navigation,manipulation,perception}_fake_capability_main.cpp
-    ├── src/main_{alone,collaboration,easynav}.cpp
-    ├── launch/{alone,collaboration,easynav}/    each with a top-level <scenario>_launch.yaml
-    │                                             including per-robot <robot>_launch.yaml files
-    │                                             (easynav also has a real-navigation variant:
-    │                                             easynav_gazebo_launch.yaml -> easynav_robot_gazebo_launch.yaml)
-    └── config/{alone,collaboration,easynav}/<robot>/   per-robot JSON/parameter files
+├── easyfleet_easynav_navigation/    Navigate BT.CPP node (plugin) -- the one resource EasyFleet provides for EasyNav
+│   └── include|src/easyfleet_easynav_navigation/bt_nodes/navigate.hpp|cpp  -> libeasynav_navigate_bt_node.so
+└── easyfleet_example_deployments/   Not a package -- a container for 3 example deployment packages
+    ├── easyfleet_fake_alone_deployment/            "alone" scenario: robot_1, all 3 fake capabilities
+    │   ├── include|src/easyfleet_fake_alone_deployment/{navigation,manipulation,perception}_fake_capability.hpp|cpp
+    │   ├── src/robot_node.cpp                       -> robot_node (the robot: hosts robot_1's capabilities)
+    │   ├── src/main_alone.cpp                       -> alone_mission_node (mission control, launched separately)
+    │   ├── launch/{alone_launch.yaml, robot_1_launch.yaml}
+    │   └── config/robot_1/                          per-robot JSON/parameter files, incl. robot_params.yaml
+    ├── easyfleet_fake_collaboration_deployment/    "collaboration" scenario: robot_1/2/3, same 3 fake capabilities
+    │   ├── (same include|src|launch shape as the alone package, its own copy)
+    │   ├── src/robot_node.cpp                       -> robot_node (reused unchanged across all 3 robots)
+    │   ├── src/main_collaboration.cpp               -> collaboration_mission_node
+    │   └── config/{robot_1,robot_2,robot_3}/
+    └── easyfleet_easynav_deployment/                "easynav" scenario: real navigation capability
+        ├── include|src/easyfleet_easynav_deployment/easynav_navigation_capability.hpp|cpp -> easynav_navigation_capability_node
+        ├── include|src/easyfleet_easynav_deployment/bt_nodes/{start_off,finish}.hpp|cpp    -> libstart_off_bt_node.so / libfinish_bt_node.so
+        ├── behavior_trees/navigate.xml                 references StartOff/Navigate/Finish by name
+        ├── src/main_easynav.cpp                        -> easynav_mission_node (mission control)
+        ├── launch/{easynav_launch.yaml -> easynav_robot_launch.yaml,             Dummy* plugins
+        │           easynav_gazebo_launch.yaml -> easynav_robot_gazebo_launch.yaml}  real navigation
+        └── config/easynav_robot/
 ```
+
+Every scenario's top-level launch file (`alone_launch.yaml`, `collaboration_launch.yaml`,
+`easynav_launch.yaml`, `easynav_gazebo_launch.yaml`) launches **both** halves
+of the deployment: the robot (one process per robot, hosting its
+capabilities) and mission control (the example mission script), the latter
+delayed a few seconds so the robot has finished activating first — see
+[Robot vs. mission control](#robot-vs-mission-control) below.
+
+`easyfleet_fake_alone_deployment` and `easyfleet_fake_collaboration_deployment`
+each carry their own full copy of the three fake capability implementations
+(library + executables + tests) — a deliberate choice to keep each
+deployment package fully self-contained rather than introduce a 4th shared
+package or an asymmetric dependency between the two.
 
 ## Extending EasyFleet
 
 Any integrator can add their own backend for a capability domain by
 subclassing the matching `easyfleet_core` base class in their own package,
-without touching `easyfleet_core` or `easyfleet_example_deployments`:
+without touching `easyfleet_core` or any of the example deployment
+packages:
 
 ```cpp
 // my_nav2_capability/include/my_nav2_capability/navigation_nav2_capability.hpp
@@ -107,10 +146,13 @@ class NavigationNav2Capability : public easyfleet_core::Capability<NavigationNav
 
 Two real reference implementations of this exact pattern exist in this
 repo, at opposite ends of the "mock vs. real" spectrum:
-- `easyfleet_example_deployments`'s `navigation_fake_capability.hpp`/`.cpp`
-  — a mock, simulates progress on a timer, no external dependency.
-- `easyfleet_easynav_navigation` — a real backend, driving an actual
-  EasyNav navigation stack (see [below](#the-easynav-backed-navigation-capability)).
+- `easyfleet_fake_alone_deployment`'s (or
+  `easyfleet_fake_collaboration_deployment`'s — identical copies)
+  `navigation_fake_capability.hpp`/`.cpp` — a mock, simulates progress on a
+  timer, no external dependency.
+- `easyfleet_easynav_deployment`'s `easynav_navigation_capability.hpp`/`.cpp`
+  — a real backend, driving an actual EasyNav navigation stack (see
+  [below](#the-easynav-backed-navigation-capability)).
 
 Either is a good template for a new `navigation_<your_backend>_capability`
 (or `manipulation_*`/`perception_*`) package. Everything else (announcing
@@ -119,22 +161,41 @@ on `/capabilities`, the heartbeat, preemption bookkeeping, discovery,
 
 ### The EasyNav-backed navigation capability
 
-`easyfleet_easynav_navigation` drives [EasyNav](../EasyNavigation) via
-`easynav::GoalManagerClient`, which only accepts raw poses — it has no
-concept of a named waypoint. So this capability owns that mapping itself:
-`navigation.waypoint_ids` + `navigation.waypoints.<id>.{frame_id,x,y,yaw}`
-parameters define a fixed set of named waypoints, and an incoming
-`Navigation` goal selects one via `parameters_json: {"goal_id": "<id>"}`
-(`target_pose`/`waypoints` on the goal itself go unused by this backend —
-see [Interfaces](#interfaces)).
+**How the two packages split responsibility.** `easynav::GoalManagerClient`
+only accepts raw poses — it has no concept of a named waypoint. Resolving
+that, and everything else about turning a ROS goal into a running
+BehaviorTree.CPP tree, is a manufacturer/integrator choice, not something
+EasyFleet prescribes — so `easyfleet_easynav_deployment` owns the actual
+capability class (`EasynavNavigationActionServer`), reusing only
+`easyfleet_easynav_navigation`'s **`Navigate`** node, the one resource
+EasyFleet itself provides for talking to EasyNav.
 
-Internally, each goal ticks a `behaviortree_cpp` v4 tree
-(`behavior_tree_xml`, default
-`behavior_trees/navigate.xml`) with three custom `StatefulActionNode`s:
-- **`StartOff`** / **`Finish`** — bookends, no ports, just take 2s and print
-  a message.
-- **`Navigate`** — reads the target waypoint id from its `goal_id` input
-  port, resolves it, and calls `GoalManagerClient::send_goal()`.
+Every BT node in this tree — including `Navigate` — is built as a
+[BT.CPP plugin](https://www.behaviortree.dev/docs/guides/plugins)
+(`BT_REGISTER_NODES`, a `SHARED` library with `BT_PLUGIN_EXPORT`), loaded
+by path at runtime via `BT::BehaviorTreeFactory::registerFromPlugin()`, not
+linked at compile time. This is what lets `easyfleet_easynav_deployment`
+reuse `easyfleet_easynav_navigation`'s `Navigate` node with zero
+compile-time coupling: the capability class never `#include`s it, it just
+loads whatever `.so` paths the `bt_plugins` parameter lists (see
+`launch/easynav_robot_launch.yaml`) — the same mechanism a *different*
+deployment package would use to reuse `Navigate` with its *own* bookend
+nodes and tree.
+
+- `navigation.waypoint_ids` + `navigation.waypoints.<id>.{frame_id,x,y,yaw}`
+  parameters (declared by `EasynavNavigationActionServer`) define a fixed
+  set of named waypoints, and an incoming `Navigation` goal selects one via
+  `parameters_json: {"goal_id": "<id>"}` (`target_pose`/`waypoints` on the
+  goal itself go unused by this backend — see [Interfaces](#interfaces)).
+- Each goal ticks a `behaviortree_cpp` v4 tree (`behavior_tree_xml`,
+  `easyfleet_easynav_deployment/behavior_trees/navigate.xml`) with three
+  `StatefulActionNode`s: **`StartOff`** / **`Finish`** (this package's own
+  fake bookends — no ports, just take 2s and print a message) and
+  **`Navigate`** (from `easyfleet_easynav_navigation`) — reads the target
+  waypoint id from its `goal_id` input port and resolves it against a
+  registry read off the *blackboard* (not constructor arguments — a
+  plugin's node type is only ever instantiated as `Navigate(name, config)`
+  by the factory), then calls `GoalManagerClient::send_goal()`.
 
 One `GoalManagerClient` is kept alive for the capability's whole lifetime
 (not recreated per ROS goal) — so when a new goal preempts an in-flight
@@ -145,7 +206,7 @@ A genuine cancellation (or capability shutdown), on the other hand, calls
 `GoalManagerClient::cancel()` before settling the goal — the robot actually
 stops, rather than continuing to navigate toward an abandoned goal.
 
-The `easynav` scenario in `easyfleet_example_deployments` runs this
+The `easynav` scenario, in `easyfleet_easynav_deployment`, runs this
 capability against real EasyNav (`easynav_system system_main`) configured
 with its own `Dummy*` plugins — see
 [Multi-robot deployments](#multi-robot-deployments).
@@ -196,33 +257,70 @@ that wraps exactly one ROS 2 action and, once activated:
   line around every goal it executes, so `ros2 launch` output stays legible
   even with several robots and capabilities running at once.
 
+## Robot vs. mission control
+
+Every deployment scenario is deliberately split into two kinds of process
+that never link against each other's implementation, only ever talk over
+ROS actions/topics:
+
+- **The robot** — one process per robot, hosting that robot's capabilities.
+  For `easyfleet_fake_alone_deployment`/`easyfleet_fake_collaboration_deployment`
+  this is `robot_node`: it reads a `capabilities` parameter (e.g.
+  `["navigation", "manipulation", "perception"]`, see
+  `config/<robot>/robot_params.yaml`) and constructs exactly that subset,
+  each its own `easyfleet_core::Capability` lifecycle node, sharing one
+  executor (safe: each capability's actual goal execution runs on its own
+  worker thread inside `easyfleet_core::ActionServerBase`, so one capability
+  can't starve another sharing the same process). The same `robot_node`
+  binary is reused unchanged across every robot in a scenario — only its
+  parameters differ. For `easyfleet_easynav_deployment`, "the robot" is
+  `easynav_system system_main` + `easynav_navigation_capability_node`
+  together (EasyNav itself is a separate package's process, so it can't be
+  merged into one binary the way the fake capabilities are).
+- **Mission control** — a separate process (`alone_mission_node`,
+  `collaboration_mission_node`, `easynav_mission_node`) that discovers the
+  robot's capabilities via `/capabilities` and drives them through
+  `CapabilityClient`, exactly the way any other operator/control-computer
+  program would. It has no compile-time dependency on any capability
+  implementation, only on `easyfleet_interfaces`' action types.
+
+Each scenario's top-level launch file starts both: the robot immediately,
+then mission control after a few seconds' delay (a `timer` action) so the
+robot has finished activating — and published its `/capabilities`
+announcement — before mission control's discovery window opens (see
+[Known limitations](#capability-discovery-is-a-one-shot-snapshot-not-a-live-view)
+for why that window is fixed and short). Either half can also be run
+standalone in its own terminal (see [Running](#running) below), which is
+how you'd poke at a robot by hand without a scripted mission at all.
+
 ## Multi-robot deployments
 
 Because a capability resolves its `robot`/`action_name` identity from its
-own ROS namespace, the same node binary (e.g. `navigation_fake_capability_node`)
-can be launched under any namespace and will announce itself correctly —
-`easyfleet_example_deployments` uses this to assemble several example
-scenarios, each self-contained under its own `launch/<scenario>/` +
-`config/<scenario>/`:
+own ROS namespace, the same `robot_node` binary can be launched under any
+namespace (with different `capabilities`/`config_subdir` parameters) and
+will announce itself correctly —
+each of the three packages under `easyfleet_example_deployments/` uses this
+to assemble one example scenario, self-contained under its own `launch/` +
+`config/`:
 
-| Scenario | Robot | Capabilities | Launch file |
-|---|---|---|---|
-| `alone` | `robot_1` | navigation, manipulation, perception (mock) | `easyfleet_example_deployments/launch/alone/alone_launch.yaml` |
-| `collaboration` | `robot_1` | navigation, perception (mock) | `easyfleet_example_deployments/launch/collaboration/collaboration_launch.yaml` |
-| `collaboration` | `robot_2` | navigation, perception (mock) | (same) |
-| `collaboration` | `robot_3` | navigation, manipulation (mock) | (same) |
-| `easynav` | `easynav_robot` | navigation (real EasyNav backend, `Dummy*` plugins) + `easynav_system system_main` | `easyfleet_example_deployments/launch/easynav/easynav_launch.yaml` |
-| `easynav` (real navigation) | *(unnamespaced)* | navigation (real EasyNav backend, real costmap/localizer/planner/controller) + `easynav_system system_main` + `rviz2` | `easyfleet_example_deployments/launch/easynav/easynav_gazebo_launch.yaml` |
+| Scenario | Package | Robot | Capabilities | Launch file |
+|---|---|---|---|---|
+| `alone` | `easyfleet_fake_alone_deployment` | `robot_1` | navigation, manipulation, perception (mock) | `launch/alone_launch.yaml` |
+| `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_1` | navigation, perception (mock) | `launch/collaboration_launch.yaml` |
+| `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_2` | navigation, perception (mock) | (same) |
+| `collaboration` | `easyfleet_fake_collaboration_deployment` | `robot_3` | navigation, manipulation (mock) | (same) |
+| `easynav` | `easyfleet_easynav_deployment` | `easynav_robot` | navigation (real EasyNav backend, `Dummy*` plugins) + `easynav_system system_main` | `launch/easynav_launch.yaml` |
+| `easynav` (real navigation) | `easyfleet_easynav_deployment` | *(unnamespaced)* | navigation (real EasyNav backend, real costmap/localizer/planner/controller) + `easynav_system system_main` + `rviz2` | `launch/easynav_gazebo_launch.yaml` |
 
 Each robot has its own per-robot launch file (e.g.
-`easyfleet_example_deployments/launch/collaboration/robot_3_launch.yaml`) that
-can also be run standalone, and its own JSON/parameter files under
-`easyfleet_example_deployments/config/<scenario>/<robot>/`. Namespacing keeps
-two robots that share a capability type (e.g. `navigation` on both
-`robot_1` and `robot_3`) fully distinct: their resolved `action_name`s
-(`/robot_1/navigation` vs. `/robot_3/navigation`) never collide, and each
-can be discovered and called independently. The real-navigation `easynav`
-variant is the one exception: it is deliberately **not** namespaced (see
+`easyfleet_fake_collaboration_deployment/launch/robot_3_launch.yaml`) that
+can also be run standalone, and its own JSON/parameter files under that
+package's `config/<robot>/`. Namespacing keeps two robots that share a
+capability type (e.g. `navigation` on both `robot_1` and `robot_3`) fully
+distinct: their resolved `action_name`s (`/robot_1/navigation` vs.
+`/robot_3/navigation`) never collide, and each can be discovered and called
+independently. The real-navigation `easynav` variant is the one exception:
+it is deliberately **not** namespaced (see
 [below](#easynav-real-navigation-scenario)), so it only ever runs one robot
 at a time.
 
@@ -233,12 +331,13 @@ at a time.
 | `easyfleet_core` | C++ library | `ActionServerBase<ActionT>`, `ActionClient<ActionT>`, `Capability<ActionServerT>`, `CapabilityClient<ActionT>`, plus `Navigation`/`Manipulation`/`PerceptionActionServerBase` |
 | `easyfleet_interfaces` | Interface package | `CapabilityDescription`, `CapabilityStatus`, and the `Navigation`/`Manipulation`/`Perception` actions |
 | `easyfleet_mission_manager` | C++ library | Capability discovery/print helpers and the generic `run_capability<ActionT>()` helper — no executables of its own |
-| `easyfleet_easynav_navigation` | C++ library + 1 executable | Real `navigation` capability backed by EasyNav + BehaviorTree.CPP (`easynav_navigation_capability_node`) |
-| `easyfleet_example_deployments` | C++ library + 6 executables + launch/config | The 3 fake capabilities (`navigation_fake_capability_node`, `manipulation_fake_capability_node`, `perception_fake_capability_node`), the 3 example missions (`alone_mission_node`, `collaboration_mission_node`, `easynav_mission_node`), and the `alone`/`collaboration`/`easynav` scenario assembly (the `easynav` scenario's robot itself runs executables from `easyfleet_easynav_navigation` and `easynav_system` instead of the fake capabilities) |
+| `easyfleet_easynav_navigation` | BT.CPP plugin library | The `Navigate` BT node (`libeasynav_navigate_bt_node.so`), loaded by path — no executable of its own |
+| `easyfleet_fake_alone_deployment` | C++ library + executables + launch/config | The `alone` scenario: all 3 fake capabilities hosted by `robot_node` on `robot_1`, + `alone_mission_node` (mission control) |
+| `easyfleet_fake_collaboration_deployment` | C++ library + executables + launch/config | The `collaboration` scenario: its own copy of the same 3 fake capabilities, `robot_node` reused across `robot_1`/`robot_2`/`robot_3`, + `collaboration_mission_node` |
+| `easyfleet_easynav_deployment` | C++ library + executables + launch/config | The `easynav` scenario: `easynav_navigation_capability_node` (this package's own capability class, reusing `easyfleet_easynav_navigation`'s `Navigate` plugin) + `easynav_mission_node`, plus `libstart_off_bt_node.so`/`libfinish_bt_node.so` and the launch/config assembly for both the `Dummy*`-plugin and real-navigation variants |
 
-Note: `easyfleet_example_deployments` intentionally keeps its own descriptive
-name rather than an `easyfleet_*` prefix, distinguishing it as an
-example/deployment package rather than core EasyFleet infrastructure.
+All three live under `easyfleet_example_deployments/`, a plain container
+directory (no `package.xml` of its own) rather than a package.
 
 ## Prerequisites
 
@@ -246,11 +345,11 @@ example/deployment package rather than core EasyFleet infrastructure.
   enter the environment with e.g. `pixi-set-ros rolling` before building).
 - `colcon` and the usual ROS 2 build tooling.
 - `nlohmann-json3-dev` (used by `easyfleet_mission_manager` and
-  `easyfleet_easynav_navigation` to parse JSON) and `behaviortree_cpp`
-  (used by `easyfleet_easynav_navigation`) — installed automatically by
-  `rosdep`/`pixi` below.
+  `easyfleet_easynav_deployment` to parse JSON) and `behaviortree_cpp`
+  (used by `easyfleet_easynav_navigation`/`easyfleet_easynav_deployment`)
+  — installed automatically by `rosdep`/`pixi` below.
 - [EasyNavigation](../EasyNavigation) (specifically `easynav_system`) built
-  in the same workspace — required by `easyfleet_easynav_navigation` and
+  in the same workspace — required by `easyfleet_easynav_deployment` and
   the `easynav` example scenario.
 - For the `easynav` (real navigation) scenario specifically:
   [easynav_indoor_testcase](../easynav_indoor_testcase) built in the same
@@ -273,26 +372,25 @@ source install/setup.bash
 ## Running
 
 Each capability node **activates itself on startup** — no external lifecycle
-manager or `ros2 lifecycle set` calls are needed. Bring up a scenario from
-`easyfleet_example_deployments`, then run the matching example mission,
-also in `easyfleet_example_deployments`.
+manager or `ros2 lifecycle set` calls are needed. Each scenario's top-level
+launch file brings up both the robot and mission control together (see
+[Robot vs. mission control](#robot-vs-mission-control)) — one command, one
+terminal.
 
 ### `alone` scenario
 
 A single robot, `robot_1`, carrying all three capabilities, all namespaced
-under `/robot_1`.
-
-Terminal 1:
+under `/robot_1`, hosted together by `robot_node`.
 
 ```bash
-ros2 launch easyfleet_example_deployments alone_launch.yaml
+ros2 launch easyfleet_fake_alone_deployment alone_launch.yaml
 ```
 
-Terminal 2, once it's up:
-
-```bash
-ros2 run easyfleet_example_deployments alone_mission_node
-```
+(To run just the robot, without mission control automatically following —
+e.g. to poke at it by hand instead — use
+`ros2 launch easyfleet_fake_alone_deployment robot_1_launch.yaml`, or
+`ros2 run easyfleet_fake_alone_deployment alone_mission_node` separately
+once it's up.)
 
 `alone_mission_node` will, in order, print what it's doing as it happens:
 
@@ -307,19 +405,17 @@ ros2 run easyfleet_example_deployments alone_mission_node
 ### `collaboration` scenario
 
 Three robots: `robot_1` and `robot_2` (navigation + perception each), and
-`robot_3` (navigation + manipulation).
-
-Terminal 1:
-
-```bash
-ros2 launch easyfleet_example_deployments collaboration_launch.yaml
-```
-
-Terminal 2, once it's up:
+`robot_3` (navigation + manipulation) — each hosted by its own `robot_node`
+process (same binary, different `capabilities`/`config_subdir` parameters).
 
 ```bash
-ros2 run easyfleet_example_deployments collaboration_mission_node
+ros2 launch easyfleet_fake_collaboration_deployment collaboration_launch.yaml
 ```
+
+(To run just the robots, without mission control automatically following,
+or a single robot standalone — e.g.
+`ros2 launch easyfleet_fake_collaboration_deployment robot_3_launch.yaml`
+— see [Robot vs. mission control](#robot-vs-mission-control).)
 
 `collaboration_mission_node` runs a two-phase mission:
 
@@ -335,29 +431,27 @@ ros2 run easyfleet_example_deployments collaboration_mission_node
 ### `easynav` scenario
 
 A single robot, `easynav_robot`, whose `navigation` capability is the real
-EasyNav-backed one (`easyfleet_easynav_navigation`), not the mock — EasyNav
+EasyNav-backed one (`easyfleet_easynav_deployment`), not the mock — EasyNav
 itself (`easynav_system system_main`) runs configured with its own
 `Dummy*` plugins (see
 [The EasyNav-backed navigation capability](#the-easynav-backed-navigation-capability)).
 
-Terminal 1:
-
 ```bash
-ros2 launch easyfleet_example_deployments easynav_launch.yaml
+ros2 launch easyfleet_easynav_deployment easynav_launch.yaml
 ```
 
-Terminal 2, once it's up:
+This launches both the robot (`easynav_system system_main` +
+`easynav_navigation_capability_node`) and, a few seconds later,
+`easynav_mission_node`. It doesn't hardcode a robot name — it finds
+whichever `navigation` capability is currently active (see
+[below](#easynav-real-navigation-scenario) for the other, unnamespaced
+variant it also works against), then, in order, prints what it's doing as
+it happens:
 
-```bash
-ros2 run easyfleet_example_deployments easynav_mission_node
-```
-
-`easynav_mission_node` will, in order, print what it's doing as it happens:
-
-1. **Discover** `easynav_robot`'s `navigation` capability and print its full
+1. **Discover** the active `navigation` capability and print its full
    description (from its JSON on `/capabilities`).
 2. Send it to the `dock` waypoint (one of the three configured in
-   `config/easynav/easynav_robot/navigation_params.yaml` — `dock`,
+   `config/easynav_robot/navigation_params.yaml` — `dock`,
    `kitchen`, `charging_station`) for up to 10 seconds. With the `Dummy*`
    EasyNav plugins, the goal is accepted and feedback keeps arriving, but —
    same as `perception_fake_capability` — it never completes on its own
@@ -369,7 +463,7 @@ ros2 run easyfleet_example_deployments easynav_mission_node
    without stopping first — demonstrating EasyNav-level preemption via the
    capability's persistent `GoalManagerClient`.
 
-To poke at it by hand instead, in Terminal 2:
+To poke at it by hand instead, from another terminal:
 
 ```bash
 ros2 action send_goal /easynav_robot/navigation easyfleet_interfaces/action/Navigation \
@@ -386,7 +480,7 @@ The same `navigation` capability, but with EasyNav itself configured for
 *real* navigation instead of the `Dummy*` plugins: `AMCLLocalizer` +
 `CostmapMapsManager` (on `src/easynav_indoor_testcase`'s `home2` map) +
 `CostmapPlanner` + `RegulatedPurePursuitController` (see
-`config/easynav/easynav_robot/easynav_system.costmap_rpp.params.yaml`,
+`config/easynav_robot/easynav_system.costmap_rpp.params.yaml`,
 copied from that package's `costmap.rpp.params.yaml`). Goals sent here
 actually complete once the robot reaches the waypoint. For use against a
 real robot, or a Gazebo simulation of one — **start that separately**
@@ -402,30 +496,27 @@ unnamespaced alongside it so its `GoalManagerClient`'s relative
 `GoalManager`. That also means it only ever runs one robot at a time.
 
 The three configured waypoints (`dock`, `kitchen`, `charging_station`, in
-`config/easynav/easynav_robot/navigation_params.yaml`) are real, reachable
+`config/easynav_robot/navigation_params.yaml`) are real, reachable
 points on the `home2` map, not placeholders.
 
-Terminal 1 — with the robot/Gazebo simulation already running and
-publishing `scan_raw`/odometry/TF:
+With the robot/Gazebo simulation already running and publishing
+`scan_raw`/odometry/TF:
 
 ```bash
-ros2 launch easyfleet_example_deployments easynav_gazebo_launch.yaml
+ros2 launch easyfleet_easynav_deployment easynav_gazebo_launch.yaml
 ```
 
-This also opens an RViz window (same config as
-`easynav_costmap_rpp.launch.py`'s).
+This launches the robot (`system_main` + the navigation capability),
+opens an RViz window (same config as `easynav_costmap_rpp.launch.py`'s),
+and, a few seconds later, `easynav_mission_node` (same executable as
+above; it auto-detects which variant is running).
 
-Terminal 2:
+To poke at it by hand instead, from another terminal:
 
 ```bash
 ros2 action send_goal /navigation easyfleet_interfaces/action/Navigation \
   "{parameters_json: '{\"goal_id\": \"dock\"}'}" --feedback
 ```
-
-(No `easynav_gazebo_mission_node` yet — poke at it by hand with
-`ros2 action send_goal`/`ros2 action cancel` as above, or reuse
-`easynav_mission_node`'s pattern against `/navigation` instead of
-`/easynav_robot/navigation`.)
 
 ### Poking at a capability by hand
 
@@ -457,7 +548,7 @@ early.
 ## Running the tests
 
 ```bash
-colcon test --packages-select easyfleet_core easyfleet_interfaces easyfleet_mission_manager easyfleet_easynav_navigation easyfleet_example_deployments
+colcon test --packages-select easyfleet_core easyfleet_interfaces easyfleet_mission_manager easyfleet_easynav_navigation easyfleet_fake_alone_deployment easyfleet_fake_collaboration_deployment easyfleet_easynav_deployment
 colcon test-result --verbose
 ```
 

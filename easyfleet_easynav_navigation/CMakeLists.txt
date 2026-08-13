@@ -10,72 +10,44 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(lifecycle_msgs REQUIRED)
-find_package(easyfleet_core REQUIRED)
 find_package(easynav_system REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(nlohmann_json REQUIRED)
 
-add_library(${PROJECT_NAME}
-  src/${PROJECT_NAME}/start_off.cpp
+# The Navigate BT node: the one resource this package provides for use by
+# EasyNav, built as a BT.CPP plugin (BT_REGISTER_NODES, loaded by path via
+# BT::BehaviorTreeFactory::registerFromPlugin()) rather than a library a
+# capability links against at compile time -- any deployment package can
+# load it by path alongside its own bookend nodes without a compile-time
+# dependency on this package's implementation.
+add_library(easynav_navigate_bt_node SHARED
   src/${PROJECT_NAME}/navigate.cpp
-  src/${PROJECT_NAME}/finish.cpp
-  src/${PROJECT_NAME}/easynav_navigation_capability.cpp
 )
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(easynav_navigate_bt_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC
-  rclcpp::rclcpp
-  rclcpp_action::rclcpp_action
-  rclcpp_lifecycle::rclcpp_lifecycle
-  easyfleet_core::easyfleet_core
-  easynav_system::easynav_system
+target_link_libraries(easynav_navigate_bt_node PUBLIC
   behaviortree_cpp::behaviortree_cpp
+  easynav_system::easynav_system
   geometry_msgs::geometry_msgs
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE
-  nlohmann_json::nlohmann_json
-)
-
-add_executable(easynav_navigation_capability_node src/easynav_navigation_capability_main.cpp)
-target_link_libraries(easynav_navigation_capability_node
-  ${PROJECT_NAME}
-  rclcpp::rclcpp
-  lifecycle_msgs::lifecycle_msgs
-)
+target_compile_definitions(easynav_navigate_bt_node PRIVATE BT_PLUGIN_EXPORT)
 
 install(
   DIRECTORY include/
   DESTINATION include
 )
 install(
-  DIRECTORY behavior_trees
-  DESTINATION share/${PROJECT_NAME}
-)
-install(
-  TARGETS ${PROJECT_NAME}
+  TARGETS easynav_navigate_bt_node
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
-install(
-  TARGETS easynav_navigation_capability_node
-  DESTINATION lib/${PROJECT_NAME}
-)
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
-  rclcpp
-  rclcpp_action
-  rclcpp_lifecycle
-  easyfleet_core
   easynav_system
   behaviortree_cpp
   geometry_msgs
@@ -92,6 +64,7 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 
+  find_package(ament_cmake_gtest REQUIRED)
   add_subdirectory(test)
 endif()
 

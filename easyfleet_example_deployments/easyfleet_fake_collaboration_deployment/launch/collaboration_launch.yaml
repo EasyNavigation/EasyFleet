@@ -1,0 +1,44 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# "collaboration" deployment scenario: launches all three robots plus
+# mission control.
+#   - robot_1: perception, navigation
+#   - robot_2: perception, navigation
+#   - robot_3: navigation, manipulation
+# Each robot is namespaced independently (see the per-robot launch files),
+# so their capabilities never collide and can also be brought up on their
+# own (e.g. `ros2 launch deployments robot_1_launch.yaml`).
+#
+# collaboration_mission_node is delayed a few seconds so all three robots
+# have finished activating (and published their /capabilities
+# announcements) before mission control's discovery window (see
+# easyfleet_mission_manager::discover_capabilities()) opens -- launching
+# everything at literally the same instant risks discovering nothing.
+launch:
+  - include:
+      file: "$(find-pkg-share easyfleet_fake_collaboration_deployment)/launch/robot_1_launch.yaml"
+  - include:
+      file: "$(find-pkg-share easyfleet_fake_collaboration_deployment)/launch/robot_2_launch.yaml"
+  - include:
+      file: "$(find-pkg-share easyfleet_fake_collaboration_deployment)/launch/robot_3_launch.yaml"
+
+  - timer:
+      period: 3.0
+      children:
+        - node:
+            pkg: "easyfleet_fake_collaboration_deployment"
+            exec: "collaboration_mission_node"
+            output: "screen"

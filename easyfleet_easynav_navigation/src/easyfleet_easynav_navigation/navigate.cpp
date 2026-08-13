@@ -50,15 +50,15 @@ void reset_if_terminal(const easynav::GoalManagerClient::SharedPtr & gm_client)
 
 }  // namespace
 
-Navigate::Navigate(
-  const std::string & name,
-  const BT::NodeConfig & config,
-  std::shared_ptr<const std::map<std::string, geometry_msgs::msg::PoseStamped>> waypoints,
-  easynav::GoalManagerClient::SharedPtr gm_client)
-: BT::StatefulActionNode(name, config),
-  waypoints_(std::move(waypoints)),
-  gm_client_(std::move(gm_client))
+Navigate::Navigate(const std::string & name, const BT::NodeConfig & config)
+: BT::StatefulActionNode(name, config)
 {
+  if (!config.blackboard->get("waypoints", waypoints_)) {
+    throw BT::RuntimeError("Navigate: missing 'waypoints' entry on the blackboard");
+  }
+  if (!config.blackboard->get("gm_client", gm_client_)) {
+    throw BT::RuntimeError("Navigate: missing 'gm_client' entry on the blackboard");
+  }
 }
 
 BT::PortsList Navigate::providedPorts()
@@ -129,3 +129,9 @@ void Navigate::onHalted()
 }
 
 }  // namespace easyfleet_easynav_navigation
+
+#include "behaviortree_cpp/bt_factory.h"
+BT_REGISTER_NODES(factory)
+{
+  factory.registerNodeType<easyfleet_easynav_navigation::Navigate>("Navigate");
+}

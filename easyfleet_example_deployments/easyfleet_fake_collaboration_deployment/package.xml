@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_fake_collaboration_deployment</name>
+  <version>0.1.0</version>
+  <description>
+    The "collaboration" deployment scenario: three robots working together
+    (robot_1 and robot_2 each carry navigation + perception, robot_3
+    carries navigation + manipulation) out of fake/mock capabilities
+    (reference implementations of the easyfleet_core
+    NavigationActionServerBase / ManipulationActionServerBase /
+    PerceptionActionServerBase classes), each robot's capabilities hosted
+    together in one process (robot_node) -- kept separate from the example
+    mission control program (collaboration_mission_node, built on
+    easyfleet_mission_manager), which only ever talks to them over their
+    ROS actions. Also ships the launch files and JSON/parameter
+    configuration each is started with.
+  </description>
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easyfleet_interfaces</depend>
+  <depend>easyfleet_mission_manager</depend>
+  <depend>vision_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>ament_index_cpp</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch_yaml</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>geometry_msgs</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

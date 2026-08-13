@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_easynav_deployment</name>
+  <version>0.1.0</version>
+  <description>
+    The "easynav" deployment scenario: this package's own
+    easyfleet_core::NavigationActionServerBase subclass, driving EasyNav
+    (easynav_system::GoalManagerClient) through a BehaviorTree.CPP tree
+    (StartOff -&gt; Navigate -&gt; Finish). Owns the capability implementation
+    itself -- how a robot's navigation capability turns waypoints and BT
+    plugins into a running ROS action is a manufacturer/integrator choice
+    -- reusing only easyfleet_easynav_navigation's Navigate BT.CPP plugin
+    (loaded by path via the `bt_plugins` parameter, alongside this
+    package's own fake StartOff/Finish plugins). Two launch variants:
+    easynav_launch.yaml runs EasyNav (easynav_system system_main)
+    configured with its own Dummy* plugins, namespaced under easynav_robot;
+    easynav_gazebo_launch.yaml runs it configured for real navigation
+    (costmap localizer/maps-manager/planner + regulated pure-pursuit
+    controller), unnamespaced, for use with a real robot or a Gazebo
+    simulation of one. Also ships the example mission script built on
+    easyfleet_mission_manager and the launch files and JSON/parameter
+    configuration each variant is started with.
+  </description>
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easyfleet_mission_manager</depend>
+  <depend>easynav_system</depend>
+  <depend>behaviortree_cpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nlohmann-json-dev</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch_yaml</exec_depend>
+  <exec_depend>easyfleet_easynav_navigation</exec_depend>
+  <exec_depend>easynav_indoor_testcase</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -8,9 +8,11 @@
     manager: capability discovery (via /capabilities and
     /capabilities_status), pretty-printing helpers, and a generic
     run_capability() helper built on easyfleet_core::CapabilityClient.
-    Ships no executables of its own -- see easyfleet_example_deployments
+    Ships no executables of its own -- see easyfleet_fake_alone_deployment,
+    easyfleet_fake_collaboration_deployment and easyfleet_easynav_deployment
     for example mission scripts (alone_mission_node,
-    collaboration_mission_node) built on top of this library.
+    collaboration_mission_node, easynav_mission_node) built on top of this
+    library.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>

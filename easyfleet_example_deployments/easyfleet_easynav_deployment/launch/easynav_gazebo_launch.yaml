@@ -1,0 +1,39 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Real-navigation variant of the "easynav" deployment scenario: launches
+# both the robot (easynav_robot_gazebo_launch.yaml -- real EasyNav, costmap
+# localizer/maps-manager/planner + regulated pure-pursuit controller,
+# instead of the Dummy* plugins used by easynav_launch.yaml, plus rviz2)
+# and mission control (easynav_mission_node), for testing against a real
+# robot or Gazebo simulation of one -- start that separately, *before* this
+# launch file, so the robot is already localized and ready to move by the
+# time mission control's first goal is sent.
+#
+# easynav_mission_node is delayed a few seconds so the capability node has
+# finished activating (and published its /capabilities announcement)
+# before mission control's discovery window (see
+# easyfleet_mission_manager::discover_capabilities()) opens.
+launch:
+  - include:
+      file: "$(find-pkg-share easyfleet_easynav_deployment)/launch/easynav_robot_gazebo_launch.yaml"
+
+  - timer:
+      period: 3.0
+      children:
+        - node:
+            pkg: "easyfleet_easynav_deployment"
+            exec: "easynav_mission_node"
+            output: "screen"
