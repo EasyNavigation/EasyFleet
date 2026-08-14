@@ -47,6 +47,20 @@ void RobotHandle::run_capability(
   const typename ActionT::Goal & goal,
   std::chrono::seconds timeout)
 {
+  if (!session_) {
+    // Never add_robot()-ed to a FleetSession -- capabilities_ is
+    // unconditionally empty in that case too (only FleetSession::add_robot()
+    // can populate it, and it always attach()es first), so this would
+    // otherwise be silently swallowed by the "not active" branch below,
+    // indistinguishable from a real, already-attached robot that simply
+    // hasn't announced this capability yet. A caller bug, not a runtime
+    // condition to tolerate quietly.
+    throw std::logic_error(
+            "RobotHandle::run_capability(\"" + capability_type + "\", ...): this handle was "
+            "never added to a FleetSession (call FleetSession::add_robot()/"
+            "SimpleController::add_robot() first).");
+  }
+
   const auto it = std::find_if(
     capabilities_.begin(), capabilities_.end(),
     [&](const easyfleet_mission_manager::CapabilityInfo & info) {
@@ -63,9 +77,6 @@ void RobotHandle::run_capability(
 
   auto running_it = running_.find(capability_type);
   if (running_it == running_.end()) {
-    if (!session_) {
-      return;
-    }
     auto running = std::make_unique<Running>(
       *session_->node(), it->action_name, name_, capability_type,
       session_->status_marker_publisher());
