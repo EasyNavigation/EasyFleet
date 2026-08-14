@@ -62,7 +62,7 @@ int main(int argc, char ** argv)
   // 1 & 2: discover active capabilities and show their descriptions.
   print_section("Phase 1: Discovering capabilities");
   print_step("listening on /capabilities and /capabilities_status ...");
-  auto capabilities = discover_capabilities(node.get());
+  auto capabilities = discover_capabilities(*node);
 
   if (capabilities.empty()) {
     print_step("no capabilities detected. Is anything published on /capabilities?");
@@ -77,9 +77,9 @@ int main(int argc, char ** argv)
     }
   }
 
-  const auto * navigation_info = find_robot_capability(capabilities, kRobot, "navigation");
-  const auto * manipulation_info = find_robot_capability(capabilities, kRobot, "manipulation");
-  const auto * perception_info = find_robot_capability(capabilities, kRobot, "perception");
+  const auto navigation_info = find_robot_capability(capabilities, kRobot, "navigation");
+  const auto manipulation_info = find_robot_capability(capabilities, kRobot, "manipulation");
+  const auto perception_info = find_robot_capability(capabilities, kRobot, "perception");
 
   // Each CapabilityClient is created against the *resolved* action name
   // (e.g. "/robot_1/navigation"), which is what robot_1 actually announced
@@ -87,17 +87,17 @@ int main(int argc, char ** argv)
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr navigation_client;
   if (navigation_info) {
     navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), navigation_info->action_name);
+      *node, navigation_info->get().action_name);
   }
   easyfleet_core::CapabilityClient<Manipulation>::SharedPtr manipulation_client;
   if (manipulation_info) {
     manipulation_client = easyfleet_core::CapabilityClient<Manipulation>::create(
-      node.get(), manipulation_info->action_name);
+      *node, manipulation_info->get().action_name);
   }
   easyfleet_core::CapabilityClient<Perception>::SharedPtr perception_client;
   if (perception_info) {
     perception_client = easyfleet_core::CapabilityClient<Perception>::create(
-      node.get(), perception_info->action_name);
+      *node, perception_info->get().action_name);
   }
 
   // 3: run each active capability sequentially, one at a time.
@@ -108,24 +108,25 @@ int main(int argc, char ** argv)
     "s or until it finishes on its own.");
   if (navigation_client) {
     run_capability<Navigation>(
-      navigation_client, navigation_info->action_name, make_navigation_goal(), kRunTimeout,
-      make_navigation_feedback_printer(navigation_info->action_name));
+      navigation_client, navigation_info->get().action_name, make_navigation_goal(), kRunTimeout,
+      make_navigation_feedback_printer(navigation_info->get().action_name));
   } else {
     print_step("[navigation] not active on '" + kRobot + "', skipping.");
   }
 
   if (manipulation_client) {
     run_capability<Manipulation>(
-      manipulation_client, manipulation_info->action_name, make_manipulation_goal(), kRunTimeout,
-      make_manipulation_feedback_printer(manipulation_info->action_name));
+      manipulation_client, manipulation_info->get().action_name, make_manipulation_goal(),
+      kRunTimeout,
+      make_manipulation_feedback_printer(manipulation_info->get().action_name));
   } else {
     print_step("[manipulation] not active on '" + kRobot + "', skipping.");
   }
 
   if (perception_client) {
     run_capability<Perception>(
-      perception_client, perception_info->action_name, make_perception_goal(), kRunTimeout,
-      make_perception_feedback_printer(perception_info->action_name));
+      perception_client, perception_info->get().action_name, make_perception_goal(), kRunTimeout,
+      make_perception_feedback_printer(perception_info->get().action_name));
   } else {
     print_step("[perception] not active on '" + kRobot + "', skipping.");
   }
@@ -141,24 +142,26 @@ int main(int argc, char ** argv)
     parallel_threads.emplace_back(
       [&navigation_client, &navigation_info] {
         run_capability<Navigation>(
-          navigation_client, navigation_info->action_name, make_navigation_goal(), kRunTimeout,
-          make_navigation_feedback_printer(navigation_info->action_name));
+          navigation_client, navigation_info->get().action_name, make_navigation_goal(),
+          kRunTimeout,
+          make_navigation_feedback_printer(navigation_info->get().action_name));
       });
   }
   if (manipulation_client) {
     parallel_threads.emplace_back(
       [&manipulation_client, &manipulation_info] {
         run_capability<Manipulation>(
-          manipulation_client, manipulation_info->action_name, make_manipulation_goal(),
-          kRunTimeout, make_manipulation_feedback_printer(manipulation_info->action_name));
+          manipulation_client, manipulation_info->get().action_name, make_manipulation_goal(),
+          kRunTimeout, make_manipulation_feedback_printer(manipulation_info->get().action_name));
       });
   }
   if (perception_client) {
     parallel_threads.emplace_back(
       [&perception_client, &perception_info] {
         run_capability<Perception>(
-          perception_client, perception_info->action_name, make_perception_goal(), kRunTimeout,
-          make_perception_feedback_printer(perception_info->action_name));
+          perception_client, perception_info->get().action_name, make_perception_goal(),
+          kRunTimeout,
+          make_perception_feedback_printer(perception_info->get().action_name));
       });
   }
   if (parallel_threads.empty()) {

@@ -48,7 +48,7 @@ class ManipulationFakeActionServer : public easyfleet_core::ManipulationActionSe
 {
 public:
   ManipulationFakeActionServer(
-    rclcpp_lifecycle::LifecycleNode * node,
+    rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
 
 protected:

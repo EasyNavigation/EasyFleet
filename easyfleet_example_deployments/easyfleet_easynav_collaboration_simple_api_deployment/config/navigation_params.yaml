@@ -1,0 +1,81 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Parameters for the "navigation" capability, shared by both robot_1 and
+# robot_2 (see launch/robot_1_launch.yaml / robot_2_launch.yaml, which both
+# load this same file onto their own easynav_navigation_capability_node
+# instance -- copied unchanged from
+# easyfleet_easynav_deployment/config/easynav_robot/navigation_params.yaml,
+# same executable, reused directly). `capabilities_file` and
+# `behavior_tree_xml` are supplied by those launch files, not set here.
+#
+# Waypoints match src/easynav_indoor_testcase's "home2" map/world (see
+# config/robot_1|robot_2/easynav_system.costmap_rpp.params.yaml's
+# map_path_file), so they are valid, reachable targets, not placeholders.
+# Each waypoint's frame_id ("map", unprefixed here) is namespace-prefixed
+# automatically by EasynavNavigationActionServer's constructor (using
+# whichever namespace, "robot_1" or "robot_2", the capability itself ends
+# up under) -- no per-robot copy of this file is needed just for that.
+#
+# Uses the "/**" wildcard (rather than a bare "navigation:" node name) so
+# this file matches the node regardless of namespace -- a bare node name
+# only matches a node's *unqualified* name and silently drops every
+# parameter this file sets once namespaced (arrays most noticeably, since
+# their code-side default is an empty vector).
+/**:
+  ros__parameters:
+    navigation:
+      allow_preemption: true
+      tick_rate_hz: 10.0
+      waypoint_ids: ["dock", "kitchen", "kitchen_standby", "charging_station", "robot_1_home", "robot_2_home"]
+      waypoints:
+        dock:
+          frame_id: "map"
+          x: 0.0
+          y: 2.5
+          yaw: 1.57
+        kitchen:
+          frame_id: "map"
+          x: 5.4
+          y: -3.0
+          yaw: 0.0
+        # 1m short of "kitchen" along its own approach direction, facing it
+        # (same yaw) -- used by main_easynav_collaboration.cpp to have
+        # robot_1 clear space at "kitchen" for robot_2 while staying nearby
+        # with its perception capability still active.
+        kitchen_standby:
+          frame_id: "map"
+          x: 3.4
+          y: -3.0
+          yaw: 0.0
+        charging_station:
+          frame_id: "map"
+          x: -7.86
+          y: -0.15
+          yaw: -3.14
+        # Each robot's own Gazebo spawn pose (see
+        # easynav_playground_kobuki/config/multirobot_config.yaml), used by
+        # main_easynav_collaboration.cpp to send each robot back to where it
+        # started at the end of the mission.
+        robot_1_home:
+          frame_id: "map"
+          x: 0.0
+          y: 0.0
+          yaw: 0.0
+        robot_2_home:
+          frame_id: "map"
+          x: 2.0
+          y: 1.0
+          yaw: 0.0

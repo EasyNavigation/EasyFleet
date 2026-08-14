@@ -72,12 +72,14 @@ public:
 
   using ResponseCallback = std::function<void (const Response &)>;
 
-  /// @param node Node on whose behalf the capability is called.
+  /// @param node Node on whose behalf the capability is called. Only used
+  ///   to construct the underlying `ActionClient` (never stored), so a
+  ///   reference -- never null, unlike a pointer -- is all this needs.
   /// @param capability_name Name of the capability to call (its action name).
   /// @param default_wait_timeout Timeout used by the no-argument overload of
   ///   `wait_for_capability()`.
   static SharedPtr create(
-    rclcpp::Node * node,
+    rclcpp::Node & node,
     const std::string & capability_name,
     std::chrono::milliseconds default_wait_timeout = std::chrono::seconds(5));
 

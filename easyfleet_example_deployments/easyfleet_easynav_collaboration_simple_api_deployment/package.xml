@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_easynav_collaboration_simple_api_deployment</name>
+  <version>0.1.0</version>
+  <description>
+    The "simple API" mirror of easyfleet_easynav_collaboration_deployment:
+    the exact same two-robot scenario (real EasyNav navigation on both
+    robots, robot_1 also carrying a fake perception capability, robot_2 a
+    fake manipulation one, same Gazebo world/map, same launch/config/rviz
+    shape), but robot_node.cpp is written against
+    easyfleet_core::Deployment's simpler API instead of the sibling
+    package's hand-rolled lifecycle dance -- see that package's own
+    robot_node.cpp for the one being mirrored, and refactor.md at the
+    workspace root for the design history. The two packages are meant to
+    be interchangeable at the launch level: point a launch file at this
+    package instead and everything else behaves the same. The mission
+    script (main_easynav_collaboration.cpp) is still a straight copy of
+    the sibling package's own (old API) for now -- see that file's own
+    header comment.
+  </description>
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easyfleet_interfaces</depend>
+  <depend>easyfleet_mission_manager</depend>
+  <depend>vision_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>ament_index_cpp</depend>
+  <depend>pluginlib</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch_yaml</exec_depend>
+  <exec_depend>easyfleet_easynav_deployment</exec_depend>
+  <exec_depend>easyfleet_easynav_navigation</exec_depend>
+  <exec_depend>easynav_system</exec_depend>
+  <exec_depend>easynav_indoor_testcase</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>geometry_msgs</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

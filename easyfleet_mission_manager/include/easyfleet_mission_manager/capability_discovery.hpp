@@ -34,7 +34,7 @@ namespace easyfleet_mission_manager
 /// `node` must already be part of an executor that is being spun on another
 /// thread: this function only subscribes and waits, it does not spin.
 std::vector<CapabilityInfo> discover_capabilities(
-  rclcpp::Node * node,
+  rclcpp::Node & node,
   std::chrono::milliseconds window = std::chrono::milliseconds(2500));
 
 }  // namespace easyfleet_mission_manager

@@ -79,12 +79,14 @@ public:
     std::function<void (bool accepted, const rclcpp_action::GoalUUID & goal_id)>;
 
   /// @param parent_node Node on whose behalf the action is called; only used
-  ///   to inherit its namespace and to derive a name for the internal node.
+  ///   to inherit its namespace and to derive a name for the internal node
+  ///   (never stored), so a reference -- never null, unlike a pointer -- is
+  ///   all this needs.
   /// @param action_name Name of the action to call.
   /// @param default_server_timeout Timeout used by the no-argument overload
   ///   of `wait_for_server()`.
   static SharedPtr create(
-    rclcpp::Node * parent_node,
+    rclcpp::Node & parent_node,
     const std::string & action_name,
     std::chrono::milliseconds default_server_timeout = std::chrono::seconds(5));
 
@@ -131,7 +133,7 @@ public:
 
 private:
   ActionClient(
-    rclcpp::Node * parent_node,
+    rclcpp::Node & parent_node,
     const std::string & action_name,
     std::chrono::milliseconds default_server_timeout);
 

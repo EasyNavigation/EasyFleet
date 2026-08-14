@@ -89,22 +89,24 @@ public:
 
 protected:
   /// @param node Node (or lifecycle node) that will host the action server.
-  ///   Must outlive this object.
+  ///   Only used here, to extract its interfaces below (each kept as its
+  ///   own `SharedPtr` member) -- not stored itself, so a reference (never
+  ///   null, unlike a pointer) is all this needs; must outlive this object.
   /// @param action_name Name under which the action is advertised.
   /// @param default_allow_preemption Initial value of the preemption parameter,
   ///   used only if the parameter has not already been declared/set (e.g. from
   ///   a YAML params file or the command line).
   template<typename NodeT>
   explicit ActionServerBase(
-    NodeT * node,
+    NodeT & node,
     const std::string & action_name,
     bool default_allow_preemption = true)
   : ActionServerBase(
-      node->get_node_base_interface(),
-      node->get_node_clock_interface(),
-      node->get_node_logging_interface(),
-      node->get_node_parameters_interface(),
-      node->get_node_waitables_interface(),
+      node.get_node_base_interface(),
+      node.get_node_clock_interface(),
+      node.get_node_logging_interface(),
+      node.get_node_parameters_interface(),
+      node.get_node_waitables_interface(),
       action_name,
       default_allow_preemption)
   {

@@ -43,7 +43,7 @@ class NavigationFakeActionServer : public easyfleet_core::NavigationActionServer
 {
 public:
   NavigationFakeActionServer(
-    rclcpp_lifecycle::LifecycleNode * node,
+    rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
 
 protected:

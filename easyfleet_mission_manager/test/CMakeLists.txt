@@ -13,3 +13,13 @@ target_link_libraries(test_capability_discovery
   ${PROJECT_NAME}
   GTest::gtest
 )
+
+# TEMPORARY: syntax/type-check only for the not-yet-implemented
+# RobotHandle/SimpleController headers -- remove once they have real
+# bodies + real tests.
+ament_add_gtest(scratch_syntax_check scratch_syntax_check.cpp
+  TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES)
+target_link_libraries(scratch_syntax_check
+  ${PROJECT_NAME}
+  GTest::gtest
+)

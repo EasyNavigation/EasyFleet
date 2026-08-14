@@ -29,7 +29,9 @@
 // namespaced and active at once.
 
 #include <chrono>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -69,10 +71,10 @@ Navigation::Goal make_easynav_goal(const std::string & waypoint_id)
 /// active at once -- e.g. two namespaced robots both running this
 /// deployment -- warns and picks the first, since this demo mission only
 /// ever drives one robot.
-const CapabilityInfo * find_navigation_capability(
+std::optional<std::reference_wrapper<const CapabilityInfo>> find_navigation_capability(
   const std::vector<CapabilityInfo> & capabilities)
 {
-  const CapabilityInfo * found = nullptr;
+  std::optional<std::reference_wrapper<const CapabilityInfo>> found;
   for (const auto & info : capabilities) {
     if (info.capability != "navigation" || !info.active) {
       continue;
@@ -80,10 +82,10 @@ const CapabilityInfo * find_navigation_capability(
     if (found) {
       print_step(
         "warning: more than one active 'navigation' capability found (also '" +
-        info.action_name + "') -- using '" + found->action_name + "'.");
+        info.action_name + "') -- using '" + found->get().action_name + "'.");
       continue;
     }
-    found = &info;
+    found = std::cref(info);
   }
   return found;
 }
@@ -106,7 +108,7 @@ int main(int argc, char ** argv)
   // 1 & 2: discover active capabilities and show their descriptions.
   print_section("Phase 1: Discovering capabilities");
   print_step("listening on /capabilities and /capabilities_status ...");
-  auto capabilities = discover_capabilities(node.get());
+  auto capabilities = discover_capabilities(*node);
 
   if (capabilities.empty()) {
     print_step("no capabilities detected. Is anything published on /capabilities?");
@@ -121,10 +123,11 @@ int main(int argc, char ** argv)
     }
   }
 
-  const auto * navigation_info = find_navigation_capability(capabilities);
+  const auto navigation_info = find_navigation_capability(capabilities);
   if (navigation_info) {
     print_step(
-      "using '" + navigation_info->action_name + "' (robot '" + navigation_info->robot + "').");
+      "using '" + navigation_info->get().action_name + "' (robot '" +
+      navigation_info->get().robot + "').");
   }
 
   // The CapabilityClient is created against the *resolved* action name
@@ -133,7 +136,7 @@ int main(int argc, char ** argv)
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr navigation_client;
   if (navigation_info) {
     navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), navigation_info->action_name);
+      *node, navigation_info->get().action_name);
   }
 
   // 3: navigate to a waypoint. The goal actually completes once the robot
@@ -143,8 +146,8 @@ int main(int argc, char ** argv)
   print_section("Phase 2: Navigate to \"" + kFirstWaypoint + "\"");
   if (navigation_client) {
     run_capability<Navigation>(
-      navigation_client, navigation_info->action_name, make_easynav_goal(kFirstWaypoint),
-      kRunTimeout, make_navigation_feedback_printer(navigation_info->action_name));
+      navigation_client, navigation_info->get().action_name, make_easynav_goal(kFirstWaypoint),
+      kRunTimeout, make_navigation_feedback_printer(navigation_info->get().action_name));
   } else {
     print_step(
       "no active 'navigation' capability found -- is easynav_gazebo_launch.yaml "
@@ -163,19 +166,19 @@ int main(int argc, char ** argv)
       kSecondWaypoint + "\" -- the first is aborted at the ROS level, but EasyNav is redirected, "
       "not stopped.");
     auto first_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), navigation_info->action_name);
+      *node, navigation_info->get().action_name);
     std::thread first_goal(
       [&] {
         run_capability<Navigation>(
-          first_client, navigation_info->action_name + " (1st goal)",
+          first_client, navigation_info->get().action_name + " (1st goal)",
           make_easynav_goal(kFirstWaypoint), kRunTimeout,
-          make_navigation_feedback_printer(navigation_info->action_name + " (1st goal)"));
+          make_navigation_feedback_printer(navigation_info->get().action_name + " (1st goal)"));
       });
     std::this_thread::sleep_for(3s);
     run_capability<Navigation>(
-      navigation_client, navigation_info->action_name + " (2nd goal)",
+      navigation_client, navigation_info->get().action_name + " (2nd goal)",
       make_easynav_goal(kSecondWaypoint), kRunTimeout,
-      make_navigation_feedback_printer(navigation_info->action_name + " (2nd goal)"));
+      make_navigation_feedback_printer(navigation_info->get().action_name + " (2nd goal)"));
     first_goal.join();
   } else {
     print_step(

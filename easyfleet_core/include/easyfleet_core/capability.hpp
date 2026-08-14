@@ -24,6 +24,7 @@
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 
 #include "easyfleet_core/action_server_base.hpp"
+#include "easyfleet_core/capability_node_base.hpp"
 #include "easyfleet_interfaces/msg/capability_description.hpp"
 #include "easyfleet_interfaces/msg/capability_status.hpp"
 
@@ -53,9 +54,14 @@ namespace easyfleet_core
  * capability launched under namespace `robot1` announces itself as such
  * without any code changes -- this is what lets a control center tell
  * apart, say, `robot1`'s and `robot2`'s `navigation` capabilities.
+ *
+ * Also implements `CapabilityNodeBase`, so a `Robot`/`Deployment` that
+ * doesn't know (and doesn't need to know) `ActionServerT` can still drive
+ * this instance's lifecycle and add its node to an executor -- see
+ * `capability_node_base.hpp` and `capability_factory.hpp`.
  */
 template<typename ActionServerT>
-class Capability : public rclcpp_lifecycle::LifecycleNode
+class Capability : public rclcpp_lifecycle::LifecycleNode, public CapabilityNodeBase
 {
 public:
   using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
@@ -72,17 +78,39 @@ public:
   /// The action server backing this capability.
   typename ActionServerBaseT::SharedPtr get_action_server() const noexcept;
 
-  const std::string & get_capability_name() const noexcept;
+  const std::string & get_capability_name() const noexcept override;
 
   /// This node's namespace, without the leading '/' (empty if none), e.g.
   /// "robot1". This is the `robot` identity field published on
   /// /capabilities and /capabilities_status.
-  const std::string & get_robot_name() const noexcept;
+  const std::string & get_robot_name() const noexcept override;
 
   /// Fully-qualified name of the action this capability exposes, e.g.
   /// "/robot1/navigation". This is the `action_name` identity field
   /// published on /capabilities and /capabilities_status.
   const std::string & get_resolved_action_name() const noexcept;
+
+  // -- CapabilityNodeBase --
+  //
+  // Named *_node() (see capability_node_base.hpp) precisely so these don't
+  // collide with rclcpp_lifecycle::LifecycleNode's own same-purpose
+  // configure()/activate()/.../shutdown() member functions -- those keep
+  // working completely unchanged (e.g. test_capability.cpp's
+  // `capability_->configure(cb)` one-arg overload) since nothing here
+  // hides or shadows them. Each *_node() implementation (capability_impl.hpp)
+  // just calls the corresponding LifecycleNode transition and returns its
+  // CallbackReturn. get_node_base_interface() is the one exception: its
+  // name/signature/return type happen to exactly match LifecycleNode's own,
+  // so this override *does* hide that one -- harmlessly, since it forwards
+  // to it internally and nothing in this codebase calls it on a
+  // `Capability<T>` directly today.
+  CallbackReturn configure_node() override;
+  CallbackReturn activate_node() override;
+  CallbackReturn deactivate_node() override;
+  CallbackReturn cleanup_node() override;
+  CallbackReturn shutdown_node() override;
+  uint8_t get_current_state_id() const override;
+  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() override;
 
 protected:
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;

@@ -108,7 +108,7 @@ int main(int argc, char ** argv)
   executor.add_node(node);
   auto spin_thread = spin_in_background(executor);
 
-  StatusMarkerPublisher status(node.get());
+  StatusMarkerPublisher status(*node);
   status.set_status(kRobot1, "Idle");
   status.set_status(kRobot2, "Idle");
 
@@ -120,7 +120,7 @@ int main(int argc, char ** argv)
   // Discover active capabilities and show their descriptions.
   print_section("Phase 0: Discovering capabilities");
   print_step("listening on /capabilities and /capabilities_status ...");
-  auto capabilities = discover_capabilities(node.get());
+  auto capabilities = discover_capabilities(*node);
 
   if (capabilities.empty()) {
     print_step("no capabilities detected. Is anything published on /capabilities?");
@@ -135,10 +135,10 @@ int main(int argc, char ** argv)
     }
   }
 
-  const auto * robot1_navigation = find_robot_capability(capabilities, kRobot1, "navigation");
-  const auto * robot1_perception = find_robot_capability(capabilities, kRobot1, "perception");
-  const auto * robot2_navigation = find_robot_capability(capabilities, kRobot2, "navigation");
-  const auto * robot2_manipulation = find_robot_capability(capabilities, kRobot2, "manipulation");
+  const auto robot1_navigation = find_robot_capability(capabilities, kRobot1, "navigation");
+  const auto robot1_perception = find_robot_capability(capabilities, kRobot1, "perception");
+  const auto robot2_navigation = find_robot_capability(capabilities, kRobot2, "navigation");
+  const auto robot2_manipulation = find_robot_capability(capabilities, kRobot2, "manipulation");
 
   // Each CapabilityClient is created against the *resolved* action name
   // (e.g. "/robot_1/navigation"), which is what each robot actually
@@ -146,22 +146,22 @@ int main(int argc, char ** argv)
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot1_navigation_client;
   if (robot1_navigation) {
     robot1_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), robot1_navigation->action_name);
+      *node, robot1_navigation->get().action_name);
   }
   easyfleet_core::CapabilityClient<Perception>::SharedPtr robot1_perception_client;
   if (robot1_perception) {
     robot1_perception_client = easyfleet_core::CapabilityClient<Perception>::create(
-      node.get(), robot1_perception->action_name);
+      *node, robot1_perception->get().action_name);
   }
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot2_navigation_client;
   if (robot2_navigation) {
     robot2_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), robot2_navigation->action_name);
+      *node, robot2_navigation->get().action_name);
   }
   easyfleet_core::CapabilityClient<Manipulation>::SharedPtr robot2_manipulation_client;
   if (robot2_manipulation) {
     robot2_manipulation_client = easyfleet_core::CapabilityClient<Manipulation>::create(
-      node.get(), robot2_manipulation->action_name);
+      *node, robot2_manipulation->get().action_name);
   }
 
   // Phase 1: robot_1 -> "kitchen" (perceiving throughout) while robot_2 ->
@@ -179,8 +179,8 @@ int main(int argc, char ** argv)
     robot1_perception_thread = std::thread(
       [&] {
         run_capability<Perception>(
-          robot1_perception_client, robot1_perception->action_name, make_perception_goal(),
-          kLongTimeout, make_perception_feedback_printer(robot1_perception->action_name));
+          robot1_perception_client, robot1_perception->get().action_name, make_perception_goal(),
+          kLongTimeout, make_perception_feedback_printer(robot1_perception->get().action_name));
       });
   } else {
     status.set_status(kRobot1, "Navigating -> " + kKitchen);
@@ -193,9 +193,9 @@ int main(int argc, char ** argv)
       robot1_thread = std::thread(
         [&] {
           run_capability<Navigation>(
-            robot1_navigation_client, robot1_navigation->action_name,
+            robot1_navigation_client, robot1_navigation->get().action_name,
             make_easynav_goal(kKitchen), kLongTimeout,
-            make_navigation_feedback_printer(robot1_navigation->action_name));
+            make_navigation_feedback_printer(robot1_navigation->get().action_name));
         });
     } else {
       print_step("[" + kRobot1 + "/navigation] not active, skipping.");
@@ -203,8 +203,8 @@ int main(int argc, char ** argv)
     if (robot2_navigation_client) {
       status.set_status(kRobot2, "Navigating -> " + kDock);
       run_capability<Navigation>(
-        robot2_navigation_client, robot2_navigation->action_name, make_easynav_goal(kDock),
-        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->action_name));
+        robot2_navigation_client, robot2_navigation->get().action_name, make_easynav_goal(kDock),
+        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->get().action_name));
     } else {
       print_step("[" + kRobot2 + "/navigation] not active, skipping.");
     }
@@ -229,9 +229,9 @@ int main(int argc, char ** argv)
       robot1_thread = std::thread(
         [&] {
           run_capability<Navigation>(
-            robot1_navigation_client, robot1_navigation->action_name,
+            robot1_navigation_client, robot1_navigation->get().action_name,
             make_easynav_goal(kKitchenStandby), kLongTimeout,
-            make_navigation_feedback_printer(robot1_navigation->action_name));
+            make_navigation_feedback_printer(robot1_navigation->get().action_name));
         });
     } else {
       print_step("[" + kRobot1 + "/navigation] not active, skipping.");
@@ -239,8 +239,8 @@ int main(int argc, char ** argv)
     if (robot2_navigation_client) {
       status.set_status(kRobot2, "Navigating -> " + kKitchen);
       run_capability<Navigation>(
-        robot2_navigation_client, robot2_navigation->action_name, make_easynav_goal(kKitchen),
-        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->action_name));
+        robot2_navigation_client, robot2_navigation->get().action_name, make_easynav_goal(kKitchen),
+        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->get().action_name));
     } else {
       print_step("[" + kRobot2 + "/navigation] not active, skipping.");
     }
@@ -266,8 +266,8 @@ int main(int argc, char ** argv)
   if (robot2_manipulation_client) {
     status.set_status(kRobot2, "At " + kKitchen + "\nManipulating");
     run_capability<Manipulation>(
-      robot2_manipulation_client, robot2_manipulation->action_name, make_manipulation_goal(),
-      kRunTimeout, make_manipulation_feedback_printer(robot2_manipulation->action_name));
+      robot2_manipulation_client, robot2_manipulation->get().action_name, make_manipulation_goal(),
+      kRunTimeout, make_manipulation_feedback_printer(robot2_manipulation->get().action_name));
     status.set_status(kRobot2, "At " + kKitchen + "\nManipulation done");
   } else {
     print_step("[" + kRobot2 + "/manipulation] not active, skipping.");
@@ -289,15 +289,15 @@ int main(int argc, char ** argv)
       robot1_thread = std::thread(
         [&] {
           run_capability<Navigation>(
-            robot1_navigation_client, robot1_navigation->action_name + " (dock, 10s cap)",
+            robot1_navigation_client, robot1_navigation->get().action_name + " (dock, 10s cap)",
             make_easynav_goal(kDock), kRunTimeout,
-            make_navigation_feedback_printer(robot1_navigation->action_name));
+            make_navigation_feedback_printer(robot1_navigation->get().action_name));
           print_step(kRobot1 + " redirected to \"" + kChargingStation + "\".");
           status.set_status(kRobot1, "Navigating -> " + kChargingStation + "\n(redirected)");
           run_capability<Navigation>(
-            robot1_navigation_client, robot1_navigation->action_name + " (charging_station)",
+            robot1_navigation_client, robot1_navigation->get().action_name + " (charging_station)",
             make_easynav_goal(kChargingStation), kLongTimeout,
-            make_navigation_feedback_printer(robot1_navigation->action_name));
+            make_navigation_feedback_printer(robot1_navigation->get().action_name));
         });
     } else {
       print_step("[" + kRobot1 + "/navigation] not active, skipping.");
@@ -305,8 +305,8 @@ int main(int argc, char ** argv)
     if (robot2_navigation_client) {
       status.set_status(kRobot2, "Navigating -> " + kDock);
       run_capability<Navigation>(
-        robot2_navigation_client, robot2_navigation->action_name, make_easynav_goal(kDock),
-        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->action_name));
+        robot2_navigation_client, robot2_navigation->get().action_name, make_easynav_goal(kDock),
+        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->get().action_name));
     } else {
       print_step("[" + kRobot2 + "/navigation] not active, skipping.");
     }
@@ -331,9 +331,9 @@ int main(int argc, char ** argv)
       robot1_thread = std::thread(
         [&] {
           run_capability<Navigation>(
-            robot1_navigation_client, robot1_navigation->action_name,
+            robot1_navigation_client, robot1_navigation->get().action_name,
             make_easynav_goal(kRobot1Home), kLongTimeout,
-            make_navigation_feedback_printer(robot1_navigation->action_name));
+            make_navigation_feedback_printer(robot1_navigation->get().action_name));
         });
     } else {
       print_step("[" + kRobot1 + "/navigation] not active, skipping.");
@@ -341,8 +341,9 @@ int main(int argc, char ** argv)
     if (robot2_navigation_client) {
       status.set_status(kRobot2, "Navigating -> home");
       run_capability<Navigation>(
-        robot2_navigation_client, robot2_navigation->action_name, make_easynav_goal(kRobot2Home),
-        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->action_name));
+        robot2_navigation_client, robot2_navigation->get().action_name,
+        make_easynav_goal(kRobot2Home),
+        kLongTimeout, make_navigation_feedback_printer(robot2_navigation->get().action_name));
     } else {
       print_step("[" + kRobot2 + "/navigation] not active, skipping.");
     }

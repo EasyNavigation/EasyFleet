@@ -53,7 +53,7 @@ class EasynavNavigationActionServer : public easyfleet_core::NavigationActionSer
 {
 public:
   EasynavNavigationActionServer(
-    rclcpp_lifecycle::LifecycleNode * node,
+    rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
   ~EasynavNavigationActionServer() override;
 

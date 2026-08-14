@@ -42,14 +42,14 @@ bool requests_target_class(
 }  // namespace
 
 PerceptionFakeActionServer::PerceptionFakeActionServer(
-  rclcpp_lifecycle::LifecycleNode * node,
+  rclcpp_lifecycle::LifecycleNode & node,
   const std::string & action_name)
 : easyfleet_core::PerceptionActionServerBase(node, action_name),
   random_engine_(std::random_device{}())
 {
-  target_class_ = node->declare_parameter(action_name + ".target_class", std::string("gato"));
-  frame_id_ = node->declare_parameter(action_name + ".frame_id", std::string("camera_link"));
-  detection_rate_hz_ = node->declare_parameter(action_name + ".detection_rate_hz", 20.0);
+  target_class_ = node.declare_parameter(action_name + ".target_class", std::string("gato"));
+  frame_id_ = node.declare_parameter(action_name + ".frame_id", std::string("camera_link"));
+  detection_rate_hz_ = node.declare_parameter(action_name + ".detection_rate_hz", 20.0);
 
   std::transform(target_class_.begin(), target_class_.end(), target_class_.begin(), ::tolower);
 }

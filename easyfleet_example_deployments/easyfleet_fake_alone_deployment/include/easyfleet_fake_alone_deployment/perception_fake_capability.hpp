@@ -48,7 +48,7 @@ class PerceptionFakeActionServer : public easyfleet_core::PerceptionActionServer
 {
 public:
   PerceptionFakeActionServer(
-    rclcpp_lifecycle::LifecycleNode * node,
+    rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
 
 protected:

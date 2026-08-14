@@ -83,7 +83,7 @@ protected:
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_easynav_server"), options);
     action_server_ = std::make_shared<EasynavNavigationActionServer>(
-      server_node_.get(), action_name_);
+      *server_node_, action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_easynav_client"));
     client_ = rclcpp_action::create_client<Navigation>(client_node_, action_name_);

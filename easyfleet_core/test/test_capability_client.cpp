@@ -80,13 +80,13 @@ protected:
 
 TEST_F(CapabilityClientTest, WaitForCapabilitySucceedsWhenAvailable)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   EXPECT_TRUE(client->wait_for_capability(5s));
 }
 
 TEST_F(CapabilityClientTest, WaitForCapabilityTimesOutForUnknownCapability)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), "no_such_capability");
+  auto client = FibonacciCapabilityClient::create(*owner_node_, "no_such_capability");
   const auto start = std::chrono::steady_clock::now();
   EXPECT_FALSE(client->wait_for_capability(300ms));
   EXPECT_LT(std::chrono::steady_clock::now() - start, 2s);
@@ -94,7 +94,7 @@ TEST_F(CapabilityClientTest, WaitForCapabilityTimesOutForUnknownCapability)
 
 TEST_F(CapabilityClientTest, RequestInvokesFeedbackAndResponseCallbacks)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_capability(5s));
 
   std::atomic<int> feedback_count{0};
@@ -123,7 +123,7 @@ TEST_F(CapabilityClientTest, RequestInvokesFeedbackAndResponseCallbacks)
 
 TEST_F(CapabilityClientTest, RequestRejectedGoalReportsRejectedOutcome)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_capability(5s));
 
   auto response_promise = std::make_shared<std::promise<FibonacciCapabilityClient::Response>>();
@@ -142,7 +142,7 @@ TEST_F(CapabilityClientTest, RequestRejectedGoalReportsRejectedOutcome)
 
 TEST_F(CapabilityClientTest, RequestAndWaitSucceeds)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_capability(5s));
 
   Fibonacci::Goal goal;
@@ -156,7 +156,7 @@ TEST_F(CapabilityClientTest, RequestAndWaitSucceeds)
 
 TEST_F(CapabilityClientTest, RequestAndWaitReturnsImmediatelyWhenCapabilityUnavailable)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), "no_such_capability", 200ms);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, "no_such_capability", 200ms);
 
   Fibonacci::Goal goal;
   goal.order = 1;
@@ -171,7 +171,7 @@ TEST_F(CapabilityClientTest, RequestAndWaitReturnsImmediatelyWhenCapabilityUnava
 TEST_F(CapabilityClientTest, RequestAndWaitTimesOutOnSlowGoal)
 {
   server_node_->set_step_delay(300ms);
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_capability(5s));
 
   Fibonacci::Goal goal;
@@ -183,7 +183,7 @@ TEST_F(CapabilityClientTest, RequestAndWaitTimesOutOnSlowGoal)
 
 TEST_F(CapabilityClientTest, FeedbackCallbackIsInvokedDuringRequestAndWait)
 {
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_capability(5s));
 
   std::atomic<int> feedback_count{0};
@@ -201,7 +201,7 @@ TEST_F(CapabilityClientTest, FeedbackCallbackIsInvokedDuringRequestAndWait)
 TEST_F(CapabilityClientTest, CancelStopsAnInFlightRequest)
 {
   server_node_->set_step_delay(150ms);
-  auto client = FibonacciCapabilityClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciCapabilityClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_capability(5s));
 
   auto response_promise = std::make_shared<std::promise<FibonacciCapabilityClient::Response>>();

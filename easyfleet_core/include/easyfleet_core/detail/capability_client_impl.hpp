@@ -31,7 +31,7 @@ namespace easyfleet_core
 
 template<typename ActionT>
 typename CapabilityClient<ActionT>::SharedPtr CapabilityClient<ActionT>::create(
-  rclcpp::Node * node,
+  rclcpp::Node & node,
   const std::string & capability_name,
   std::chrono::milliseconds default_wait_timeout)
 {

@@ -129,7 +129,7 @@ protected:
 
 TEST_F(CapabilityDiscoveryTest, ReturnsEmptyWhenNothingIsPublished)
 {
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 300ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 300ms);
   EXPECT_TRUE(result.empty());
 }
 
@@ -140,7 +140,7 @@ TEST_F(CapabilityDiscoveryTest, ParsesJsonAndMarksActiveWhenHeartbeatSeen)
       "fake_cap", "/fake_cap", R"({"name":"fake_cap","display_name":"Fake Capability"})"));
   start_heartbeat("fake_cap", "/fake_cap");
 
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 800ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 800ms);
 
   ASSERT_EQ(result.size(), 1u);
   EXPECT_EQ(result.front().capability, "fake_cap");
@@ -156,7 +156,7 @@ TEST_F(CapabilityDiscoveryTest, TracksBusyStateFromTheLatestHeartbeat)
   capabilities_pub_->publish(make_description("fake_cap", "/fake_cap", R"({})"));
   start_heartbeat("fake_cap", "/fake_cap", "", /*busy=*/ true);
 
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 800ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 800ms);
 
   ASSERT_EQ(result.size(), 1u);
   EXPECT_TRUE(result.front().active);
@@ -167,7 +167,7 @@ TEST_F(CapabilityDiscoveryTest, CapabilityWithoutHeartbeatIsNotActive)
 {
   capabilities_pub_->publish(make_description("silent_cap", "/silent_cap", R"({})"));
 
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 500ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 500ms);
 
   ASSERT_EQ(result.size(), 1u);
   EXPECT_EQ(result.front().capability, "silent_cap");
@@ -180,7 +180,7 @@ TEST_F(CapabilityDiscoveryTest, MalformedJsonStillRegistersTheCapabilityButFlags
   capabilities_pub_->publish(
     make_description("broken_cap", "/broken_cap", "not valid json {{{"));
 
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 300ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 300ms);
 
   ASSERT_EQ(result.size(), 1u);
   EXPECT_EQ(result.front().capability, "broken_cap");
@@ -193,7 +193,7 @@ TEST_F(CapabilityDiscoveryTest, DiscoversMultipleDistinctCapabilities)
   capabilities_pub_->publish(make_description("cap_b", "/cap_b", R"({})"));
   start_heartbeat("cap_a", "/cap_a");
 
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 800ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 800ms);
 
   ASSERT_EQ(result.size(), 2u);
   auto find_by_action_name = [&result](const std::string & action_name) {
@@ -220,7 +220,7 @@ TEST_F(CapabilityDiscoveryTest, SameCapabilityFromTwoRobotsAreKeptDistinctByActi
   start_heartbeat("navigation", "/robot1/navigation", "robot1");
   start_heartbeat("navigation", "/robot2/navigation", "robot2");
 
-  auto result = easyfleet_mission_manager::discover_capabilities(consumer_node_.get(), 800ms);
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 800ms);
 
   ASSERT_EQ(result.size(), 2u);
   for (const auto & info : result) {

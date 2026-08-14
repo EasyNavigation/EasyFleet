@@ -24,7 +24,6 @@
 
 #include <atomic>
 #include <future>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -35,7 +34,7 @@ namespace easyfleet_core
 
 template<typename ActionT>
 typename ActionClient<ActionT>::SharedPtr ActionClient<ActionT>::create(
-  rclcpp::Node * parent_node,
+  rclcpp::Node & parent_node,
   const std::string & action_name,
   std::chrono::milliseconds default_server_timeout)
 {
@@ -44,20 +43,16 @@ typename ActionClient<ActionT>::SharedPtr ActionClient<ActionT>::create(
 
 template<typename ActionT>
 ActionClient<ActionT>::ActionClient(
-  rclcpp::Node * parent_node,
+  rclcpp::Node & parent_node,
   const std::string & action_name,
   std::chrono::milliseconds default_server_timeout)
 : action_name_(action_name),
   default_server_timeout_(default_server_timeout)
 {
-  if (parent_node == nullptr) {
-    throw std::invalid_argument("ActionClient: parent_node must not be null");
-  }
-
   static std::atomic<uint64_t> instance_counter{0};
   const std::string node_name =
     detail::sanitize_identifier(
-    std::string(parent_node->get_name()) + "_ac_" +
+    std::string(parent_node.get_name()) + "_ac_" +
     detail::sanitize_parameter_name(action_name)) +
     "_" + std::to_string(instance_counter.fetch_add(1));
 
@@ -67,7 +62,7 @@ ActionClient<ActionT>::ActionClient(
   options.use_global_arguments(false);
 
   internal_node_ = std::make_shared<rclcpp::Node>(
-    node_name, parent_node->get_namespace(), options);
+    node_name, parent_node.get_namespace(), options);
 
   client_ = rclcpp_action::create_client<ActionT>(internal_node_, action_name_);
 

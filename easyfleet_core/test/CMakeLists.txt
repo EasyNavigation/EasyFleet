@@ -56,3 +56,11 @@ target_link_libraries(test_capability_client
   example_interfaces::example_interfaces
   GTest::gtest
 )
+
+ament_add_gtest(test_deployment test_deployment.cpp
+  TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
+  ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=66)
+target_link_libraries(test_deployment
+  ${PROJECT_NAME}
+  GTest::gtest
+)

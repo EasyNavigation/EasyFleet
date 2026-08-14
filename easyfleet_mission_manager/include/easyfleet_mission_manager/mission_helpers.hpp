@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <functional>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -80,7 +81,9 @@ inline void print_step(const std::string & text)
 /// Finds `robot`'s active capability of the given short type (e.g.
 /// "navigation"). `action_name` is what must actually be dialed to reach
 /// it (e.g. "/robot_1/navigation").
-inline const CapabilityInfo * find_robot_capability(
+/// @return The matching entry, or `std::nullopt` if none was found -- a
+///   nullable *reference* into `capabilities`, without a raw pointer.
+inline std::optional<std::reference_wrapper<const CapabilityInfo>> find_robot_capability(
   const std::vector<CapabilityInfo> & capabilities,
   const std::string & robot, const std::string & capability)
 {
@@ -89,7 +92,10 @@ inline const CapabilityInfo * find_robot_capability(
     [&](const CapabilityInfo & info) {
       return info.robot == robot && info.capability == capability && info.active;
     });
-  return it != capabilities.end() ? &(*it) : nullptr;
+  if (it == capabilities.end()) {
+    return std::nullopt;
+  }
+  return std::cref(*it);
 }
 
 inline Navigation::Goal make_navigation_goal()
