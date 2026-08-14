@@ -387,6 +387,7 @@ Gazebo launch.
 | `easyfleet_fake_collaboration_deployment` | C++ library + executables + launch/config | The `collaboration` scenario: its own copy of the same 3 fake capabilities, `robot_node` reused across `robot_1`/`robot_2`/`robot_3`, + `collaboration_mission_node` |
 | `easyfleet_easynav_deployment` | C++ library + executables + launch/config | The `easynav` scenario: `easynav_navigation_capability_node` (this package's own capability class, reusing `easyfleet_easynav_navigation`'s `Navigate` plugin) + `easynav_mission_node`, plus `libstart_off_bt_node.so`/`libfinish_bt_node.so` and the launch/config assembly for real navigation against a real robot or Gazebo |
 | `easyfleet_easynav_collaboration_deployment` | C++ library + executables + launch/config | The `easynav_collaboration` scenario: two robots each running real EasyNav navigation (executables reused from `easyfleet_easynav_deployment`, not duplicated) plus its own mock capability — `robot_node` hosting its own copies of `PerceptionFakeCapability`/`ManipulationFakeCapability` (one per robot, mirroring `easyfleet_fake_collaboration_deployment`'s own duplication) — + `easynav_collaboration_mission_node` |
+| [`easyfleet_tools`](easyfleet_tools) | `ament_python` package | Read-only TUI (`ros2 run easyfleet_tools tui`) + CLI (`ros2 easyfleet <verb>`) for monitoring a running fleet — see [Monitoring a running fleet](#monitoring-a-running-fleet-easyfleet_tools) above |
 
 All four live under `easyfleet_example_deployments/`, a plain container
 directory (no `package.xml` of its own) rather than a package.
@@ -691,6 +692,51 @@ Perception (and any preempted/canceled goal) runs until stopped: press
 Ctrl-C on the `send_goal` command, or call `ros2 action cancel` /
 `CapabilityClient::cancel()` from another terminal/process, to stop it
 early.
+
+<a name="monitoring-a-running-fleet-easyfleet_tools"></a>
+### Monitoring a running fleet: `easyfleet_tools`
+
+[`easyfleet_tools`](easyfleet_tools) is a read-only TUI + CLI for
+watching a running fleet without hand-assembling `ros2 topic
+echo`/`ros2 action send_goal --feedback` invocations like the ones
+above — it never launches, stops, or preempts a capability itself, only
+observes. It follows the same TUI/CLI split as EasyNavigation's own
+[`easynav_tools`](../EasyNavigation/easynav_tools): one shared Python
+layer (`easyfleet_tools/controller/ros_controllers.py`) parses/formats
+every message once, reused by both the Textual TUI and the `ros2cli`
+verbs below.
+
+```bash
+ros2 run easyfleet_tools tui
+```
+
+The TUI's **Mission** tab (the default) shows the whole fleet at a
+glance: a robot list colored by IDLE/BUSY/INACTIVE, that robot's
+capabilities, and the selected capability's live goal status, feedback
+and result. Every discovered robot also gets its own tab (its
+capabilities, the selected one's JSON description, its execution
+status, and a colored `RCLCPP_INFO`/`WARN`/`ERROR` log feed), plus a
+fleet-wide **Logs** tab.
+
+The CLI exposes the same data as one-shot or `--duration`-bounded
+commands, e.g. against the `alone` scenario:
+
+```bash
+ros2 easyfleet fleet                                   # every robot + capability, with status
+ros2 easyfleet describe robot_1/navigation              # full JSON description (same as /capabilities)
+ros2 easyfleet watch robot_1/navigation --duration 10   # live goal status + feedback + result
+ros2 easyfleet status --duration 10                     # each robot's RViz status-marker text
+ros2 easyfleet logs --robot robot_1 --duration 10       # colored /rosout tail
+```
+
+`describe`/`watch` accept a capability either as `<robot>/<capability>`
+(e.g. `robot_1/navigation`) or as its bare action name (e.g.
+`/robot_1/navigation`). `watch`'s Result section is fetched through the
+action's own `_action/get_result` service once a goal reaches a
+terminal state — the action protocol lets any client fetch a goal's
+result given its `goal_id`, not just the client that sent it, so this
+works even for a goal `watch` never sent itself (e.g. one from a
+mission script).
 
 ## Running the tests
 
