@@ -134,6 +134,19 @@ TEST(RobotHandleTest, IsAliveIsFalseWithoutAnyHeartbeatSeen)
   EXPECT_FALSE(robot.is_alive("navigation"));
 }
 
+TEST(RobotHandleTest, RunCapabilityOnAHandleNeverAddedToAFleetSessionThrows)
+{
+  // A RobotHandle that was never passed to FleetSession::add_robot() (or
+  // SimpleController::add_robot()) has no session_ to reach a node/executor
+  // through -- this must fail loudly, not silently no-op, since it's
+  // otherwise indistinguishable from a properly attached robot that simply
+  // hasn't announced this capability yet.
+  easyfleet::RobotHandle robot(unique_test_name("robot"));
+  EXPECT_THROW(
+    robot.run_capability<Navigation>("navigation", make_navigation_goal("kitchen")),
+    std::logic_error);
+}
+
 TEST(FleetSessionTest, FindRobotReturnsNulloptBeforeAdding)
 {
   easyfleet::FleetSession session;
