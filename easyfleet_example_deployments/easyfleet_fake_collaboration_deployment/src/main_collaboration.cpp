@@ -84,7 +84,7 @@ int main(int argc, char ** argv)
   // Discover active capabilities and show their descriptions.
   print_section("Phase 0: Discovering capabilities");
   print_step("listening on /capabilities and /capabilities_status ...");
-  auto capabilities = discover_capabilities(node.get());
+  auto capabilities = discover_capabilities(*node);
 
   if (capabilities.empty()) {
     print_step("no capabilities detected. Is anything published on /capabilities?");
@@ -99,12 +99,12 @@ int main(int argc, char ** argv)
     }
   }
 
-  const auto * robot1_navigation = find_robot_capability(capabilities, kRobot1, "navigation");
-  const auto * robot1_perception = find_robot_capability(capabilities, kRobot1, "perception");
-  const auto * robot2_navigation = find_robot_capability(capabilities, kRobot2, "navigation");
-  const auto * robot2_perception = find_robot_capability(capabilities, kRobot2, "perception");
-  const auto * robot3_navigation = find_robot_capability(capabilities, kRobot3, "navigation");
-  const auto * robot3_manipulation = find_robot_capability(capabilities, kRobot3, "manipulation");
+  const auto robot1_navigation = find_robot_capability(capabilities, kRobot1, "navigation");
+  const auto robot1_perception = find_robot_capability(capabilities, kRobot1, "perception");
+  const auto robot2_navigation = find_robot_capability(capabilities, kRobot2, "navigation");
+  const auto robot2_perception = find_robot_capability(capabilities, kRobot2, "perception");
+  const auto robot3_navigation = find_robot_capability(capabilities, kRobot3, "navigation");
+  const auto robot3_manipulation = find_robot_capability(capabilities, kRobot3, "manipulation");
 
   // Each CapabilityClient is created against the *resolved* action name
   // (e.g. "/robot_1/navigation"), which is what each robot actually
@@ -112,32 +112,32 @@ int main(int argc, char ** argv)
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot1_navigation_client;
   if (robot1_navigation) {
     robot1_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), robot1_navigation->action_name);
+      *node, robot1_navigation->get().action_name);
   }
   easyfleet_core::CapabilityClient<Perception>::SharedPtr robot1_perception_client;
   if (robot1_perception) {
     robot1_perception_client = easyfleet_core::CapabilityClient<Perception>::create(
-      node.get(), robot1_perception->action_name);
+      *node, robot1_perception->get().action_name);
   }
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot2_navigation_client;
   if (robot2_navigation) {
     robot2_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), robot2_navigation->action_name);
+      *node, robot2_navigation->get().action_name);
   }
   easyfleet_core::CapabilityClient<Perception>::SharedPtr robot2_perception_client;
   if (robot2_perception) {
     robot2_perception_client = easyfleet_core::CapabilityClient<Perception>::create(
-      node.get(), robot2_perception->action_name);
+      *node, robot2_perception->get().action_name);
   }
   easyfleet_core::CapabilityClient<Navigation>::SharedPtr robot3_navigation_client;
   if (robot3_navigation) {
     robot3_navigation_client = easyfleet_core::CapabilityClient<Navigation>::create(
-      node.get(), robot3_navigation->action_name);
+      *node, robot3_navigation->get().action_name);
   }
   easyfleet_core::CapabilityClient<Manipulation>::SharedPtr robot3_manipulation_client;
   if (robot3_manipulation) {
     robot3_manipulation_client = easyfleet_core::CapabilityClient<Manipulation>::create(
-      node.get(), robot3_manipulation->action_name);
+      *node, robot3_manipulation->get().action_name);
   }
 
   // Phase 1: robot_1 and robot_2 run navigation + perception together, in
@@ -151,8 +151,8 @@ int main(int argc, char ** argv)
     phase1_threads.emplace_back(
       [&robot1_navigation_client, &robot1_navigation] {
         run_capability<Navigation>(
-          robot1_navigation_client, robot1_navigation->action_name, make_navigation_goal(),
-          kRunTimeout, make_navigation_feedback_printer(robot1_navigation->action_name));
+          robot1_navigation_client, robot1_navigation->get().action_name, make_navigation_goal(),
+          kRunTimeout, make_navigation_feedback_printer(robot1_navigation->get().action_name));
       });
   } else {
     print_step("[" + kRobot1 + "/navigation] not active, skipping.");
@@ -161,8 +161,8 @@ int main(int argc, char ** argv)
     phase1_threads.emplace_back(
       [&robot1_perception_client, &robot1_perception] {
         run_capability<Perception>(
-          robot1_perception_client, robot1_perception->action_name, make_perception_goal(),
-          kRunTimeout, make_perception_feedback_printer(robot1_perception->action_name));
+          robot1_perception_client, robot1_perception->get().action_name, make_perception_goal(),
+          kRunTimeout, make_perception_feedback_printer(robot1_perception->get().action_name));
       });
   } else {
     print_step("[" + kRobot1 + "/perception] not active, skipping.");
@@ -171,8 +171,8 @@ int main(int argc, char ** argv)
     phase1_threads.emplace_back(
       [&robot2_navigation_client, &robot2_navigation] {
         run_capability<Navigation>(
-          robot2_navigation_client, robot2_navigation->action_name, make_navigation_goal(),
-          kRunTimeout, make_navigation_feedback_printer(robot2_navigation->action_name));
+          robot2_navigation_client, robot2_navigation->get().action_name, make_navigation_goal(),
+          kRunTimeout, make_navigation_feedback_printer(robot2_navigation->get().action_name));
       });
   } else {
     print_step("[" + kRobot2 + "/navigation] not active, skipping.");
@@ -181,8 +181,8 @@ int main(int argc, char ** argv)
     phase1_threads.emplace_back(
       [&robot2_perception_client, &robot2_perception] {
         run_capability<Perception>(
-          robot2_perception_client, robot2_perception->action_name, make_perception_goal(),
-          kRunTimeout, make_perception_feedback_printer(robot2_perception->action_name));
+          robot2_perception_client, robot2_perception->get().action_name, make_perception_goal(),
+          kRunTimeout, make_perception_feedback_printer(robot2_perception->get().action_name));
       });
   } else {
     print_step("[" + kRobot2 + "/perception] not active, skipping.");
@@ -200,8 +200,8 @@ int main(int argc, char ** argv)
   if (robot3_navigation_client) {
     print_step("starting " + kRobot3 + "'s navigation; manipulation will follow once it ends.");
     const auto outcome = run_and_describe<Navigation>(
-      robot3_navigation_client, robot3_navigation->action_name, make_navigation_goal(),
-      make_navigation_feedback_printer(robot3_navigation->action_name));
+      robot3_navigation_client, robot3_navigation->get().action_name, make_navigation_goal(),
+      make_navigation_feedback_printer(robot3_navigation->get().action_name));
     print_step(
       kRobot3 + "'s navigation finished with outcome " + outcome + "; starting manipulation.");
   } else {
@@ -210,8 +210,8 @@ int main(int argc, char ** argv)
 
   if (robot3_manipulation_client) {
     run_capability<Manipulation>(
-      robot3_manipulation_client, robot3_manipulation->action_name, make_manipulation_goal(),
-      kRunTimeout, make_manipulation_feedback_printer(robot3_manipulation->action_name));
+      robot3_manipulation_client, robot3_manipulation->get().action_name, make_manipulation_goal(),
+      kRunTimeout, make_manipulation_feedback_printer(robot3_manipulation->get().action_name));
   } else {
     print_step("[" + kRobot3 + "/manipulation] not active, skipping.");
   }

@@ -1,0 +1,28 @@
+<class_libraries>
+  <library path="easyfleet_easynav_collaboration_simple_api_deployment">
+    <!--
+      Registered under the bare capability type name ("perception", not
+      "perception/cats"): this package has exactly one fake implementation
+      per type, and keeping the lookup name identical to the short name the
+      sibling easyfleet_easynav_collaboration_deployment package's own
+      hardcoded factory already expects means the exact same "capabilities"
+      parameter value (e.g. ["perception"]) works unchanged for either
+      package's robot_node.cpp -- the two are meant to be interchangeable
+      at the launch level with no other change (see refactor.md).
+      A package offering more than one alternative implementation of the
+      same capability type would register each under
+      "type/implementation" instead (see easyfleet_core/deployment.hpp's
+      doc comment on add_capability()) to disambiguate.
+    -->
+    <class name="perception" type="easyfleet_easynav_collaboration_simple_api_deployment::PerceptionFakeCapabilityFactory" base_class_type="easyfleet_core::CapabilityFactory">
+      <description>
+      Fake/mock "perception" capability for this deployment scenario: streams randomly placed cat detections at a fixed rate, no real object detector.
+      </description>
+    </class>
+    <class name="manipulation" type="easyfleet_easynav_collaboration_simple_api_deployment::ManipulationFakeCapabilityFactory" base_class_type="easyfleet_core::CapabilityFactory">
+      <description>
+      Fake/mock "manipulation" capability for this deployment scenario: simulates joint-trajectory execution progress over a configurable duration, no real manipulator.
+      </description>
+    </class>
+  </library>
+</class_libraries>

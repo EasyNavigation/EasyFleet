@@ -34,7 +34,7 @@
 namespace easyfleet_easynav_deployment
 {
 
-/// Real navigation capability backed by EasyNav (via easynav::GoalManagerClient)
+/// @brief Real navigation capability backed by EasyNav (via easynav::GoalManagerClient)
 /// and structured internally as a BehaviorTree.CPP tree. Named waypoints
 /// are configured as ROS parameters and resolved to poses by the Navigate
 /// node (provided by this package as a BT.CPP plugin) -- EasyNav itself
@@ -52,16 +52,28 @@ namespace easyfleet_easynav_deployment
 class EasynavNavigationActionServer : public easyfleet_core::NavigationActionServerBase
 {
 public:
+  /// @brief Constructs the action server.
+  /// @param node Lifecycle node that will host this action server.
+  /// @param action_name Name under which the action is advertised.
   EasynavNavigationActionServer(
-    rclcpp_lifecycle::LifecycleNode * node,
+    rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
   ~EasynavNavigationActionServer() override;
 
 protected:
+  /// @brief Accepts only goals whose `parameters_json` names a known `goal_id`.
+  /// @param uuid Id of the incoming goal.
+  /// @param goal Goal content to validate.
+  /// @return `ACCEPT_AND_EXECUTE` if `goal_id` resolves to a configured
+  ///   waypoint, `REJECT` otherwise.
   rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Goal> goal) override;
 
+  /// @brief Builds and ticks the BT tree named by `behavior_tree_xml_`, driving
+  /// `gm_client_` through the `Navigate` node until the tree reaches
+  /// `SUCCESS`/`FAILURE` or the goal is canceled/preempted/shut down.
+  /// @param goal_handle Handle of the accepted goal to run to completion.
   void on_execute(const GoalHandleSharedPtr goal_handle) override;
 
 private:
@@ -89,13 +101,15 @@ private:
   BT::BehaviorTreeFactory factory_;
 };
 
-/// The "navigation" capability, backed by EasyNav: a lifecycle node
+/// @brief The "navigation" capability, backed by EasyNav: a lifecycle node
 /// advertising a real easyfleet_interfaces/Navigation action, described by
 /// config/easynav_robot/navigation_gazebo.json.
 class EasynavNavigationCapability
   : public easyfleet_core::Capability<EasynavNavigationActionServer>
 {
 public:
+  /// @brief Constructs the capability node.
+  /// @param options Forwarded to the underlying `LifecycleNode`.
   explicit EasynavNavigationCapability(
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 };

@@ -27,7 +27,7 @@ namespace easyfleet_mission_manager
 {
 
 std::vector<CapabilityInfo> discover_capabilities(
-  rclcpp::Node * node,
+  rclcpp::Node & node,
   std::chrono::milliseconds window)
 {
   using easyfleet_interfaces::msg::CapabilityDescription;
@@ -36,7 +36,7 @@ std::vector<CapabilityInfo> discover_capabilities(
   std::mutex mutex;
   std::map<std::string, CapabilityInfo> by_action_name;
 
-  auto capabilities_sub = node->create_subscription<CapabilityDescription>(
+  auto capabilities_sub = node.create_subscription<CapabilityDescription>(
     "/capabilities", rclcpp::QoS(10).reliable().transient_local(),
     [&mutex, &by_action_name](const CapabilityDescription::SharedPtr msg) {
       std::lock_guard<std::mutex> lock(mutex);
@@ -53,7 +53,7 @@ std::vector<CapabilityInfo> discover_capabilities(
       }
     });
 
-  auto status_sub = node->create_subscription<CapabilityStatus>(
+  auto status_sub = node.create_subscription<CapabilityStatus>(
     "/capabilities_status", rclcpp::QoS(10).reliable(),
     [&mutex, &by_action_name](const CapabilityStatus::SharedPtr msg) {
       std::lock_guard<std::mutex> lock(mutex);

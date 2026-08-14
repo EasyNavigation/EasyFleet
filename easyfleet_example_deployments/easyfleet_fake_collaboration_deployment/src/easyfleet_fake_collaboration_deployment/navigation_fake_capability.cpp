@@ -38,16 +38,16 @@ builtin_interfaces::msg::Duration to_duration_msg(double seconds)
 }  // namespace
 
 NavigationFakeActionServer::NavigationFakeActionServer(
-  rclcpp_lifecycle::LifecycleNode * node,
+  rclcpp_lifecycle::LifecycleNode & node,
   const std::string & action_name)
 : easyfleet_core::NavigationActionServerBase(node, action_name)
 {
   mock_navigation_duration_s_ =
-    node->declare_parameter(action_name + ".mock_navigation_duration", 5.0);
+    node.declare_parameter(action_name + ".mock_navigation_duration", 5.0);
   mock_feedback_period_s_ =
-    node->declare_parameter(action_name + ".mock_feedback_period", 0.5);
+    node.declare_parameter(action_name + ".mock_feedback_period", 0.5);
   mock_initial_distance_m_ =
-    node->declare_parameter(action_name + ".mock_initial_distance", 5.0);
+    node.declare_parameter(action_name + ".mock_initial_distance", 5.0);
 }
 
 rclcpp_action::GoalResponse NavigationFakeActionServer::on_goal_received(

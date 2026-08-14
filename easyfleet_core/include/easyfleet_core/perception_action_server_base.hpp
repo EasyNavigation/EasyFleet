@@ -22,7 +22,7 @@
 namespace easyfleet_core
 {
 
-/// Fixes `ActionServerBase`'s action type to `easyfleet_interfaces/Perception`,
+/// @brief Fixes `ActionServerBase`'s action type to `easyfleet_interfaces/Perception`,
 /// so a concrete perception backend (a classic detector, a VLM-based one, a
 /// fake mock, ...) only has to subclass this and implement
 /// `on_goal_received()`/`on_execute()` -- it never needs to spell out the

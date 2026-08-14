@@ -67,7 +67,7 @@ protected:
     });
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_perception_server"), options);
-    action_server_ = std::make_shared<PerceptionFakeActionServer>(server_node_.get(), action_name_);
+    action_server_ = std::make_shared<PerceptionFakeActionServer>(*server_node_, action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_perception_client"));
     client_ = rclcpp_action::create_client<Perception>(client_node_, action_name_);
@@ -232,7 +232,7 @@ TEST(PerceptionFakeActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWh
   });
   auto server_node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
     unique_test_name("test_perception_server_np"), options);
-  auto action_server = std::make_shared<PerceptionFakeActionServer>(server_node.get(), action_name);
+  auto action_server = std::make_shared<PerceptionFakeActionServer>(*server_node, action_name);
   ASSERT_FALSE(action_server->is_preemptable());
 
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_perception_client_np"));

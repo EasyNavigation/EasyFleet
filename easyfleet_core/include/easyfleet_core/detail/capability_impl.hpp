@@ -46,7 +46,7 @@ Capability<ActionServerT>::Capability(
   capability_name_(capability_name)
 {
   this->declare_parameter(detail::kCapabilitiesFileParam, std::string());
-  action_server_ = std::make_shared<ActionServerT>(this, capability_name_);
+  action_server_ = std::make_shared<ActionServerT>(*this, capability_name_);
 
   robot_name_ = detail::strip_leading_slash(this->get_namespace());
   resolved_action_name_ = this->get_node_base_interface()->resolve_topic_or_service_name(
@@ -191,6 +191,71 @@ void Capability<ActionServerT>::stop_heartbeat()
     heartbeat_timer_->cancel();
     heartbeat_timer_.reset();
   }
+}
+
+// -- CapabilityNodeBase -- each of these calls the corresponding
+// LifecycleNode transition (unambiguously -- see capability.hpp for why
+// these are named *_node() instead of colliding with LifecycleNode's own
+// configure()/activate()/etc.) and surfaces just the CallbackReturn, which
+// is all a Robot/Deployment driving this instance through CapabilityNodeBase
+// alone needs to know.
+
+template<typename ActionServerT>
+typename Capability<ActionServerT>::CallbackReturn
+Capability<ActionServerT>::configure_node()
+{
+  CallbackReturn cb_return_code;
+  this->configure(cb_return_code);
+  return cb_return_code;
+}
+
+template<typename ActionServerT>
+typename Capability<ActionServerT>::CallbackReturn
+Capability<ActionServerT>::activate_node()
+{
+  CallbackReturn cb_return_code;
+  this->activate(cb_return_code);
+  return cb_return_code;
+}
+
+template<typename ActionServerT>
+typename Capability<ActionServerT>::CallbackReturn
+Capability<ActionServerT>::deactivate_node()
+{
+  CallbackReturn cb_return_code;
+  this->deactivate(cb_return_code);
+  return cb_return_code;
+}
+
+template<typename ActionServerT>
+typename Capability<ActionServerT>::CallbackReturn
+Capability<ActionServerT>::cleanup_node()
+{
+  CallbackReturn cb_return_code;
+  this->cleanup(cb_return_code);
+  return cb_return_code;
+}
+
+template<typename ActionServerT>
+typename Capability<ActionServerT>::CallbackReturn
+Capability<ActionServerT>::shutdown_node()
+{
+  CallbackReturn cb_return_code;
+  this->shutdown(cb_return_code);
+  return cb_return_code;
+}
+
+template<typename ActionServerT>
+uint8_t Capability<ActionServerT>::get_current_state_id() const
+{
+  return rclcpp_lifecycle::LifecycleNode::get_current_state().id();
+}
+
+template<typename ActionServerT>
+rclcpp::node_interfaces::NodeBaseInterface::SharedPtr
+Capability<ActionServerT>::get_node_base_interface()
+{
+  return rclcpp_lifecycle::LifecycleNode::get_node_base_interface();
 }
 
 }  // namespace easyfleet_core

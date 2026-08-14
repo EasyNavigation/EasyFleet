@@ -72,7 +72,7 @@ protected:
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_nav_server"), options);
     action_server_ = std::make_shared<NavigationFakeActionServer>(
-      server_node_.get(), action_name_);
+      *server_node_, action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_nav_client"));
     client_ = rclcpp_action::create_client<Navigation>(client_node_, action_name_);
@@ -237,7 +237,7 @@ TEST(NavigationFakeActionServerStandaloneTest, NonPreemptableRejectsSecondGoalWh
   });
   auto server_node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
     unique_test_name("test_nav_server_np"), options);
-  auto action_server = std::make_shared<NavigationFakeActionServer>(server_node.get(), action_name);
+  auto action_server = std::make_shared<NavigationFakeActionServer>(*server_node, action_name);
   ASSERT_FALSE(action_server->is_preemptable());
 
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_nav_client_np"));

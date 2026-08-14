@@ -44,7 +44,7 @@ inline std::string outcome_to_string(uint8_t outcome_value)
   }
 }
 
-/// Sends `goal` to a capability through `client`, printing progress as it
+/// @brief Sends `goal` to a capability through `client`, printing progress as it
 /// happens: a start line, live feedback (via `on_feedback`), and either the
 /// natural terminal outcome or -- if `timeout` elapses first -- a message
 /// that the capability is being stopped, followed by the outcome of that

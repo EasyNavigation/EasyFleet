@@ -23,11 +23,11 @@ namespace easyfleet_core
 namespace detail
 {
 
-/// Turns an action name (e.g. "/robot/follow_path") into a valid, readable
+/// @brief Turns an action name (e.g. "/robot/follow_path") into a valid, readable
 /// ROS 2 parameter name segment (e.g. "robot.follow_path").
 std::string sanitize_parameter_name(const std::string & action_name);
 
-/// Turns an arbitrary string into a valid ROS 2 base node name segment
+/// @brief Turns an arbitrary string into a valid ROS 2 base node name segment
 /// (alphanumeric and underscores only, not starting with a digit).
 std::string sanitize_identifier(const std::string & text);
 

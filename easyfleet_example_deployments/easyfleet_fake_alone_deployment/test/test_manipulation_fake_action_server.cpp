@@ -70,7 +70,7 @@ protected:
     server_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
       unique_test_name("test_manip_server"), options);
     action_server_ = std::make_shared<ManipulationFakeActionServer>(
-      server_node_.get(), action_name_);
+      *server_node_, action_name_);
 
     client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("test_manip_client"));
     client_ = rclcpp_action::create_client<Manipulation>(client_node_, action_name_);
@@ -233,7 +233,7 @@ TEST(ManipulationFakeActionServerStandaloneTest, NonPreemptableRejectsSecondGoal
   auto server_node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
     unique_test_name("test_manip_server_np"), options);
   auto action_server = std::make_shared<ManipulationFakeActionServer>(
-    server_node.get(), action_name);
+    *server_node, action_name);
   ASSERT_FALSE(action_server->is_preemptable());
 
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_manip_client_np"));

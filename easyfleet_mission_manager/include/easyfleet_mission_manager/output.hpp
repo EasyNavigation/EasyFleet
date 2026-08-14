@@ -23,7 +23,7 @@
 namespace easyfleet_mission_manager
 {
 
-/// Serializes terminal output across the threads used to run capabilities
+/// @brief Serializes terminal output across the threads used to run capabilities
 /// in parallel, so concurrent feedback lines never get interleaved
 /// character-by-character.
 inline std::mutex g_output_mutex;

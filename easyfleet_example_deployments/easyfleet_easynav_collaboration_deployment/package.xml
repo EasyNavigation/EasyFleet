@@ -20,6 +20,10 @@
     initial pose. Also ships the example mission script built on
     easyfleet_mission_manager and the launch files and JSON/parameter
     configuration each robot is started with.
+
+    See the sibling package easyfleet_easynav_collaboration_simple_api_deployment
+    for the exact same scenario written against easyfleet_core::Deployment's
+    simpler API instead of this package's own hand-rolled lifecycle dance.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>

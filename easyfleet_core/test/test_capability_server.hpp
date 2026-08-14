@@ -33,8 +33,8 @@ namespace easyfleet_core_test
 using Fibonacci = example_interfaces::action::Fibonacci;
 
 /// Minimal ActionServerBase<Fibonacci> subclass usable as the ActionServerT
-/// of easyfleet_core::Capability<T>: constructible from a LifecycleNode pointer
-/// plus an action name, as Capability<T> requires.
+/// of easyfleet_core::Capability<T>: constructible from a LifecycleNode
+/// reference plus an action name, as Capability<T> requires.
 ///
 /// Settles goals instantly by default (`<action_name>.mock_delay_seconds`
 /// defaults to 0), which is what most tests want. Tests that need to
@@ -45,11 +45,11 @@ class TestCapabilityActionServer : public easyfleet_core::ActionServerBase<Fibon
 {
 public:
   TestCapabilityActionServer(
-    rclcpp_lifecycle::LifecycleNode * node,
+    rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name)
   : easyfleet_core::ActionServerBase<Fibonacci>(node, action_name)
   {
-    mock_delay_s_ = node->declare_parameter(action_name + ".mock_delay_seconds", 0.0);
+    mock_delay_s_ = node.declare_parameter(action_name + ".mock_delay_seconds", 0.0);
   }
 
 protected:

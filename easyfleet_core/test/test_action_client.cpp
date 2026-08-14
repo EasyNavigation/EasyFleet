@@ -82,13 +82,13 @@ protected:
 
 TEST_F(ActionClientTest, WaitForServerSucceedsWhenServerIsUp)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   EXPECT_TRUE(client->wait_for_server(5s));
 }
 
 TEST_F(ActionClientTest, WaitForServerTimesOutForUnknownAction)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), "no_such_action");
+  auto client = FibonacciClient::create(*owner_node_, "no_such_action");
   const auto start = std::chrono::steady_clock::now();
   EXPECT_FALSE(client->wait_for_server(300ms));
   const auto elapsed = std::chrono::steady_clock::now() - start;
@@ -97,7 +97,7 @@ TEST_F(ActionClientTest, WaitForServerTimesOutForUnknownAction)
 
 TEST_F(ActionClientTest, SendGoalAsyncInvokesAllCallbacks)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
 
   std::atomic<bool> response_called{false};
@@ -135,7 +135,7 @@ TEST_F(ActionClientTest, SendGoalAsyncInvokesAllCallbacks)
 
 TEST_F(ActionClientTest, SendGoalAsyncRejectedGoalReportsRejected)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
 
   auto result_promise = std::make_shared<std::promise<FibonacciClient::GoalResult>>();
@@ -154,7 +154,7 @@ TEST_F(ActionClientTest, SendGoalAsyncRejectedGoalReportsRejected)
 
 TEST_F(ActionClientTest, SendGoalAndWaitSucceeds)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
 
   Fibonacci::Goal goal;
@@ -168,7 +168,7 @@ TEST_F(ActionClientTest, SendGoalAndWaitSucceeds)
 
 TEST_F(ActionClientTest, SendGoalAndWaitServerUnavailableReturnsImmediately)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), "no_such_action", 200ms);
+  auto client = FibonacciClient::create(*owner_node_, "no_such_action", 200ms);
 
   Fibonacci::Goal goal;
   goal.order = 1;
@@ -183,7 +183,7 @@ TEST_F(ActionClientTest, SendGoalAndWaitServerUnavailableReturnsImmediately)
 TEST_F(ActionClientTest, SendGoalAndWaitTimesOutOnSlowGoal)
 {
   server_node_->set_step_delay(300ms);
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
 
   Fibonacci::Goal goal;
@@ -196,7 +196,7 @@ TEST_F(ActionClientTest, SendGoalAndWaitTimesOutOnSlowGoal)
 TEST_F(ActionClientTest, CancelGoalByIdResultsInCanceled)
 {
   server_node_->set_step_delay(150ms);
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
 
   auto id_promise = std::make_shared<std::promise<rclcpp_action::GoalUUID>>();
@@ -231,7 +231,7 @@ TEST_F(ActionClientTest, CancelGoalByIdResultsInCanceled)
 
 TEST_F(ActionClientTest, CancelGoalWithUnknownIdReturnsFalse)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
   EXPECT_FALSE(client->cancel_goal(rclcpp_action::GoalUUID{}));
 }
@@ -239,7 +239,7 @@ TEST_F(ActionClientTest, CancelGoalWithUnknownIdReturnsFalse)
 TEST_F(ActionClientTest, CancelAllGoalsResultsInCanceled)
 {
   server_node_->set_step_delay(150ms);
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
 
   auto result_promise = std::make_shared<std::promise<FibonacciClient::GoalResult>>();
@@ -261,7 +261,7 @@ TEST_F(ActionClientTest, CancelAllGoalsResultsInCanceled)
 
 TEST_F(ActionClientTest, ActiveGoalCountTracksLifecycle)
 {
-  auto client = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client->wait_for_server(5s));
   EXPECT_EQ(client->active_goal_count(), 0u);
 
@@ -282,8 +282,8 @@ TEST_F(ActionClientTest, ActiveGoalCountTracksLifecycle)
 
 TEST_F(ActionClientTest, MultipleIndependentClientsCanTalkToSameServer)
 {
-  auto client_a = FibonacciClient::create(owner_node_.get(), action_name_);
-  auto client_b = FibonacciClient::create(owner_node_.get(), action_name_);
+  auto client_a = FibonacciClient::create(*owner_node_, action_name_);
+  auto client_b = FibonacciClient::create(*owner_node_, action_name_);
   ASSERT_TRUE(client_a->wait_for_server(5s));
   ASSERT_TRUE(client_b->wait_for_server(5s));
 

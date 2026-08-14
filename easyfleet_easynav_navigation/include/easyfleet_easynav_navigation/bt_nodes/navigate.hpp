@@ -27,19 +27,35 @@
 namespace easyfleet_easynav_navigation
 {
 
-/// Drives EasyNav (via easynav::GoalManagerClient) to the waypoint named by
+/// @brief Drives EasyNav (via easynav::GoalManagerClient) to the waypoint named by
 /// the "goal_id" input port, resolved against a fixed id->pose registry
 /// (EasyNav itself has no named-waypoint concept -- this node is where
 /// that resolution happens).
 class Navigate : public BT::StatefulActionNode
 {
 public:
+  /// @brief Constructs the BT node.
+  /// @param name Name of this node instance, as given in the BT XML.
+  /// @param config BT.CPP node configuration (ports, blackboard); the
+  ///   waypoint registry and `GoalManagerClient` are read off the
+  ///   blackboard here.
   Navigate(const std::string & name, const BT::NodeConfig & config);
 
+  /// @brief This node's ports: the input port `goal_id`.
+  /// @return This node's ports: the input port `goal_id`.
   static BT::PortsList providedPorts();
 
+  /// @brief Resolves the `goal_id` input port against the waypoint registry and
+  /// sends the corresponding pose through `gm_client_`.
+  /// @return `RUNNING`, or `FAILURE` if `goal_id` is missing/unknown.
   BT::NodeStatus onStart() override;
+  /// @brief Polls `gm_client_` for the in-flight goal's progress.
+  /// @return `RUNNING` while EasyNav is still navigating, `SUCCESS`/
+  ///   `FAILURE` once `gm_client_` reports a terminal state.
   BT::NodeStatus onRunning() override;
+  /// @brief No-op: an in-flight EasyNav goal is left alone on halt, deliberately
+  /// (see the class-level design note on preemption in the owning
+  /// capability), not canceled here.
   void onHalted() override;
 
 private:

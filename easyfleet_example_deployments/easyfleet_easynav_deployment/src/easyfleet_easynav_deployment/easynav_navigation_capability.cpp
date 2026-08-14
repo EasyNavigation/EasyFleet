@@ -83,27 +83,27 @@ std::optional<std::string> extract_goal_id(const std::string & parameters_json)
 }  // namespace
 
 EasynavNavigationActionServer::EasynavNavigationActionServer(
-  rclcpp_lifecycle::LifecycleNode * node,
+  rclcpp_lifecycle::LifecycleNode & node,
   const std::string & action_name)
 : easyfleet_core::NavigationActionServerBase(node, action_name)
 {
-  const auto waypoint_ids = node->declare_parameter(
+  const auto waypoint_ids = node.declare_parameter(
     action_name + ".waypoint_ids", std::vector<std::string>());
 
   // Matches whatever "tf_prefix" system_main was launched with (both driven
   // by the same "robot_namespace" launch argument -- see
   // launch/easynav_robot_launch.yaml / easynav_robot_gazebo_launch.yaml).
-  const std::string tf_prefix = easyfleet_core::detail::strip_leading_slash(node->get_namespace());
+  const std::string tf_prefix = easyfleet_core::detail::strip_leading_slash(node.get_namespace());
 
   auto waypoints = std::make_shared<std::map<std::string, geometry_msgs::msg::PoseStamped>>();
   for (const auto & id : waypoint_ids) {
     const std::string prefix = action_name + ".waypoints." + id + ".";
     geometry_msgs::msg::PoseStamped pose;
     pose.header.frame_id = apply_tf_prefix(
-      node->declare_parameter(prefix + "frame_id", std::string("map")), tf_prefix);
-    pose.pose.position.x = node->declare_parameter(prefix + "x", 0.0);
-    pose.pose.position.y = node->declare_parameter(prefix + "y", 0.0);
-    const double yaw = node->declare_parameter(prefix + "yaw", 0.0);
+      node.declare_parameter(prefix + "frame_id", std::string("map")), tf_prefix);
+    pose.pose.position.x = node.declare_parameter(prefix + "x", 0.0);
+    pose.pose.position.y = node.declare_parameter(prefix + "y", 0.0);
+    const double yaw = node.declare_parameter(prefix + "yaw", 0.0);
     pose.pose.orientation.z = std::sin(yaw / 2.0);
     pose.pose.orientation.w = std::cos(yaw / 2.0);
     (*waypoints)[id] = pose;
@@ -116,20 +116,20 @@ EasynavNavigationActionServer::EasynavNavigationActionServer(
   // -- combining them under the same from-file + inline-override node was
   // observed to make the array-typed waypoint_ids load empty. Same reasoning
   // applies to bt_plugins below.
-  behavior_tree_xml_ = node->declare_parameter("behavior_tree_xml", std::string());
-  tick_rate_hz_ = node->declare_parameter(action_name + ".tick_rate_hz", 10.0);
-  const auto bt_plugins = node->declare_parameter("bt_plugins", std::vector<std::string>());
+  behavior_tree_xml_ = node.declare_parameter("behavior_tree_xml", std::string());
+  tick_rate_hz_ = node.declare_parameter(action_name + ".tick_rate_hz", 10.0);
+  const auto bt_plugins = node.declare_parameter("bt_plugins", std::vector<std::string>());
 
   // Internal node dedicated to the GoalManagerClient, spun on its own
   // background thread for the whole lifetime of this action server.
   const std::string internal_node_name = sanitize_identifier(
-    std::string(node->get_name()) + "_" + action_name + "_gm_client");
+    std::string(node.get_name()) + "_" + action_name + "_gm_client");
   rclcpp::NodeOptions internal_options;
   internal_options.start_parameter_services(false);
   internal_options.start_parameter_event_publisher(false);
   internal_options.use_global_arguments(false);
   internal_node_ = std::make_shared<rclcpp::Node>(
-    internal_node_name, node->get_namespace(), internal_options);
+    internal_node_name, node.get_namespace(), internal_options);
 
   gm_client_ = easynav::GoalManagerClient::make_shared(internal_node_);
 

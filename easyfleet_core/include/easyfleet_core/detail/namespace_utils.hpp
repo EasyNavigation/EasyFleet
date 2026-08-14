@@ -23,14 +23,14 @@ namespace easyfleet_core
 namespace detail
 {
 
-/// Strips the leading '/' from a ROS 2 namespace, so the default (no)
+/// @brief Strips the leading '/' from a ROS 2 namespace, so the default (no)
 /// namespace "/" becomes "" and "/robot1" becomes "robot1".
 inline std::string strip_leading_slash(const std::string & ns)
 {
   return (!ns.empty() && ns.front() == '/') ? ns.substr(1) : ns;
 }
 
-/// `strip_leading_slash(ns)`, or `"-"` if the result would be empty. Used
+/// @brief `strip_leading_slash(ns)`, or `"-"` if the result would be empty. Used
 /// when logging the robot identity, so unnamespaced nodes (e.g. in tests)
 /// print something more legible than an empty pair of quotes.
 inline std::string robot_label(const std::string & ns)

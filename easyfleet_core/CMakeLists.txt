@@ -17,8 +17,12 @@ find_package(action_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(easyfleet_interfaces REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 add_library(${PROJECT_NAME}
+  src/deployment.cpp
+  src/init.cpp
   src/param_utils.cpp
   src/spin_utils.cpp
 )
@@ -34,6 +38,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rcl_interfaces::rcl_interfaces
   lifecycle_msgs::lifecycle_msgs
   easyfleet_interfaces::easyfleet_interfaces
+  pluginlib::pluginlib
+  ament_index_cpp::ament_index_cpp
 )
 
 install(
@@ -57,6 +63,8 @@ ament_export_dependencies(
   rcl_interfaces
   lifecycle_msgs
   easyfleet_interfaces
+  pluginlib
+  ament_index_cpp
 )
 
 if(BUILD_TESTING)
@@ -69,6 +77,13 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+  find_package(pluginlib REQUIRED)
+
+  # Must be called from this top-level scope, not from test/CMakeLists.txt:
+  # it's a macro that accumulates into a variable consumed by the
+  # ament_package() call below, and add_subdirectory(test) would give that
+  # accumulation its own CMake variable scope invisible from here.
+  pluginlib_export_plugin_description_file(easyfleet_core test/test_plugins.xml)
 
   add_subdirectory(test)
 endif()

@@ -53,7 +53,7 @@ public:
     const std::string & action_name = "fibonacci",
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node(node_name, options),
-    easyfleet_core::ActionServerBase<Fibonacci>(this, action_name, default_allow_preemption)
+    easyfleet_core::ActionServerBase<Fibonacci>(*this, action_name, default_allow_preemption)
   {
   }
 

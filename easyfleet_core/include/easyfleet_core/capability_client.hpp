@@ -28,7 +28,7 @@
 namespace easyfleet_core
 {
 
-/// The simplest possible way to ask a capability to do something.
+/// @brief The simplest possible way to ask a capability to do something.
 /**
  * Where `ActionClient<ActionT>` exposes the full action protocol (goal
  * acceptance, per-goal cancellation by id, active goal bookkeeping...),
@@ -55,56 +55,84 @@ template<typename ActionT>
 class CapabilityClient
 {
 public:
+  /// @brief Shared pointer to a `CapabilityClient<ActionT>`.
   using SharedPtr = std::shared_ptr<CapabilityClient<ActionT>>;
+  /// @brief Goal type of the wrapped action.
   using Goal = typename ActionT::Goal;
+  /// @brief Feedback type of the wrapped action.
   using Feedback = typename ActionT::Feedback;
+  /// @brief Result type of the wrapped action.
   using Result = typename ActionT::Result;
+  /// @brief Callback invoked with feedback as it arrives for the request.
   using FeedbackCallback = std::function<void (std::shared_ptr<const Feedback>)>;
 
-  /// Same vocabulary as `ActionClient::GoalOutcome`.
+  /// @brief Same vocabulary as `ActionClient::GoalOutcome`.
   using Outcome = typename ActionClient<ActionT>::GoalOutcome;
 
+  /// @brief Final outcome of a request, as delivered to a `ResponseCallback` or
+  /// returned by `request_and_wait()`.
   struct Response
   {
+    /// @brief How the request ended.
     Outcome outcome{Outcome::ABORTED};
+    /// @brief Action-specific result, if `outcome` is `Outcome::SUCCEEDED`.
     typename Result::SharedPtr result;
   };
 
+  /// @brief Callback invoked once a request reaches a final outcome.
   using ResponseCallback = std::function<void (const Response &)>;
 
-  /// @param node Node on whose behalf the capability is called.
+  /// @brief Constructs a new client for the capability named `capability_name`.
+  /// @param node Node on whose behalf the capability is called. Only used
+  ///   to construct the underlying `ActionClient` (never stored), so a
+  ///   reference -- never null, unlike a pointer -- is all this needs.
   /// @param capability_name Name of the capability to call (its action name).
   /// @param default_wait_timeout Timeout used by the no-argument overload of
   ///   `wait_for_capability()`.
+  /// @return A new `CapabilityClient<ActionT>`.
   static SharedPtr create(
-    rclcpp::Node * node,
+    rclcpp::Node & node,
     const std::string & capability_name,
     std::chrono::milliseconds default_wait_timeout = std::chrono::seconds(5));
 
   CapabilityClient(const CapabilityClient &) = delete;
   CapabilityClient & operator=(const CapabilityClient &) = delete;
 
-  /// Blocks until the capability is reachable, or the timeout elapses.
+  /// @brief Blocks until the capability is reachable, using the constructor's
+  /// `default_wait_timeout`.
+  /// @return Whether the capability became reachable before the timeout.
   bool wait_for_capability();
+  /// @brief Blocks until the capability is reachable, or `timeout` elapses.
+  /// @param timeout Maximum time to wait.
+  /// @return Whether the capability became reachable before the timeout.
   bool wait_for_capability(std::chrono::milliseconds timeout);
 
-  /// Asks the capability to do something. Returns immediately; `on_response`
+  /// @brief Asks the capability to do something. Returns immediately; `on_response`
   /// is called exactly once with the final outcome, and `on_feedback` (if
   /// given) once per feedback message while the request is running.
+  /// @param goal Request content to send.
+  /// @param on_response Invoked once with the final outcome.
+  /// @param on_feedback Invoked as feedback arrives, if given.
   void request(
     const Goal & goal,
     ResponseCallback on_response,
     FeedbackCallback on_feedback = nullptr);
 
-  /// Asks the capability to do something and blocks the calling thread
+  /// @brief Asks the capability to do something and blocks the calling thread
   /// until the response is ready (or `timeout` elapses, if positive). Safe
   /// to call from any thread.
+  /// @param goal Request content to send.
+  /// @param on_feedback Invoked as feedback arrives, if given.
+  /// @param timeout Maximum time to wait for a response; `0` (the default)
+  ///   waits indefinitely.
+  /// @return The request's final outcome (`Outcome::TIMEOUT` if `timeout`
+  ///   elapsed first).
   Response request_and_wait(
     const Goal & goal,
     FeedbackCallback on_feedback = nullptr,
     std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-  /// Asks the capability to stop whatever it is currently doing (e.g. a
+  /// @brief Asks the capability to stop whatever it is currently doing (e.g. a
   /// navigating robot stops moving, a perception stream stops reporting
   /// detections). Returns immediately; the pending request's `on_response`
   /// (from `request()`) or the return of `request_and_wait()` will resolve

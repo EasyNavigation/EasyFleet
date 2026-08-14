@@ -42,14 +42,14 @@ bool goal_target_is_empty(const ManipulationFakeActionServer::Goal & goal)
 }  // namespace
 
 ManipulationFakeActionServer::ManipulationFakeActionServer(
-  rclcpp_lifecycle::LifecycleNode * node,
+  rclcpp_lifecycle::LifecycleNode & node,
   const std::string & action_name)
 : easyfleet_core::ManipulationActionServerBase(node, action_name)
 {
   mock_execution_duration_s_ =
-    node->declare_parameter(action_name + ".mock_execution_duration", 3.0);
+    node.declare_parameter(action_name + ".mock_execution_duration", 3.0);
   mock_feedback_period_s_ =
-    node->declare_parameter(action_name + ".mock_feedback_period", 0.3);
+    node.declare_parameter(action_name + ".mock_feedback_period", 0.3);
 }
 
 rclcpp_action::GoalResponse ManipulationFakeActionServer::on_goal_received(

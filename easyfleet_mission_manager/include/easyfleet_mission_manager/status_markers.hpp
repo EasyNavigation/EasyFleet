@@ -27,7 +27,7 @@
 namespace easyfleet_mission_manager
 {
 
-/// Publishes a floating `TEXT_VIEW_FACING` marker above each robot's own
+/// @brief Publishes a floating `TEXT_VIEW_FACING` marker above each robot's own
 /// `base_link`, showing a short, human-readable line of what that robot is
 /// currently doing (which capability, what state/result) -- so watching
 /// the mission in RViz alone (no terminal) is enough for a non-expert to
@@ -46,7 +46,11 @@ namespace easyfleet_mission_manager
 class StatusMarkerPublisher
 {
 public:
-  /// @param node Node the marker publisher is created on.
+  /// @brief Constructs the marker publisher.
+  /// @param node Node the marker publisher is created on. Kept as a
+  ///   reference for this object's whole life (used later by the refresh
+  ///   timer callback), so `node` must outlive this `StatusMarkerPublisher`
+  ///   -- never null, unlike a pointer.
   /// @param topic Topic the MarkerArray is published on.
   /// @param height Height (m) above each robot's base_link the text floats at.
   /// @param text_size Marker `scale.z`: character height, **in world-space
@@ -60,7 +64,7 @@ public:
   ///   Kobuki at a typical close-in RViz view over matching some absolute
   ///   "normal" text size.
   explicit StatusMarkerPublisher(
-    rclcpp::Node * node,
+    rclcpp::Node & node,
     const std::string & topic = "mission_status_markers",
     double height = 0.75,
     double text_size = 0.25)
@@ -71,7 +75,7 @@ public:
     // Transient-local: a subscriber (RViz) that joins after the mission has
     // already started still needs to see every robot's last known status
     // immediately, not wait for its next transition.
-    pub_ = node->create_publisher<visualization_msgs::msg::MarkerArray>(
+    pub_ = node_.create_publisher<visualization_msgs::msg::MarkerArray>(
       topic, rclcpp::QoS(10).reliable().transient_local());
     // set_status() is only called at mission phase transitions -- sometimes
     // minutes apart (kLongTimeout in this scenario's own mission script) --
@@ -84,15 +88,17 @@ public:
     // (rather than a message meant to be interpreted once) keeps every
     // stamp within a couple hundred ms of "now" at all times, independent
     // of how often the *text* itself actually changes.
-    refresh_timer_ = node->create_wall_timer(
+    refresh_timer_ = node_.create_wall_timer(
       std::chrono::milliseconds(200), [this] {publish_all();});
   }
 
-  /// Sets `robot`'s current status text and publishes it immediately (the
+  /// @brief Sets `robot`'s current status text and publishes it immediately (the
   /// background refresh timer then keeps republishing it, and every other
   /// robot's last known text, with a fresh timestamp). Safe to call from
   /// multiple threads (e.g. one per robot, as a mission script's own
   /// parallel phases do).
+  /// @param robot Robot identity the marker is shown above.
+  /// @param text Status text to display.
   void set_status(const std::string & robot, const std::string & text)
   {
     {
@@ -108,7 +114,7 @@ private:
   {
     visualization_msgs::msg::MarkerArray array;
     std::lock_guard<std::mutex> lock(mutex_);
-    const rclcpp::Time stamp = node_->get_clock()->now();
+    const rclcpp::Time stamp = node_.get_clock()->now();
     for (const auto & [robot, text] : texts_) {
       visualization_msgs::msg::Marker marker;
       marker.header.frame_id = robot + "/base_link";
@@ -156,7 +162,7 @@ private:
     return id;
   }
 
-  rclcpp::Node * node_;
+  rclcpp::Node & node_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_;
   rclcpp::TimerBase::SharedPtr refresh_timer_;
   double height_;

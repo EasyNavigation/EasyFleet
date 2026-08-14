@@ -23,7 +23,7 @@
 namespace easyfleet_mission_manager
 {
 
-/// Everything known about one running capability instance, gathered from
+/// @brief Everything known about one running capability instance, gathered from
 /// its `/capabilities` (easyfleet_interfaces/CapabilityDescription) and
 /// `/capabilities_status` (easyfleet_interfaces/CapabilityStatus)
 /// messages. `action_name` is the unique identity: two robots can both
@@ -31,25 +31,33 @@ namespace easyfleet_mission_manager
 /// `action_name` (e.g. "/robot1/navigation" vs "/robot2/navigation").
 struct CapabilityInfo
 {
+  /// @brief Robot identity this capability was announced under (e.g. "robot1").
   std::string robot;
+  /// @brief Capability type (e.g. "navigation").
   std::string capability;
+  /// @brief Fully-qualified action name (e.g. "/robot1/navigation").
   std::string action_name;
+  /// @brief Raw JSON text of the capability description, as published.
   std::string description_json_raw;
+  /// @brief `description_json_raw`, parsed -- empty if parsing failed.
   nlohmann::json description_json;
+  /// @brief Whether `description_json_raw` parsed successfully as JSON.
   bool description_json_valid{false};
+  /// @brief Whether this capability was announced on /capabilities at all, at
+  /// discovery time.
   bool active{false};
-  /// True while the capability has a goal currently executing (from the
+  /// @brief True while the capability has a goal currently executing (from the
   /// latest CapabilityStatus heartbeat seen). Meaningless if `active` is
   /// false: a capability that isn't publishing heartbeats at all can't be
   /// "busy" or "idle", it's just gone.
   bool busy{false};
 };
 
-/// Pretty-prints the full capability description (requirements, effects,
+/// @brief Pretty-prints the full capability description (requirements, effects,
 /// parameters, ...) to the terminal.
 void print_capability_info(const CapabilityInfo & info);
 
-/// Prints a single summary line, e.g. for a "known capabilities" list.
+/// @brief Prints a single summary line, e.g. for a "known capabilities" list.
 void print_capability_summary_line(const CapabilityInfo & info);
 
 }  // namespace easyfleet_mission_manager

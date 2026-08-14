@@ -26,7 +26,7 @@
 namespace easyfleet_mission_manager
 {
 
-/// Listens on `/capabilities` (retained CapabilityDescription messages) and
+/// @brief Listens on `/capabilities` (retained CapabilityDescription messages) and
 /// `/capabilities_status` (1 Hz CapabilityStatus heartbeats) for `window`,
 /// and returns one `CapabilityInfo` per distinct `action_name` seen on
 /// either topic -- this is the right key because two robots can offer the
@@ -34,7 +34,7 @@ namespace easyfleet_mission_manager
 /// `node` must already be part of an executor that is being spun on another
 /// thread: this function only subscribes and waits, it does not spin.
 std::vector<CapabilityInfo> discover_capabilities(
-  rclcpp::Node * node,
+  rclcpp::Node & node,
   std::chrono::milliseconds window = std::chrono::milliseconds(2500));
 
 }  // namespace easyfleet_mission_manager

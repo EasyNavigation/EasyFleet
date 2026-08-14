@@ -62,8 +62,8 @@ protected:
     executor_->add_node(arm_server_);
     spin_thread_ = spin_in_background(*executor_);
 
-    nav_client_ = FibonacciClient::create(mission_node_.get(), nav_action_name_);
-    arm_client_ = FibonacciClient::create(mission_node_.get(), arm_action_name_);
+    nav_client_ = FibonacciClient::create(*mission_node_, nav_action_name_);
+    arm_client_ = FibonacciClient::create(*mission_node_, arm_action_name_);
     ASSERT_TRUE(nav_client_->wait_for_server(5s));
     ASSERT_TRUE(arm_client_->wait_for_server(5s));
   }
@@ -208,7 +208,7 @@ TEST_F(IntegrationTest, ClientCreatedAndDestroyedInLocalScopeCleansUpPromptly)
 {
   const auto start = std::chrono::steady_clock::now();
   {
-    auto scoped_client = FibonacciClient::create(mission_node_.get(), nav_action_name_);
+    auto scoped_client = FibonacciClient::create(*mission_node_, nav_action_name_);
     ASSERT_TRUE(scoped_client->wait_for_server(5s));
     Fibonacci::Goal goal;
     goal.order = 2;

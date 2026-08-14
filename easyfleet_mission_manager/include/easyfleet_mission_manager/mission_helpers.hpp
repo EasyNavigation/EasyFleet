@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <functional>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -27,6 +28,7 @@
 #include "easyfleet_interfaces/action/manipulation.hpp"
 #include "easyfleet_interfaces/action/navigation.hpp"
 #include "easyfleet_interfaces/action/perception.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 #include "easyfleet_mission_manager/ansi.hpp"
@@ -46,11 +48,11 @@ using Navigation = easyfleet_interfaces::action::Navigation;
 using Manipulation = easyfleet_interfaces::action::Manipulation;
 using Perception = easyfleet_interfaces::action::Perception;
 
-/// How long a mission script lets a capability run before stopping it, if
+/// @brief How long a mission script lets a capability run before stopping it, if
 /// it hasn't finished on its own by then.
 constexpr std::chrono::seconds kRunTimeout(10);
 
-/// Starts `executor.spin()` on a background thread and blocks until it has
+/// @brief Starts `executor.spin()` on a background thread and blocks until it has
 /// actually begun spinning before returning it. `Executor::cancel()` only
 /// reliably interrupts a `spin()` that has already started.
 inline std::thread spin_in_background(rclcpp::Executor & executor)
@@ -62,7 +64,7 @@ inline std::thread spin_in_background(rclcpp::Executor & executor)
   return thread;
 }
 
-/// Prints a bold, boxed header marking a new phase of a mission script.
+/// @brief Prints a bold, boxed header marking a new phase of a mission script.
 inline void print_section(const std::string & title)
 {
   std::ostringstream out;
@@ -70,17 +72,19 @@ inline void print_section(const std::string & title)
   safe_print(out.str());
 }
 
-/// Prints a dim, indented line explaining what a phase is about to do (or
+/// @brief Prints a dim, indented line explaining what a phase is about to do (or
 /// just did), so the mission's progress is legible as it happens.
 inline void print_step(const std::string & text)
 {
   safe_print(std::string("  ") + ansi::dim + text + ansi::reset);
 }
 
-/// Finds `robot`'s active capability of the given short type (e.g.
+/// @brief Finds `robot`'s active capability of the given short type (e.g.
 /// "navigation"). `action_name` is what must actually be dialed to reach
 /// it (e.g. "/robot_1/navigation").
-inline const CapabilityInfo * find_robot_capability(
+/// @return The matching entry, or `std::nullopt` if none was found -- a
+///   nullable *reference* into `capabilities`, without a raw pointer.
+inline std::optional<std::reference_wrapper<const CapabilityInfo>> find_robot_capability(
   const std::vector<CapabilityInfo> & capabilities,
   const std::string & robot, const std::string & capability)
 {
@@ -89,7 +93,10 @@ inline const CapabilityInfo * find_robot_capability(
     [&](const CapabilityInfo & info) {
       return info.robot == robot && info.capability == capability && info.active;
     });
-  return it != capabilities.end() ? &(*it) : nullptr;
+  if (it == capabilities.end()) {
+    return std::nullopt;
+  }
+  return std::cref(*it);
 }
 
 inline Navigation::Goal make_navigation_goal()
@@ -102,6 +109,21 @@ inline Navigation::Goal make_navigation_goal()
   return goal;
 }
 
+/// @brief Builds a navigation goal targeting a named waypoint, via the
+/// `parameters_json: {"goal_id": ...}` convention the real EasyNav-backed
+/// navigation capability reads (see easyfleet_easynav_navigation); ignored
+/// by (and therefore also safe against) the mock navigation capability,
+/// which pays no attention to goal content at all.
+/// @param waypoint_id Id of the waypoint to navigate to, as configured on
+///   the target capability's own `navigation.waypoint_ids` parameter.
+inline Navigation::Goal make_navigation_goal(const std::string & waypoint_id)
+{
+  Navigation::Goal goal;
+  goal.parameters_json = R"({"goal_id": ")" + waypoint_id + R"("})";
+  return goal;
+}
+
+/// @brief Builds a throttled feedback printer for navigation goals.
 /// @param label Printed on every feedback line, e.g. "/robot_1/navigation":
 ///   needed to tell apart interleaved feedback from several robots running
 ///   the same capability type in parallel.
@@ -131,6 +153,17 @@ inline Manipulation::Goal make_manipulation_goal()
   return goal;
 }
 
+/// @brief Builds a manipulation goal reaching for an end-effector pose
+/// (`MODE_POSE_TARGET`).
+/// @param pose Target end-effector pose.
+inline Manipulation::Goal make_manipulation_goal(const geometry_msgs::msg::PoseStamped & pose)
+{
+  Manipulation::Goal goal;
+  goal.mode = Manipulation::Goal::MODE_POSE_TARGET;
+  goal.pose_target = pose;
+  return goal;
+}
+
 inline std::function<void(const Manipulation::Feedback & )> make_manipulation_feedback_printer(
   const std::string & label)
 {
@@ -150,6 +183,15 @@ inline Perception::Goal make_perception_goal()
 {
   Perception::Goal goal;
   goal.object_classes.push_back("gato");
+  return goal;
+}
+
+/// @brief Builds a perception goal detecting the given object classes.
+/// @param object_classes Object classes to detect (e.g. {"gato"}).
+inline Perception::Goal make_perception_goal(const std::vector<std::string> & object_classes)
+{
+  Perception::Goal goal;
+  goal.object_classes = object_classes;
   return goal;
 }
 
