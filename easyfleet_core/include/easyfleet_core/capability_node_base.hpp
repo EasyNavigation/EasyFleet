@@ -25,7 +25,7 @@
 namespace easyfleet_core
 {
 
-/// Non-template handle to an already-constructed `Capability<ActionServerT>`
+/// @brief Non-template handle to an already-constructed `Capability<ActionServerT>`
 /// instance, exposing exactly the surface `Robot`/`Deployment` need to drive
 /// it -- lifecycle transitions, its node (to add to an executor), and its
 /// identity -- without needing to know `ActionServerT`.
@@ -40,7 +40,9 @@ namespace easyfleet_core
 class CapabilityNodeBase
 {
 public:
+  /// @brief Shared pointer to a `CapabilityNodeBase`.
   using SharedPtr = std::shared_ptr<CapabilityNodeBase>;
+  /// @brief Lifecycle transition result type shared with `rclcpp_lifecycle`.
   using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
   virtual ~CapabilityNodeBase() = default;
@@ -53,18 +55,39 @@ public:
   // Capability<T>* directly -- including the one-arg configure(CallbackReturn&)
   // overload existing code (test_capability.cpp) already calls -- breaking
   // it. Distinct names sidestep that entirely.
+  /// @brief Drive the underlying lifecycle node from UNCONFIGURED to INACTIVE.
+  /// @return The resulting lifecycle transition outcome.
   virtual CallbackReturn configure_node() = 0;
+  /// @brief Drive the underlying lifecycle node from INACTIVE to ACTIVE.
+  /// @return The resulting lifecycle transition outcome.
   virtual CallbackReturn activate_node() = 0;
+  /// @brief Drive the underlying lifecycle node from ACTIVE to INACTIVE.
+  /// @return The resulting lifecycle transition outcome.
   virtual CallbackReturn deactivate_node() = 0;
+  /// @brief Drive the underlying lifecycle node from INACTIVE to UNCONFIGURED.
+  /// @return The resulting lifecycle transition outcome.
   virtual CallbackReturn cleanup_node() = 0;
+  /// @brief Drive the underlying lifecycle node to FINALIZED, from whatever state
+  /// it is currently in.
+  /// @return The resulting lifecycle transition outcome.
   virtual CallbackReturn shutdown_node() = 0;
+  /// @brief The underlying lifecycle node's current state id.
+  /// @return The underlying lifecycle node's current state id (one of the
+  ///   `lifecycle_msgs::msg::State::PRIMARY_STATE_*` constants).
   virtual uint8_t get_current_state_id() const = 0;
 
-  /// So a `Deployment` can add the underlying node to its shared executor
+  /// @brief So a `Deployment` can add the underlying node to its shared executor
   /// without knowing its concrete type.
+  /// @return The underlying node's base interface.
   virtual rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() = 0;
 
+  /// @brief The `capability` identity field published on /capabilities and /capabilities_status.
+  /// @return The `capability` identity field published on /capabilities
+  ///   and /capabilities_status.
   virtual const std::string & get_capability_name() const = 0;
+  /// @brief The `robot` identity field published on /capabilities and /capabilities_status.
+  /// @return The `robot` identity field published on /capabilities and
+  ///   /capabilities_status.
   virtual const std::string & get_robot_name() const = 0;
 };
 

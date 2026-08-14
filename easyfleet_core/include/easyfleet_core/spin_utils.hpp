@@ -21,7 +21,7 @@
 namespace easyfleet_core
 {
 
-/// Spins `executor` until SIGINT/SIGTERM, then returns -- with the ROS
+/// @brief Spins `executor` until SIGINT/SIGTERM, then returns -- with the ROS
 /// context still valid, unlike a plain `executor.spin()` under rclcpp's own
 /// default signal handling.
 /**
@@ -38,6 +38,8 @@ namespace easyfleet_core
  * Requires the caller to have called `rclcpp::init()` with
  * `SignalHandlerOptions::None` -- otherwise rclcpp's own handler still
  * fires (in addition to this one) and shuts the context down regardless.
+ *
+ * @param executor Executor to spin and, on SIGINT/SIGTERM, cancel.
  */
 void spin_until_shutdown(rclcpp::Executor & executor);
 

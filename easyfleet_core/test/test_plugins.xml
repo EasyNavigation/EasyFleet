@@ -1,0 +1,22 @@
+<library path="test_capability_factory_plugin">
+  <class name="test_capability/fibonacci"
+         type="easyfleet_core_test::TestCapabilityFactory"
+         base_class_type="easyfleet_core::CapabilityFactory">
+    <description>
+      Test-only CapabilityFactory (backed by TestCapabilityActionServer /
+      example_interfaces/Fibonacci), used exclusively by easyfleet_core's
+      own gtest suite to exercise Deployment's plugin-loading success path.
+    </description>
+  </class>
+  <!-- Same underlying factory type, a second lookup name: lets a single
+       test exercise Deployment::add_capability() called more than once
+       without two capability nodes fighting over the same ROS node name. -->
+  <class name="test_capability_two/fibonacci"
+         type="easyfleet_core_test::TestCapabilityFactory"
+         base_class_type="easyfleet_core::CapabilityFactory">
+    <description>
+      Second test-only CapabilityFactory registration, identical to
+      test_capability/fibonacci under a different lookup/capability name.
+    </description>
+  </class>
+</library>

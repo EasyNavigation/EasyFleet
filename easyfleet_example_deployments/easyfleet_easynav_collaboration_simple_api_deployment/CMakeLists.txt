@@ -62,17 +62,17 @@ target_link_libraries(robot_node
   easyfleet_core::easyfleet_core
 )
 
-# TEMPORARILY NOT BUILT: src/main_easynav_collaboration.cpp is the
-# simple-API mission script (easyfleet_mission_manager::RobotHandle/
-# SimpleController), but those are still header-only -- no .cpp bodies
-# yet (see refactor.md). Re-enable this executable (and add it back to
-# the install(TARGETS ...) below) once that implementation lands.
-# add_executable(easynav_collaboration_mission_node src/main_easynav_collaboration.cpp)
-# target_link_libraries(easynav_collaboration_mission_node
-#   rclcpp::rclcpp
-#   easyfleet_core::easyfleet_core
-#   easyfleet_mission_manager::easyfleet_mission_manager
-# )
+# The simple-API mission script (easyfleet_mission_manager::RobotHandle/
+# SimpleController/FleetSession) -- see refactor.md for the implementation
+# history; produces identical mission behavior to
+# easyfleet_easynav_collaboration_deployment's own
+# main_easynav_collaboration.cpp, driven through the simpler API instead.
+add_executable(easynav_collaboration_mission_node src/main_easynav_collaboration.cpp)
+target_link_libraries(easynav_collaboration_mission_node
+  rclcpp::rclcpp
+  easyfleet_core::easyfleet_core
+  easyfleet_mission_manager::easyfleet_mission_manager
+)
 
 install(
   DIRECTORY include/
@@ -88,6 +88,7 @@ install(
 install(
   TARGETS
     robot_node
+    easynav_collaboration_mission_node
   DESTINATION lib/${PROJECT_NAME}
 )
 install(

@@ -22,7 +22,7 @@
 namespace easyfleet_core
 {
 
-/// Fixes `ActionServerBase`'s action type to `easyfleet_interfaces/Navigation`,
+/// @brief Fixes `ActionServerBase`'s action type to `easyfleet_interfaces/Navigation`,
 /// so a concrete navigation backend (Nav2, EasyNav, a fake mock, ...) only has
 /// to subclass this and implement `on_goal_received()`/`on_execute()` -- it
 /// never needs to spell out the action type itself.

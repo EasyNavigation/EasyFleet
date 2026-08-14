@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_EASYNAV_COLLABORATION_DEPLOYMENT__PERCEPTION_FAKE_CAPABILITY_HPP_
-#define EASYFLEET_EASYNAV_COLLABORATION_DEPLOYMENT__PERCEPTION_FAKE_CAPABILITY_HPP_
+#ifndef EASYFLEET_EASYNAV_COLLABORATION_SIMPLE_API_DEPLOYMENT__PERCEPTION_FAKE_CAPABILITY_HPP_
+#define EASYFLEET_EASYNAV_COLLABORATION_SIMPLE_API_DEPLOYMENT__PERCEPTION_FAKE_CAPABILITY_HPP_
 
 #include <random>
 #include <string>
@@ -30,7 +30,7 @@
 namespace easyfleet_easynav_collaboration_simple_api_deployment
 {
 
-/// Fake/mock implementation of the easyfleet_interfaces/Perception action.
+/// @brief Fake/mock implementation of the easyfleet_interfaces/Perception action.
 /**
  * A reference implementation of `easyfleet_core::PerceptionActionServerBase`:
  * it does not run a real object detector. When asked for the configured
@@ -52,18 +52,32 @@ namespace easyfleet_easynav_collaboration_simple_api_deployment
 class PerceptionFakeActionServer : public easyfleet_core::PerceptionActionServerBase
 {
 public:
+  /// @brief Constructs the action server.
+  /// @param node Lifecycle node that will host this action server.
+  /// @param action_name Name under which the action is advertised.
   PerceptionFakeActionServer(
     rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
 
 protected:
+  /// @brief Accepts only goals asking for the configured `target_class_`.
+  /// @param uuid Id of the incoming goal.
+  /// @param goal Goal content to validate.
+  /// @return `ACCEPT_AND_EXECUTE` if `goal->target_class` matches
+  ///   `target_class_`, `REJECT` otherwise.
   rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Goal> goal) override;
 
+  /// @brief Streams random detections at `detection_rate_hz_` until canceled,
+  /// preempted or shut down.
+  /// @param goal_handle Handle of the accepted goal to run to completion.
   void on_execute(const GoalHandleSharedPtr goal_handle) override;
 
 private:
+  /// @brief One feedback message with 1 to 3 randomly placed detections of `target_class_`.
+  /// @return One feedback message with 1 to 3 randomly placed detections
+  ///   of `target_class_`.
   Feedback make_random_detections();
 
   std::string target_class_;
@@ -73,15 +87,17 @@ private:
   std::mt19937 random_engine_;
 };
 
-/// The "perception" capability, backed by the fake/mock action server: a
+/// @brief The "perception" capability, backed by the fake/mock action server: a
 /// lifecycle node advertising a (mock) easyfleet_interfaces/Perception
 /// action, described by config/robot_1/perception.json.
 class PerceptionFakeCapability : public easyfleet_core::Capability<PerceptionFakeActionServer>
 {
 public:
+  /// @brief Constructs the capability node.
+  /// @param options Forwarded to the underlying `LifecycleNode`.
   explicit PerceptionFakeCapability(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 };
 
 }  // namespace easyfleet_easynav_collaboration_simple_api_deployment
 
-#endif  // EASYFLEET_EASYNAV_COLLABORATION_DEPLOYMENT__PERCEPTION_FAKE_CAPABILITY_HPP_
+#endif  // EASYFLEET_EASYNAV_COLLABORATION_SIMPLE_API_DEPLOYMENT__PERCEPTION_FAKE_CAPABILITY_HPP_

@@ -31,7 +31,7 @@
 namespace easyfleet
 {
 
-/// Everything one robot's process needs: load its capabilities, bring them
+/// @brief Everything one robot's process needs: load its capabilities, bring them
 /// up, run them until shutdown, tear them down.
 /**
  * Replaces the longhand configure/check/activate/check/spin/deactivate/
@@ -83,13 +83,14 @@ namespace easyfleet
 class Deployment
 {
 public:
-  /// Robot identity inferred from this process's own ROS namespace (e.g.
+  /// @brief Robot identity inferred from this process's own ROS namespace (e.g.
   /// a process launched under `/robot_1` becomes `"robot_1"`) -- matching
   /// how that identity is already determined by however the process was
   /// launched, with no code needing to repeat it. The common case; see the
   /// class-level doc comment's second example.
   Deployment();
 
+  /// @brief Constructs a `Deployment` with an explicit robot identity.
   /// @param name This robot's identity, e.g. "robot_1" -- used for log
   ///   messages only. Not applied as a ROS namespace: that's already
   ///   determined by however this process itself was launched (see the
@@ -97,9 +98,12 @@ public:
   ///   name other than this process's own namespace is genuinely needed.
   explicit Deployment(std::string name);
 
+  /// @brief This robot's identity, as passed to the constructor.
+  /// @return This robot's identity, as passed to the constructor (or
+  ///   inferred from the process's own ROS namespace).
   const std::string & name() const noexcept;
 
-  /// Loads, constructs and starts hosting one capability. Safe to call
+  /// @brief Loads, constructs and starts hosting one capability. Safe to call
   /// only before `start()`.
   /**
    * @param plugin_lookup_name Pluginlib lookup name for a
@@ -125,10 +129,11 @@ public:
     const std::string & plugin_lookup_name,
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
-  /// Every capability added so far, in `add_capability()` order.
+  /// @brief Every capability added so far, in `add_capability()` order.
+  /// @return Every capability added so far, in `add_capability()` order.
   const std::vector<easyfleet_core::CapabilityNodeBase::SharedPtr> & capabilities() const noexcept;
 
-  /// Reads which capabilities to host from this process's own
+  /// @brief Reads which capabilities to host from this process's own
   /// `"capabilities"` (string list) and `"config_subdir"` parameters --
   /// the same convention `robot_node.cpp`'s own hardcoded factory function
   /// already reads by hand -- resolves each one's `capabilities_file` JSON
@@ -147,7 +152,7 @@ public:
    */
   void add_capabilities_from_parameters(const std::string & package_name);
 
-  /// Configures, then activates, every added capability, in the order
+  /// @brief Configures, then activates, every added capability, in the order
   /// they were added.
   /**
    * Fails loud, on purpose: the first capability that doesn't reach the
@@ -159,14 +164,14 @@ public:
    */
   void start();
 
-  /// Adds every capability's node to one shared executor and blocks until
+  /// @brief Adds every capability's node to one shared executor and blocks until
   /// SIGINT/SIGTERM (see `spin_until_shutdown()`), then deactivates and
   /// cleans up every capability -- in reverse order -- before returning.
   /// Requires `init()` to have been called (its non-default signal
   /// handling is what lets this shut lifecycle nodes down cleanly).
   void run();
 
-  /// Shuts down every capability's lifecycle node, then calls
+  /// @brief Shuts down every capability's lifecycle node, then calls
   /// `rclcpp::shutdown()` -- the ROS context teardown, distinct from
   /// `run()`'s own already-completed per-capability deactivate/cleanup.
   void shutdown();
@@ -175,7 +180,7 @@ private:
   std::string name_;
   std::vector<easyfleet_core::CapabilityNodeBase::SharedPtr> capabilities_;
 
-  /// Lazily constructed on the first `add_capability()` call. Kept alive
+  /// @brief Lazily constructed on the first `add_capability()` call. Kept alive
   /// for this `Deployment`'s whole life -- pluginlib requires the loader
   /// that created a plugin instance to outlive that instance. One loader
   /// suffices for every plugin regardless of which package it comes from:
@@ -185,7 +190,7 @@ private:
 
   rclcpp::executors::SingleThreadedExecutor executor_;
 
-  /// Lazily constructed the first time it's needed (by the no-arg
+  /// @brief Lazily constructed the first time it's needed (by the no-arg
   /// constructor, or by `add_capabilities_from_parameters()`, whichever
   /// runs first) -- a throwaway node that exists only to read this
   /// process's namespace and/or its `"capabilities"`/`"config_subdir"`

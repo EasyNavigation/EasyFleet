@@ -29,7 +29,7 @@
 namespace easyfleet_fake_collaboration_deployment
 {
 
-/// Fake/mock implementation of the easyfleet_interfaces/Navigation action.
+/// @brief Fake/mock implementation of the easyfleet_interfaces/Navigation action.
 /**
  * A reference implementation of `easyfleet_core::NavigationActionServerBase`:
  * it does not perform real path planning, localization or obstacle
@@ -42,15 +42,25 @@ namespace easyfleet_fake_collaboration_deployment
 class NavigationFakeActionServer : public easyfleet_core::NavigationActionServerBase
 {
 public:
+  /// @brief Constructs the action server.
+  /// @param node Lifecycle node that will host this action server.
+  /// @param action_name Name under which the action is advertised.
   NavigationFakeActionServer(
     rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
 
 protected:
+  /// @brief Always accepts (this mock never rejects a goal).
+  /// @param uuid Id of the incoming goal.
+  /// @param goal Goal content (unused).
+  /// @return Always `ACCEPT_AND_EXECUTE`.
   rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Goal> goal) override;
 
+  /// @brief Simulates navigation progress over `mock_navigation_duration_s_`,
+  /// publishing feedback every `mock_feedback_period_s_`.
+  /// @param goal_handle Handle of the accepted goal to run to completion.
   void on_execute(const GoalHandleSharedPtr goal_handle) override;
 
 private:
@@ -59,12 +69,14 @@ private:
   double mock_initial_distance_m_;
 };
 
-/// The "navigation" capability, backed by the fake/mock action server: a
+/// @brief The "navigation" capability, backed by the fake/mock action server: a
 /// lifecycle node advertising a (mock) easyfleet_interfaces/Navigation
 /// action, described by config/navigation.json.
 class NavigationFakeCapability : public easyfleet_core::Capability<NavigationFakeActionServer>
 {
 public:
+  /// @brief Constructs the capability node.
+  /// @param options Forwarded to the underlying `LifecycleNode`.
   explicit NavigationFakeCapability(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 };
 

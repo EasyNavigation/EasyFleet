@@ -22,7 +22,7 @@
 namespace easyfleet_core
 {
 
-/// Fixes `ActionServerBase`'s action type to `easyfleet_interfaces/Manipulation`,
+/// @brief Fixes `ActionServerBase`'s action type to `easyfleet_interfaces/Manipulation`,
 /// so a concrete manipulation backend (MoveIt, a vendor SDK, a fake mock, ...)
 /// only has to subclass this and implement
 /// `on_goal_received()`/`on_execute()` -- it never needs to spell out the

@@ -32,26 +32,19 @@
 # announcements) before mission control's discovery window (see
 # easyfleet_mission_manager::discover_capabilities()) opens -- launching
 # everything at literally the same instant risks discovering nothing.
-#
-# TEMPORARY: the mission-node launch below is commented out --
-# easynav_collaboration_mission_node isn't built by this package yet (see
-# CMakeLists.txt: its source, src/main_easynav_collaboration.cpp, is the
-# simple-API mission script, which needs easyfleet_mission_manager::
-# RobotHandle/SimpleController -- still header-only, see refactor.md).
-# This file still brings up both robots on their own.
 launch:
   - include:
       file: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/launch/robot_1_launch.yaml"
   - include:
       file: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/launch/robot_2_launch.yaml"
 
-  # - timer:
-  #     period: 5.0
-  #     children:
-  #       - node:
-  #           pkg: "easyfleet_easynav_collaboration_simple_api_deployment"
-  #           exec: "easynav_collaboration_mission_node"
-  #           output: "screen"
-  #           param:
-  #             - name: "use_sim_time"
-  #               value: true
+  - timer:
+      period: 5.0
+      children:
+        - node:
+            pkg: "easyfleet_easynav_collaboration_simple_api_deployment"
+            exec: "easynav_collaboration_mission_node"
+            output: "screen"
+            param:
+              - name: "use_sim_time"
+                value: true

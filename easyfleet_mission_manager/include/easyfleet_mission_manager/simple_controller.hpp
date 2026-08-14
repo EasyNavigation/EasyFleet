@@ -31,7 +31,7 @@
 namespace easyfleet
 {
 
-/// The plain, manual controller: a mission script decides everything by
+/// @brief The plain, manual controller: a mission script decides everything by
 /// hand (which robot runs which capability, when), `SimpleController` just
 /// hosts the `FleetSession` that makes talking to those robots possible.
 /**
@@ -66,38 +66,46 @@ class SimpleController
 public:
   SimpleController() = default;
 
+  /// @brief Adds `robot` to this controller's session.
   /// @param robot Must outlive this `SimpleController`.
   void add_robot(RobotHandle & robot) {session_.add_robot(robot);}
 
-  /// See `FleetSession::robots()`.
+  /// @brief See `FleetSession::robots()`.
+  /// @return Every robot added so far.
   const std::vector<std::reference_wrapper<RobotHandle>> & robots() const noexcept
   {
     return session_.robots();
   }
 
-  /// See `FleetSession::find_robot()`.
+  /// @brief See `FleetSession::find_robot()`.
+  /// @param name Name to look up, as passed to `RobotHandle`'s constructor.
+  /// @return The matching robot, or `std::nullopt` if none was added under
+  ///   that name.
   std::optional<std::reference_wrapper<RobotHandle>> find_robot(
     const std::string & name) const noexcept
   {
     return session_.find_robot(name);
   }
 
-  /// See `FleetSession::discover_capabilities()`.
+  /// @brief See `FleetSession::discover_capabilities()`.
+  /// @param window How long to listen before returning.
   void discover_capabilities(std::chrono::milliseconds window = std::chrono::milliseconds(2500))
   {
     session_.discover_capabilities(window);
   }
 
-  /// See `FleetSession::spin_some()`.
+  /// @brief See `FleetSession::spin_some()`.
   void spin_some() {session_.spin_some();}
 
-  /// See `FleetSession::spin_for()`.
+  /// @brief See `FleetSession::spin_for()`.
+  /// @param duration How long to block for.
   void spin_for(std::chrono::milliseconds duration) {session_.spin_for(duration);}
 
-  /// See `FleetSession::node()`.
+  /// @brief See `FleetSession::node()`.
+  /// @return The underlying ROS node.
   rclcpp::Node::SharedPtr node() const noexcept {return session_.node();}
 
-  /// See `FleetSession::shutdown()`.
+  /// @brief See `FleetSession::shutdown()`.
   void shutdown() {session_.shutdown();}
 
 private:

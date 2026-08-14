@@ -22,18 +22,23 @@
 namespace easyfleet_mission_manager
 {
 
-/// Value-semantics rate limiter: copies (e.g. captured by value into a
+/// @brief Value-semantics rate limiter: copies (e.g. captured by value into a
 /// `std::function`) share the same underlying clock, so a feedback callback
 /// that fires at, say, 20 Hz can be throttled down to a readable printing
 /// rate without flooding the terminal.
 class Throttle
 {
 public:
+  /// @brief Constructs a throttle with the given minimum interval.
+  /// @param interval Minimum time between two calls returning `true`.
   explicit Throttle(std::chrono::milliseconds interval)
   : interval_(interval), last_(std::make_shared<std::chrono::steady_clock::time_point>())
   {
   }
 
+  /// @brief Whether at least `interval` has elapsed since the last call that returned `true`.
+  /// @return Whether at least `interval` has elapsed since the last call
+  ///   (across every copy of this `Throttle`) that returned `true`.
   bool ready() const
   {
     const auto now = std::chrono::steady_clock::now();

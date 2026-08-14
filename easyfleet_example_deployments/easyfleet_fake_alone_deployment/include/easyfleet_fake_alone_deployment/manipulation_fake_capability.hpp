@@ -29,7 +29,7 @@
 namespace easyfleet_fake_alone_deployment
 {
 
-/// Fake/mock implementation of the easyfleet_interfaces/Manipulation action.
+/// @brief Fake/mock implementation of the easyfleet_interfaces/Manipulation action.
 /**
  * A reference implementation of `easyfleet_core::ManipulationActionServerBase`:
  * it does not drive a real manipulator or interact with real controllers. It
@@ -42,15 +42,26 @@ namespace easyfleet_fake_alone_deployment
 class ManipulationFakeActionServer : public easyfleet_core::ManipulationActionServerBase
 {
 public:
+  /// @brief Constructs the action server.
+  /// @param node Lifecycle node that will host this action server.
+  /// @param action_name Name under which the action is advertised.
   ManipulationFakeActionServer(
     rclcpp_lifecycle::LifecycleNode & node,
     const std::string & action_name);
 
 protected:
+  /// @brief Always accepts (this mock never rejects a goal).
+  /// @param uuid Id of the incoming goal.
+  /// @param goal Goal content (unused).
+  /// @return Always `ACCEPT_AND_EXECUTE`.
   rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Goal> goal) override;
 
+  /// @brief Simulates trajectory execution progress over
+  /// `mock_execution_duration_s_`, publishing feedback every
+  /// `mock_feedback_period_s_`.
+  /// @param goal_handle Handle of the accepted goal to run to completion.
   void on_execute(const GoalHandleSharedPtr goal_handle) override;
 
 private:
@@ -58,13 +69,15 @@ private:
   double mock_feedback_period_s_;
 };
 
-/// The "manipulation" capability, backed by the fake/mock action server: a
+/// @brief The "manipulation" capability, backed by the fake/mock action server: a
 /// lifecycle node advertising a (mock) easyfleet_interfaces/Manipulation
 /// action, described by config/manipulation.json.
 class ManipulationFakeCapability
   : public easyfleet_core::Capability<ManipulationFakeActionServer>
 {
 public:
+  /// @brief Constructs the capability node.
+  /// @param options Forwarded to the underlying `LifecycleNode`.
   explicit ManipulationFakeCapability(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 };
 

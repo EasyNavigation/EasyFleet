@@ -27,7 +27,7 @@
 namespace easyfleet_mission_manager
 {
 
-/// Publishes a floating `TEXT_VIEW_FACING` marker above each robot's own
+/// @brief Publishes a floating `TEXT_VIEW_FACING` marker above each robot's own
 /// `base_link`, showing a short, human-readable line of what that robot is
 /// currently doing (which capability, what state/result) -- so watching
 /// the mission in RViz alone (no terminal) is enough for a non-expert to
@@ -46,6 +46,7 @@ namespace easyfleet_mission_manager
 class StatusMarkerPublisher
 {
 public:
+  /// @brief Constructs the marker publisher.
   /// @param node Node the marker publisher is created on. Kept as a
   ///   reference for this object's whole life (used later by the refresh
   ///   timer callback), so `node` must outlive this `StatusMarkerPublisher`
@@ -91,11 +92,13 @@ public:
       std::chrono::milliseconds(200), [this] {publish_all();});
   }
 
-  /// Sets `robot`'s current status text and publishes it immediately (the
+  /// @brief Sets `robot`'s current status text and publishes it immediately (the
   /// background refresh timer then keeps republishing it, and every other
   /// robot's last known text, with a fresh timestamp). Safe to call from
   /// multiple threads (e.g. one per robot, as a mission script's own
   /// parallel phases do).
+  /// @param robot Robot identity the marker is shown above.
+  /// @param text Status text to display.
   void set_status(const std::string & robot, const std::string & text)
   {
     {

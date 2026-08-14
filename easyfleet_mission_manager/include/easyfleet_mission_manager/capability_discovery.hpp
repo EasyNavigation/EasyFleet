@@ -26,7 +26,7 @@
 namespace easyfleet_mission_manager
 {
 
-/// Listens on `/capabilities` (retained CapabilityDescription messages) and
+/// @brief Listens on `/capabilities` (retained CapabilityDescription messages) and
 /// `/capabilities_status` (1 Hz CapabilityStatus heartbeats) for `window`,
 /// and returns one `CapabilityInfo` per distinct `action_name` seen on
 /// either topic -- this is the right key because two robots can offer the

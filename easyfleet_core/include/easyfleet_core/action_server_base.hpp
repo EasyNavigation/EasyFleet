@@ -30,7 +30,7 @@
 namespace easyfleet_core
 {
 
-/// Base class that hides the boilerplate of running a ROS 2 action server.
+/// @brief Base class that hides the boilerplate of running a ROS 2 action server.
 /**
  * A node exposes an action by inheriting from `ActionServerBase<ActionT>` and
  * implementing three hooks: `on_goal_received()`, `on_execute()` and,
@@ -65,12 +65,19 @@ template<typename ActionT>
 class ActionServerBase
 {
 public:
+  /// @brief The wrapped `rclcpp_action` action type.
   using ActionType = ActionT;
+  /// @brief Goal type of the wrapped action.
   using Goal = typename ActionT::Goal;
+  /// @brief Feedback type of the wrapped action.
   using Feedback = typename ActionT::Feedback;
+  /// @brief Result type of the wrapped action.
   using Result = typename ActionT::Result;
+  /// @brief `rclcpp_action` server-side goal handle type of the wrapped action.
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+  /// @brief Shared pointer to a `GoalHandle`.
   using GoalHandleSharedPtr = std::shared_ptr<GoalHandle>;
+  /// @brief Shared pointer to an `ActionServerBase<ActionT>`.
   using SharedPtr = std::shared_ptr<ActionServerBase<ActionT>>;
 
   ActionServerBase(const ActionServerBase &) = delete;
@@ -78,16 +85,21 @@ public:
 
   virtual ~ActionServerBase();
 
-  /// Fully-qualified name of the action served by this instance.
+  /// @brief Fully-qualified name of the action served by this instance.
+  /// @return Fully-qualified name of the action served by this instance.
   const std::string & get_action_name() const noexcept;
 
-  /// Whether a goal is currently executing.
+  /// @brief Whether a goal is currently executing.
+  /// @return Whether a goal is currently executing.
   bool is_active() const;
 
-  /// Current value of the "allow_preemption" parameter for this action.
+  /// @brief Current value of the "allow_preemption" parameter for this action.
+  /// @return Current value of the "allow_preemption" parameter for this
+  ///   action.
   bool is_preemptable() const noexcept;
 
 protected:
+  /// @brief Constructs the action server, attached to `node` under `action_name`.
   /// @param node Node (or lifecycle node) that will host the action server.
   ///   Only used here, to extract its interfaces below (each kept as its
   ///   own `SharedPtr` member) -- not stored itself, so a reference (never
@@ -112,15 +124,18 @@ protected:
   {
   }
 
-  /// Validate an incoming goal. Return `ACCEPT_AND_EXECUTE` or `REJECT`.
+  /// @brief Validate an incoming goal. Return `ACCEPT_AND_EXECUTE` or `REJECT`.
   /// Preemption bookkeeping is applied automatically after this returns
   /// `ACCEPT_AND_EXECUTE`, so implementations only need to worry about
   /// whether the *content* of the goal is valid.
+  /// @param uuid Id of the incoming goal.
+  /// @param goal Goal content to validate.
+  /// @return `ACCEPT_AND_EXECUTE` or `REJECT`.
   virtual rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Goal> goal) = 0;
 
-  /// Run an accepted goal to completion. Must leave the goal handle in a
+  /// @brief Run an accepted goal to completion. Must leave the goal handle in a
   /// terminal state (`succeed()`, `abort()` or `canceled()`) before
   /// returning. Long-running implementations should periodically check
   /// `is_preempt_requested()`, `goal_handle->is_canceling()` and
@@ -130,28 +145,37 @@ protected:
   /// the goal to CANCELING); for preemption or shutdown, which happen while
   /// the goal is still EXECUTING, use `abort()` instead -- `canceled()` from
   /// EXECUTING is an invalid state transition.
+  /// @param goal_handle Handle of the accepted goal to run to completion.
   virtual void on_execute(const GoalHandleSharedPtr goal_handle) = 0;
 
-  /// Decide whether a cancel request (via the action's cancel service) should
+  /// @brief Decide whether a cancel request (via the action's cancel service) should
   /// be accepted. Unrelated to preemption. Defaults to always accepting.
+  /// @param goal_handle Handle of the goal a cancellation was requested for.
+  /// @return Whether the cancel request is accepted.
   virtual rclcpp_action::CancelResponse on_cancel_requested(const GoalHandleSharedPtr goal_handle);
 
-  /// Optional hook invoked (from the accepting thread, not the worker thread)
+  /// @brief Optional hook invoked (from the accepting thread, not the worker thread)
   /// when a new goal is about to preempt the currently running one.
+  /// @param preempted_goal_handle Handle of the goal being preempted.
   virtual void on_preempted(const GoalHandleSharedPtr & preempted_goal_handle);
 
-  /// True once a newer goal has been accepted and is waiting to replace the
-  /// one currently executing. Only meaningful from within `on_execute()`.
+  /// @brief Whether a newer goal has been accepted and is waiting to replace the one currently executing.
+  /// @return Whether a newer goal has been accepted and is waiting to
+  ///   replace the one currently executing. Only meaningful from within
+  ///   `on_execute()`.
   bool is_preempt_requested() const noexcept;
 
-  /// True once this object is being destroyed. Long-running `on_execute()`
-  /// implementations should treat this the same as a preemption request.
+  /// @brief Whether this object is being destroyed.
+  /// @return Whether this object is being destroyed. Long-running
+  ///   `on_execute()` implementations should treat this the same as a
+  ///   preemption request.
   bool is_shutdown_requested() const noexcept;
 
-  /// Logger of the node hosting this action server. Named without the usual
+  /// @brief Logger of the node hosting this action server. Named without the usual
   /// `get_` prefix to avoid an ambiguous lookup in classes that also inherit
   /// from `rclcpp::Node` or `rclcpp_lifecycle::LifecycleNode`, both of which
   /// already declare a `get_logger()` of their own.
+  /// @return The hosting node's logger.
   rclcpp::Logger logger() const;
 
 private:

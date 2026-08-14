@@ -24,17 +24,28 @@
 namespace easyfleet_easynav_deployment
 {
 
-/// Bookend BT node run after Navigate: takes 2 seconds and only prints a
+/// @brief Bookend BT node run after Navigate: takes 2 seconds and only prints a
 /// finishing message. No ports.
 class Finish : public BT::StatefulActionNode
 {
 public:
+  /// @brief Constructs the BT node.
+  /// @param name Name of this node instance, as given in the BT XML.
+  /// @param config BT.CPP node configuration (ports, blackboard).
   Finish(const std::string & name, const BT::NodeConfig & config);
 
+  /// @brief This node's ports (none).
+  /// @return This node's ports (none).
   static BT::PortsList providedPorts();
 
+  /// @brief Records the start time and logs a finishing message.
+  /// @return `RUNNING`.
   BT::NodeStatus onStart() override;
+  /// @brief Waits out the fixed 2-second delay.
+  /// @return `SUCCESS` once at least 2 seconds have elapsed since
+  ///   `onStart()`, `RUNNING` otherwise.
   BT::NodeStatus onRunning() override;
+  /// @brief No-op: this node has nothing to clean up on halt.
   void onHalted() override;
 
 private:

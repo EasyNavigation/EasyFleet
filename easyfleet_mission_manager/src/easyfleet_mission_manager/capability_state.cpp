@@ -13,27 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_MISSION_MANAGER__OUTPUT_HPP_
-#define EASYFLEET_MISSION_MANAGER__OUTPUT_HPP_
+#include "easyfleet_mission_manager/capability_state.hpp"
 
-#include <iostream>
-#include <mutex>
-#include <string>
-
-namespace easyfleet_mission_manager
+namespace easyfleet
 {
 
-/// @brief Serializes terminal output across the threads used to run capabilities
-/// in parallel, so concurrent feedback lines never get interleaved
-/// character-by-character.
-inline std::mutex g_output_mutex;
-
-inline void safe_print(const std::string & line)
+std::string to_string(CapabilityState state)
 {
-  std::lock_guard<std::mutex> lock(g_output_mutex);
-  std::cout << line << std::endl;
+  switch (state) {
+    case CapabilityState::IDLE: return "IDLE";
+    case CapabilityState::RUNNING: return "RUNNING";
+    case CapabilityState::SUCCEEDED: return "SUCCEEDED";
+    case CapabilityState::ABORTED: return "ABORTED";
+    case CapabilityState::CANCELED: return "CANCELED";
+    case CapabilityState::REJECTED: return "REJECTED";
+    case CapabilityState::TIMEOUT: return "TIMEOUT";
+    case CapabilityState::UNREACHABLE: return "UNREACHABLE";
+  }
+  return "UNKNOWN";
 }
 
-}  // namespace easyfleet_mission_manager
-
-#endif  // EASYFLEET_MISSION_MANAGER__OUTPUT_HPP_
+}  // namespace easyfleet

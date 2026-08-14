@@ -11,14 +11,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(easyfleet_core REQUIRED)
 find_package(easyfleet_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/capability_discovery.cpp
   src/${PROJECT_NAME}/capability_info.cpp
+  src/${PROJECT_NAME}/capability_state.cpp
+  src/${PROJECT_NAME}/fleet_session.cpp
+  src/${PROJECT_NAME}/robot_handle.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -26,8 +31,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
   rclcpp::rclcpp
+  rclcpp_action::rclcpp_action
   easyfleet_core::easyfleet_core
   easyfleet_interfaces::easyfleet_interfaces
+  ${geometry_msgs_TARGETS}
   nlohmann_json::nlohmann_json
   ${visualization_msgs_TARGETS}
 )
@@ -47,8 +54,10 @@ install(
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   rclcpp
+  rclcpp_action
   easyfleet_core
   easyfleet_interfaces
+  geometry_msgs
   nlohmann_json
   visualization_msgs
 )

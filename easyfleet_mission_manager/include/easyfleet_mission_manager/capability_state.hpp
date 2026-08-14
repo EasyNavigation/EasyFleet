@@ -21,30 +21,48 @@
 namespace easyfleet
 {
 
-/// What a `RobotHandle`-driven capability is doing right now, from the
+/// @brief What a `RobotHandle`-driven capability is doing right now, from the
 /// mission script's point of view. Deliberately richer than a plain
 /// running/not-running bool: `is_capability_running()` alone can't tell a
-/// beginner's mission script "it finished, and here's whether it actually
-/// worked" apart from "nothing is happening because it crashed" -- three
-/// very different situations that all look like "not running" if that's
-/// all you can ask.
+/// beginner's mission script "it finished, and here's what actually
+/// happened" apart from "nothing is happening because it crashed" -- very
+/// different situations that all look like "not running" if that's all you
+/// can ask. Every terminal value below mirrors
+/// `easyfleet_core::CapabilityClient<ActionT>::Outcome` one to one
+/// (`RunningCapability`'s own doc comment maps them) -- the real, specific
+/// outcome is what gets reported, never collapsed into a generic
+/// success/failure bit.
 enum class CapabilityState
 {
-  /// Never asked to do anything (or done, superseded, and not re-run).
+  /// @brief Never asked to do anything (or done, superseded, and not re-run).
   IDLE,
-  /// A goal is in flight.
+  /// @brief A goal is in flight.
   RUNNING,
-  /// The last goal finished successfully.
+  /// @brief The last goal finished successfully.
   SUCCEEDED,
-  /// The last goal finished unsuccessfully (aborted, canceled, rejected,
-  /// or client-side timeout) -- see `RobotHandle::last_outcome()` for the
-  /// specific reason.
-  FAILED,
-  /// No heartbeat seen recently on `/capabilities_status` for this
+  /// @brief The last goal was aborted -- it started, then failed on its own.
+  ABORTED,
+  /// @brief The last goal was stopped -- either explicitly, via
+  /// `RobotHandle::stop_capability()`, or automatically, by its own
+  /// `run_capability()` timeout elapsing. Distinct from `ABORTED`/`REJECTED`:
+  /// this is an expected, deliberate outcome (a mission script asked for
+  /// it, directly or via a timeout it chose), not the capability itself
+  /// going wrong.
+  CANCELED,
+  /// @brief The last goal was rejected outright -- the capability never
+  /// even started it (invalid/unsupported goal content, or busy and not
+  /// preemptable).
+  REJECTED,
+  /// @brief The underlying `ActionClient`'s own send/response mechanics
+  /// timed out -- distinct from a `run_capability()` timeout, which
+  /// produces `CANCELED` instead (that path issues an explicit cancel
+  /// rather than the client giving up on its own).
+  TIMEOUT,
+  /// @brief No heartbeat seen recently on `/capabilities_status` for this
   /// capability -- the process is gone, was never there, or has stalled.
-  /// Distinct from FAILED: a FAILED goal still means the capability itself
-  /// is alive and responded; UNREACHABLE means it may not even know a goal
-  /// was sent.
+  /// Distinct from every other terminal value above: those all mean the
+  /// capability itself is alive and responded; UNREACHABLE means it may
+  /// not even know a goal was sent.
   UNREACHABLE,
 };
 

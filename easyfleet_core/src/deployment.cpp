@@ -146,11 +146,14 @@ void Deployment::start()
 
 void Deployment::run()
 {
-  // One executor for every capability this robot hosts: each capability's
-  // actual goal execution runs on its own worker thread (see
-  // easyfleet_core::ActionServerBase), so sharing a single-threaded
-  // executor here for the lightweight ROS callback dispatch (goal accept/
-  // reject, feedback publish, heartbeats) doesn't starve the others.
+  // One shared executor_ for this whole Deployment (this robot's whole
+  // process), not one per capability: every capability's node joins the
+  // same executor here. Safe to share because each capability's actual
+  // goal execution runs on its own worker thread (see
+  // easyfleet_core::ActionServerBase) -- this executor only ever carries
+  // the lightweight ROS callback dispatch (goal accept/reject, feedback
+  // publish, heartbeats), so one capability's callbacks can't starve
+  // another's.
   for (const auto & capability : capabilities_) {
     executor_.add_node(capability->get_node_base_interface());
   }

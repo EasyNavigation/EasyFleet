@@ -31,7 +31,7 @@
 namespace easyfleet_core
 {
 
-/// Comfortable wrapper around `rclcpp_action::Client<ActionT>`.
+/// @brief Comfortable wrapper around `rclcpp_action::Client<ActionT>`.
 /**
  * Each `ActionClient<ActionT>` owns a small internal node dedicated to a
  * single action and spins it on a background thread for its entire
@@ -47,15 +47,21 @@ template<typename ActionT>
 class ActionClient
 {
 public:
+  /// @brief Shared pointer to an `ActionClient<ActionT>`.
   using SharedPtr = std::shared_ptr<ActionClient<ActionT>>;
+  /// @brief Goal type of the wrapped action.
   using Goal = typename ActionT::Goal;
+  /// @brief Feedback type of the wrapped action.
   using Feedback = typename ActionT::Feedback;
+  /// @brief Result type of the wrapped action.
   using Result = typename ActionT::Result;
+  /// @brief `rclcpp_action` goal handle type of the wrapped action.
   using ClientGoalHandle = typename rclcpp_action::Client<ActionT>::GoalHandle;
 
+  /// @brief Callback invoked with feedback as it arrives for an in-flight goal.
   using FeedbackCallback = std::function<void (std::shared_ptr<const Feedback>)>;
 
-  /// Outcome of a goal, unifying rejection/timeout/unavailability with the
+  /// @brief Outcome of a goal, unifying rejection/timeout/unavailability with the
   /// normal terminal states of the action state machine.
   enum class GoalOutcome : uint8_t
   {
@@ -67,17 +73,25 @@ public:
     SERVER_UNAVAILABLE,
   };
 
+  /// @brief Terminal outcome of a goal, as delivered to a `ResultCallback` or
+  /// returned by `send_goal_and_wait()`.
   struct GoalResult
   {
+    /// @brief How the goal ended.
     GoalOutcome outcome{GoalOutcome::ABORTED};
+    /// @brief Id of the goal this result belongs to.
     rclcpp_action::GoalUUID goal_id{};
+    /// @brief Action-specific result, if `outcome` is `GoalOutcome::SUCCEEDED`.
     typename Result::SharedPtr result;
   };
 
+  /// @brief Callback invoked once a goal reaches a terminal state.
   using ResultCallback = std::function<void (const GoalResult &)>;
+  /// @brief Callback invoked once the server has accepted or rejected a goal.
   using GoalResponseCallback =
     std::function<void (bool accepted, const rclcpp_action::GoalUUID & goal_id)>;
 
+  /// @brief Constructs a new client for `action_name`, spinning its own internal node in the background.
   /// @param parent_node Node on whose behalf the action is called; only used
   ///   to inherit its namespace and to derive a name for the internal node
   ///   (never stored), so a reference -- never null, unlike a pointer -- is
@@ -85,6 +99,8 @@ public:
   /// @param action_name Name of the action to call.
   /// @param default_server_timeout Timeout used by the no-argument overload
   ///   of `wait_for_server()`.
+  /// @return A new `ActionClient<ActionT>`, already spinning its internal
+  ///   node in the background.
   static SharedPtr create(
     rclcpp::Node & parent_node,
     const std::string & action_name,
@@ -95,40 +111,66 @@ public:
 
   ~ActionClient();
 
+  /// @brief The action name this client was created for.
+  /// @return The action name this client was created for.
   const std::string & get_action_name() const noexcept;
 
+  /// @brief Whether the action server is currently reachable.
+  /// @return Whether the action server is currently reachable.
   bool is_server_ready() const;
 
+  /// @brief Block until the server is reachable, using the constructor's
+  /// `default_server_timeout`.
+  /// @return Whether the server became reachable before the timeout.
   bool wait_for_server();
+  /// @brief Block until the server is reachable or `timeout` elapses.
+  /// @param timeout Maximum time to wait.
+  /// @return Whether the server became reachable before the timeout.
   bool wait_for_server(std::chrono::milliseconds timeout);
 
-  /// Send a goal without blocking. Returns `false` immediately (without
+  /// @brief Send a goal without blocking. Returns `false` immediately (without
   /// contacting the server) if it is not currently reachable; in that case,
   /// `result_callback`, if any, is invoked synchronously with
   /// `GoalOutcome::SERVER_UNAVAILABLE`.
+  /// @param goal Goal to send.
+  /// @param result_callback Invoked once the goal reaches a terminal state.
+  /// @param feedback_callback Invoked as feedback arrives for this goal.
+  /// @param goal_response_callback Invoked once the server accepts/rejects
+  ///   the goal.
+  /// @return Whether the goal was sent (not whether it was accepted).
   bool send_goal(
     const Goal & goal,
     ResultCallback result_callback = nullptr,
     FeedbackCallback feedback_callback = nullptr,
     GoalResponseCallback goal_response_callback = nullptr);
 
-  /// Send a goal and block the calling thread until it reaches a terminal
+  /// @brief Send a goal and block the calling thread until it reaches a terminal
   /// state (or `timeout` elapses, if positive). Safe to call from any
   /// thread, including one that also spins the owning node: this object
   /// spins its own dedicated internal node to drive the exchange.
+  /// @param goal Goal to send.
+  /// @param feedback_callback Invoked as feedback arrives for this goal.
+  /// @param timeout Maximum time to wait for a terminal state; `0` (the
+  ///   default) waits indefinitely.
+  /// @return The goal's terminal outcome (`GoalOutcome::TIMEOUT` if
+  ///   `timeout` elapsed first).
   GoalResult send_goal_and_wait(
     const Goal & goal,
     FeedbackCallback feedback_callback = nullptr,
     std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
-  /// Request cancellation of a specific in-flight goal. Returns `false` if
+  /// @brief Request cancellation of a specific in-flight goal. Returns `false` if
   /// the goal is unknown (already terminal, or never accepted).
+  /// @param goal_id Id of the goal to cancel.
+  /// @return Whether a cancellation request was sent.
   bool cancel_goal(const rclcpp_action::GoalUUID & goal_id);
 
-  /// Request cancellation of every goal currently tracked by this client.
+  /// @brief Request cancellation of every goal currently tracked by this client.
   void cancel_all_goals();
 
-  /// Number of goals accepted by the server and not yet in a terminal state.
+  /// @brief Number of goals accepted by the server and not yet in a terminal state.
+  /// @return Number of goals accepted by the server and not yet in a
+  ///   terminal state.
   std::size_t active_goal_count() const;
 
 private:

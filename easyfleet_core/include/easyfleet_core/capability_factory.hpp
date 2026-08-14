@@ -27,7 +27,7 @@
 namespace easyfleet_core
 {
 
-/// Pluginlib base class for "a thing that can build a capability node by
+/// @brief Pluginlib base class for "a thing that can build a capability node by
 /// name". Not itself default-constructible-and-ready like a typical
 /// pluginlib strategy plugin, because `Capability<ActionServerT>` is a real
 /// `rclcpp_lifecycle::LifecycleNode` and its base class needs a name at
@@ -39,11 +39,12 @@ namespace easyfleet_core
 class CapabilityFactory
 {
 public:
+  /// @brief Shared pointer to a `CapabilityFactory`.
   using SharedPtr = std::shared_ptr<CapabilityFactory>;
 
   virtual ~CapabilityFactory() = default;
 
-  /// Constructs and returns one capability node instance ready for the
+  /// @brief Constructs and returns one capability node instance ready for the
   /// caller to `configure()`/`activate()`.
   /// @param capability_name Passed straight through to `Capability<T>`'s own
   ///   constructor -- the node name, the action name, and the `capability`
@@ -51,12 +52,14 @@ public:
   /// @param options Node options `Robot::add_capability()` has already
   ///   stamped with this robot's namespace (see `robot.hpp`), plus whatever
   ///   parameter overrides the caller supplied.
+  /// @return The newly constructed capability node, through its
+  ///   `CapabilityNodeBase` interface.
   virtual std::shared_ptr<CapabilityNodeBase> create(
     const std::string & capability_name,
     const rclcpp::NodeOptions & options) const = 0;
 };
 
-/// Boilerplate-free `CapabilityFactory` for any `Capability<ActionServerT>`.
+/// @brief Boilerplate-free `CapabilityFactory` for any `Capability<ActionServerT>`.
 /// A concrete backend needs nothing beyond one line to become
 /// plugin-loadable -- see the .cpp of any capability implementation for the
 /// matching `PLUGINLIB_EXPORT_CLASS` registration:

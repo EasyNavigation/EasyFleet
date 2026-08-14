@@ -77,6 +77,13 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+  find_package(pluginlib REQUIRED)
+
+  # Must be called from this top-level scope, not from test/CMakeLists.txt:
+  # it's a macro that accumulates into a variable consumed by the
+  # ament_package() call below, and add_subdirectory(test) would give that
+  # accumulation its own CMake variable scope invisible from here.
+  pluginlib_export_plugin_description_file(easyfleet_core test/test_plugins.xml)
 
   add_subdirectory(test)
 endif()

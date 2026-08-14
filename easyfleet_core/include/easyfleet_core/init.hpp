@@ -19,7 +19,7 @@
 namespace easyfleet
 {
 
-/// Every EasyFleet program -- a `Deployment` hosting capabilities, or a
+/// @brief Every EasyFleet program -- a `Deployment` hosting capabilities, or a
 /// mission script driving a `SimpleController` -- starts with this instead
 /// of a bare `rclcpp::init(argc, argv)`.
 ///
@@ -31,6 +31,9 @@ namespace easyfleet
 /// each capability -- instead of having the ROS context torn out from under
 /// them before they get the chance. See `spin_utils.hpp` for the full
 /// explanation of why that matters.
+///
+/// @param argc Argument count, as received by `main()`.
+/// @param argv Argument vector, as received by `main()`.
 void init(int argc, char ** argv);
 
 }  // namespace easyfleet

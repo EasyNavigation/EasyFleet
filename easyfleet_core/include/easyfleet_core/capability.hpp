@@ -31,12 +31,12 @@
 namespace easyfleet_core
 {
 
-/// Lifecycle node that advertises a single action as a "capability".
+/// @brief Lifecycle node that advertises a single action as a "capability".
 /**
  * `Capability<ActionServerT>` is a `rclcpp_lifecycle::LifecycleNode` that:
  *  - owns an instance of `ActionServerT` (a concrete subclass of
  *    `ActionServerBase<ActionType>`, constructed as
- *    `ActionServerT(rclcpp_lifecycle::LifecycleNode *, const std::string &)`),
+ *    `ActionServerT(rclcpp_lifecycle::LifecycleNode &, const std::string &)`),
  *    exposed through its `ActionServerBase<ActionType>::SharedPtr` base type;
  *  - on `on_activate`, reads the file named by the `capabilities_file`
  *    string parameter and publishes it, together with its own runtime
@@ -47,7 +47,7 @@ namespace easyfleet_core
  *    heartbeat once a second on `/capabilities_status`.
  *
  * `ActionServerT` must publicly inherit `ActionServerBase<SomeActionType>`
- * and be constructible as `ActionServerT(LifecycleNode *, const std::string &)`.
+ * and be constructible as `ActionServerT(LifecycleNode &, const std::string &)`.
  *
  * The `robot`/`capability`/`action_name` identity published on both topics
  * is resolved from this node's actual namespace at construction time, so a
@@ -64,30 +64,41 @@ template<typename ActionServerT>
 class Capability : public rclcpp_lifecycle::LifecycleNode, public CapabilityNodeBase
 {
 public:
+  /// @brief Lifecycle transition result type shared with `rclcpp_lifecycle`.
   using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+  /// @brief The `ActionServerBase<...>` specialization backing this capability.
   using ActionServerBaseT = ActionServerBase<typename ActionServerT::ActionType>;
 
+  /// @brief Constructs the capability node.
   /// @param capability_name Used as the node name, the action name of the
   ///   contained action server, and the `capability` identity field.
+  /// @param options Forwarded to the underlying `LifecycleNode`.
   explicit Capability(
     const std::string & capability_name,
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   ~Capability() override;
 
-  /// The action server backing this capability.
+  /// @brief The action server backing this capability.
+  /// @return The contained `ActionServerT`, through its
+  ///   `ActionServerBaseT::SharedPtr` base type.
   typename ActionServerBaseT::SharedPtr get_action_server() const noexcept;
 
+  /// @brief The `capability` identity field published on /capabilities and /capabilities_status.
+  /// @return The `capability` identity field published on /capabilities
+  ///   and /capabilities_status.
   const std::string & get_capability_name() const noexcept override;
 
-  /// This node's namespace, without the leading '/' (empty if none), e.g.
+  /// @brief This node's namespace, without the leading '/' (empty if none), e.g.
   /// "robot1". This is the `robot` identity field published on
   /// /capabilities and /capabilities_status.
+  /// @return This node's resolved robot name.
   const std::string & get_robot_name() const noexcept override;
 
-  /// Fully-qualified name of the action this capability exposes, e.g.
+  /// @brief Fully-qualified name of the action this capability exposes, e.g.
   /// "/robot1/navigation". This is the `action_name` identity field
   /// published on /capabilities and /capabilities_status.
+  /// @return The resolved, fully-qualified action name.
   const std::string & get_resolved_action_name() const noexcept;
 
   // -- CapabilityNodeBase --
@@ -113,10 +124,30 @@ public:
   rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() override;
 
 protected:
+  /// @brief Reads `capabilities_file` and configures the contained `ActionServerT`.
+  /// @param previous_state State this node is transitioning from.
+  /// @return `CallbackReturn::SUCCESS` on success, `CallbackReturn::FAILURE`
+  ///   otherwise.
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
+  /// @brief Publishes the capability description and starts the status heartbeat.
+  /// @param previous_state State this node is transitioning from.
+  /// @return `CallbackReturn::SUCCESS` on success, `CallbackReturn::FAILURE`
+  ///   otherwise.
   CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
+  /// @brief Stops the status heartbeat.
+  /// @param previous_state State this node is transitioning from.
+  /// @return `CallbackReturn::SUCCESS` on success, `CallbackReturn::FAILURE`
+  ///   otherwise.
   CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
+  /// @brief Releases the resources acquired in `on_configure()`.
+  /// @param previous_state State this node is transitioning from.
+  /// @return `CallbackReturn::SUCCESS` on success, `CallbackReturn::FAILURE`
+  ///   otherwise.
   CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state) override;
+  /// @brief Stops the status heartbeat if still running.
+  /// @param previous_state State this node is transitioning from.
+  /// @return `CallbackReturn::SUCCESS` on success, `CallbackReturn::FAILURE`
+  ///   otherwise.
   CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state) override;
 
 private:

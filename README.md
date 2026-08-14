@@ -130,6 +130,7 @@ each carry their own full copy of the three fake capability implementations
 deployment package fully self-contained rather than introduce a 4th shared
 package or an asymmetric dependency between the two.
 
+<a name="extending-easyfleet"></a>
 ## Extending EasyFleet
 
 Any integrator can add their own backend for a capability domain by
@@ -166,6 +167,7 @@ Either is a good template for a new `navigation_<your_backend>_capability`
 on `/capabilities`, the heartbeat, preemption bookkeeping, discovery,
 `CapabilityClient`) is handled by `easyfleet_core` and needs no changes.
 
+<a name="the-easynav-backed-navigation-capability"></a>
 ### The EasyNav-backed navigation capability
 
 **How the two packages split responsibility.** `easynav::GoalManagerClient`
@@ -217,6 +219,7 @@ The `easynav` scenario, in `easyfleet_easynav_deployment`, runs this
 capability against a real EasyNav navigation stack (`easynav_system
 system_main`) — see [Multi-robot deployments](#multi-robot-deployments).
 
+<a name="interfaces"></a>
 ## Interfaces
 
 `easyfleet_interfaces` defines three actions general enough that any robot's
@@ -263,6 +266,7 @@ that wraps exactly one ROS 2 action and, once activated:
   line around every goal it executes, so `ros2 launch` output stays legible
   even with several robots and capabilities running at once.
 
+<a name="robot-vs-mission-control"></a>
 ## Robot vs. mission control
 
 Every deployment scenario is deliberately split into two kinds of process
@@ -299,6 +303,7 @@ for why that window is fixed and short). Either half can also be run
 standalone in its own terminal (see [Running](#running) below), which is
 how you'd poke at a robot by hand without a scripted mission at all.
 
+<a name="multi-robot-deployments"></a>
 ## Multi-robot deployments
 
 Because a capability resolves its `robot`/`action_name` identity from its
@@ -421,6 +426,7 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
+<a name="running"></a>
 ## Running
 
 Each capability node **activates itself on startup** — no external lifecycle
@@ -480,6 +486,7 @@ or a single robot standalone — e.g.
 3. **Phase 2**: `robot_3` runs `navigation` to completion, then, once it
    finishes, runs `manipulation`.
 
+<a name="easynav-scenario"></a>
 ### `easynav` scenario
 
 A single robot whose `navigation` capability is the real EasyNav-backed
@@ -573,6 +580,7 @@ ros2 action send_goal /navigation easyfleet_interfaces/action/Navigation \
   "{parameters_json: '{\"goal_id\": \"dock\"}'}" --feedback
 ```
 
+<a name="easynav_collaboration-scenario"></a>
 ### `easynav_collaboration` scenario
 
 Two robots, `robot_1` and `robot_2`, both running real EasyNav navigation
@@ -698,6 +706,7 @@ on the shared `/capabilities` topics.
 
 ## Known limitations
 
+<a name="capability-discovery-is-a-one-shot-snapshot-not-a-live-view"></a>
 ### Capability discovery is a one-shot snapshot, not a live view
 
 `easyfleet_mission_manager::discover_capabilities()` subscribes to
