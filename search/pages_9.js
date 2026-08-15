@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['mission_20control_0',['Robot vs. mission control',['../index.html#autotoc_md6',1,'']]],
-  ['multi_20robot_20deployments_1',['Multi-robot deployments',['../index.html#autotoc_md7',1,'']]]
+  ['layout_0',['Repository layout',['../index.html#autotoc_md1',1,'']]],
+  ['license_1',['License',['../index.html#autotoc_md21',1,'']]],
+  ['limitations_2',['Known limitations',['../index.html#autotoc_md19',1,'']]],
+  ['live_20view_3',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md20',1,'']]]
 ];

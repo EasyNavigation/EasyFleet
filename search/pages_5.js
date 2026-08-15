@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['hand_0',['Poking at a capability by hand',['../index.html#autotoc_md16',1,'']]]
+  ['fleet_3a_20easyfleet_5ftools_0',['Monitoring a running fleet: &lt;span class=&quot;tt&quot;&gt;easyfleet_tools&lt;/span&gt;',['../index.html#autotoc_md17',1,'']]]
 ];

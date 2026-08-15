@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['what_20s_20a_20capability_0',['What&apos;s a &quot;capability&quot;?',['../index.html#autotoc_md5',1,'']]]
+  ['view_0',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md20',1,'']]],
+  ['vs_20mission_20control_1',['Robot vs. mission control',['../index.html#autotoc_md6',1,'']]]
 ];

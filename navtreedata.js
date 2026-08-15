@@ -42,13 +42,14 @@ var NAVTREE =
         [ "<span class=\"tt\">collaboration</span> scenario", "index.html#autotoc_md13", null ],
         [ "<span class=\"tt\">easynav</span> scenario", "index.html#autotoc_md14", null ],
         [ "<span class=\"tt\">easynav_collaboration</span> scenario", "index.html#autotoc_md15", null ],
-        [ "Poking at a capability by hand", "index.html#autotoc_md16", null ]
+        [ "Poking at a capability by hand", "index.html#autotoc_md16", null ],
+        [ "Monitoring a running fleet: <span class=\"tt\">easyfleet_tools</span>", "index.html#autotoc_md17", null ]
       ] ],
-      [ "Running the tests", "index.html#autotoc_md17", null ],
-      [ "Known limitations", "index.html#autotoc_md18", [
-        [ "Capability discovery is a one-shot snapshot, not a live view", "index.html#autotoc_md19", null ]
+      [ "Running the tests", "index.html#autotoc_md18", null ],
+      [ "Known limitations", "index.html#autotoc_md19", [
+        [ "Capability discovery is a one-shot snapshot, not a live view", "index.html#autotoc_md20", null ]
       ] ],
-      [ "License", "index.html#autotoc_md20", null ]
+      [ "License", "index.html#autotoc_md21", null ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],

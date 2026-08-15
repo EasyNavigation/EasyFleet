@@ -8,7 +8,7 @@ var searchData=
   ['capability_5',['Capability',['../classeasyfleet__core_1_1Capability.html',1,'Capability&lt; ActionServerT &gt;'],['../classeasyfleet__core_1_1Capability.html#a4eb08cbf34b7578e1db0f870a226f7d9',1,'easyfleet_core::Capability::Capability()']]],
   ['capability_6',['capability',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a586d4b3f6ee263311139695f7554f978',1,'easyfleet_mission_manager::CapabilityInfo::capability'],['../index.html#autotoc_md3',1,'The EasyNav-backed navigation capability'],['../index.html#autotoc_md5',1,'What&apos;s a &quot;capability&quot;?']]],
   ['capability_20by_20hand_7',['Poking at a capability by hand',['../index.html#autotoc_md16',1,'']]],
-  ['capability_20discovery_20is_20a_20one_20shot_20snapshot_20not_20a_20live_20view_8',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md19',1,'']]],
+  ['capability_20discovery_20is_20a_20one_20shot_20snapshot_20not_20a_20live_20view_8',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md20',1,'']]],
   ['capability_3c_20easynavnavigationactionserver_20_3e_9',['Capability&lt; EasynavNavigationActionServer &gt;',['../classeasyfleet__core_1_1Capability.html',1,'easyfleet_core']]],
   ['capability_3c_20manipulationfakeactionserver_20_3e_10',['Capability&lt; ManipulationFakeActionServer &gt;',['../classeasyfleet__core_1_1Capability.html',1,'easyfleet_core']]],
   ['capability_3c_20navigationfakeactionserver_20_3e_11',['Capability&lt; NavigationFakeActionServer &gt;',['../classeasyfleet__core_1_1Capability.html',1,'easyfleet_core']]],

@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['packages_0',['Packages',['../index.html#autotoc_md8',1,'']]],
-  ['poking_20at_20a_20capability_20by_20hand_1',['Poking at a capability by hand',['../index.html#autotoc_md16',1,'']]],
-  ['prerequisites_2',['Prerequisites',['../index.html#autotoc_md9',1,'']]]
+  ['one_20shot_20snapshot_20not_20a_20live_20view_0',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md20',1,'']]]
 ];

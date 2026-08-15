@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['repository_20layout_0',['Repository layout',['../index.html#autotoc_md1',1,'']]],
-  ['robot_20deployments_1',['Multi-robot deployments',['../index.html#autotoc_md7',1,'']]],
-  ['robot_20vs_20mission_20control_2',['Robot vs. mission control',['../index.html#autotoc_md6',1,'']]],
-  ['running_3',['Running',['../index.html#autotoc_md11',1,'']]],
-  ['running_20the_20tests_4',['Running the tests',['../index.html#autotoc_md17',1,'']]]
+  ['packages_0',['Packages',['../index.html#autotoc_md8',1,'']]],
+  ['poking_20at_20a_20capability_20by_20hand_1',['Poking at a capability by hand',['../index.html#autotoc_md16',1,'']]],
+  ['prerequisites_2',['Prerequisites',['../index.html#autotoc_md9',1,'']]]
 ];

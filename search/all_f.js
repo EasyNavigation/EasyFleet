@@ -17,7 +17,8 @@ var searchData=
   ['run_14',['run',['../classeasyfleet_1_1Deployment.html#a13a43e6d814de94978c515cb084873b1',1,'easyfleet::Deployment::run()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4f62e84a2a92e3f989a0a552a0b45219',1,'easyfleet_mission_manager::detail::RunningCapability::run()']]],
   ['run_5fcapability_15',['run_capability',['../classeasyfleet_1_1RobotHandle.html#ac46846c63e2660cd7b284fb1183fb23c',1,'easyfleet::RobotHandle']]],
   ['running_16',['Running',['../index.html#autotoc_md11',1,'']]],
-  ['running_20the_20tests_17',['Running the tests',['../index.html#autotoc_md17',1,'']]],
-  ['runningcapability_18',['RunningCapability',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html',1,'RunningCapability&lt; ActionT &gt;'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a1d03b6a8b97f7a43c12f4308c3784af9',1,'easyfleet_mission_manager::detail::RunningCapability::RunningCapability()']]],
-  ['runningcapabilitybase_19',['RunningCapabilityBase',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html',1,'easyfleet_mission_manager::detail']]]
+  ['running_20fleet_3a_20easyfleet_5ftools_17',['Monitoring a running fleet: &lt;span class=&quot;tt&quot;&gt;easyfleet_tools&lt;/span&gt;',['../index.html#autotoc_md17',1,'']]],
+  ['running_20the_20tests_18',['Running the tests',['../index.html#autotoc_md18',1,'']]],
+  ['runningcapability_19',['RunningCapability',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html',1,'RunningCapability&lt; ActionT &gt;'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a1d03b6a8b97f7a43c12f4308c3784af9',1,'easyfleet_mission_manager::detail::RunningCapability::RunningCapability()']]],
+  ['runningcapabilitybase_20',['RunningCapabilityBase',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html',1,'easyfleet_mission_manager::detail']]]
 ];

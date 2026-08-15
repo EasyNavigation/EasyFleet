@@ -290,6 +290,8 @@ Packages</h2>
 <td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">easynav</span> scenario: <span class="tt">easynav_navigation_capability_node</span> (this package's own capability class, reusing <span class="tt">easyfleet_easynav_navigation</span>'s <span class="tt">Navigate</span> plugin) + <span class="tt">easynav_mission_node</span>, plus <span class="tt">libstart_off_bt_node.so</span>/<span class="tt">libfinish_bt_node.so</span> and the launch/config assembly for real navigation against a real robot or Gazebo  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_collaboration_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">easynav_collaboration</span> scenario: two robots each running real EasyNav navigation (executables reused from <span class="tt">easyfleet_easynav_deployment</span>, not duplicated) plus its own mock capability — <span class="tt">robot_node</span> hosting its own copies of <span class="tt">PerceptionFakeCapability</span>/<span class="tt">ManipulationFakeCapability</span> (one per robot, mirroring <span class="tt">easyfleet_fake_collaboration_deployment</span>'s own duplication) — + <span class="tt">easynav_collaboration_mission_node</span>  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">[<span class="tt">easyfleet_tools</span>](easyfleet_tools)  </td><td class="markdownTableBodyNone"><span class="tt">ament_python</span> package  </td><td class="markdownTableBodyNone">Read-only TUI (<span class="tt">ros2 run easyfleet_tools tui</span>) + CLI (<span class="tt">ros2 easyfleet &lt;verb&gt;</span>) for monitoring a running fleet — see <a class="el" href="#monitoring-a-running-fleet-easyfleet_tools" title="monitoring-a-running-fleet-easyfleet_tools">Monitoring a running fleet</a>Monitoring a running fleet above  </td></tr>
 </table>
 <p>All four live under <span class="tt">easyfleet_example_deployments/</span>, a plain container directory (no <span class="tt">package.xml</span> of its own) rather than a package.</p>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
@@ -395,15 +397,29 @@ Poking at a capability by hand</h3>
 <div class="line">ros2 action send_goal /robot_1/perception easyfleet_interfaces/action/Perception \</div>
 <div class="line">  &quot;{object_classes: [&#39;gato&#39;]}&quot; --feedback</div>
 </div><!-- fragment --><p>Perception (and any preempted/canceled goal) runs until stopped: press Ctrl-C on the <span class="tt">send_goal</span> command, or call <span class="tt">ros2 action cancel</span> / <span class="tt">CapabilityClient::cancel()</span> from another terminal/process, to stop it early.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
+<p><a class="anchor" id="monitoring-a-running-fleet-easyfleet_tools"></a> </p>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
+Monitoring a running fleet: <span class="tt">easyfleet_tools</span></h3>
+<p>[<span class="tt">easyfleet_tools</span>](easyfleet_tools) is a read-only TUI + CLI for watching a running fleet without hand-assembling <span class="tt">ros2 topic
+echo</span>/<span class="tt">ros2 action send_goal --feedback</span> invocations like the ones above — it never launches, stops, or preempts a capability itself, only observes. It follows the same TUI/CLI split as EasyNavigation's own <a href="../EasyNavigation/easynav_tools"><span class="tt">easynav_tools</span></a>: one shared Python layer (<span class="tt">easyfleet_tools/controller/ros_controllers.py</span>) parses/formats every message once, reused by both the Textual TUI and the <span class="tt">ros2cli</span> verbs below.</p>
+<div class="fragment"><div class="line">ros2 run easyfleet_tools tui</div>
+</div><!-- fragment --><p>The TUI's <b>Mission</b> tab (the default) shows the whole fleet at a glance: a robot list colored by IDLE/BUSY/INACTIVE, that robot's capabilities, and the selected capability's live goal status, feedback and result. Every discovered robot also gets its own tab (its capabilities, the selected one's JSON description, its execution status, and a colored <span class="tt">RCLCPP_INFO</span>/<span class="tt">WARN</span>/<span class="tt">ERROR</span> log feed), plus a fleet-wide <b>Logs</b> tab.</p>
+<p>The CLI exposes the same data as one-shot or <span class="tt">--duration</span>-bounded commands, e.g. against the <span class="tt">alone</span> scenario:</p>
+<div class="fragment"><div class="line">ros2 easyfleet fleet                                   # every robot + capability, with status</div>
+<div class="line">ros2 easyfleet describe robot_1/navigation              # full JSON description (same as /capabilities)</div>
+<div class="line">ros2 easyfleet watch robot_1/navigation --duration 10   # live goal status + feedback + result</div>
+<div class="line">ros2 easyfleet status --duration 10                     # each robot&#39;s RViz status-marker text</div>
+<div class="line">ros2 easyfleet logs --robot robot_1 --duration 10       # colored /rosout tail</div>
+</div><!-- fragment --><p><span class="tt">describe</span>/<span class="tt">watch</span> accept a capability either as <span class="tt">&lt;robot&gt;/&lt;capability&gt;</span> (e.g. <span class="tt">robot_1/navigation</span>) or as its bare action name (e.g. <span class="tt">/robot_1/navigation</span>). <span class="tt">watch</span>'s Result section is fetched through the action's own <span class="tt">_action/get_result</span> service once a goal reaches a terminal state — the action protocol lets any client fetch a goal's result given its <span class="tt">goal_id</span>, not just the client that sent it, so this works even for a goal <span class="tt">watch</span> never sent itself (e.g. one from a mission script).</p>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
 Running the tests</h2>
 <div class="fragment"><div class="line">colcon test --packages-select easyfleet_core easyfleet_interfaces easyfleet_mission_manager easyfleet_easynav_navigation easyfleet_fake_alone_deployment easyfleet_fake_collaboration_deployment easyfleet_easynav_deployment</div>
 <div class="line">colcon test-result --verbose</div>
 </div><!-- fragment --><p>Each test binary that touches ROS communication runs on its own <span class="tt">ROS_DOMAIN_ID</span>, so the test suite is safe to run even while you have capability nodes launched interactively (as above) — they won't cross-talk on the shared <span class="tt">/capabilities</span> topics.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
 Known limitations</h2>
 <p><a class="anchor" id="capability-discovery-is-a-one-shot-snapshot-not-a-live-view"></a> </p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
 Capability discovery is a one-shot snapshot, not a live view</h3>
 <p><span class="tt">easyfleet_mission_manager::discover_capabilities()</span> subscribes to <span class="tt">/capabilities</span> and <span class="tt">/capabilities_status</span>, waits for a fixed window (2.5s by default), and returns whatever it collected — a snapshot. That's good enough for the example missions in this repo: they discover once at startup and then run a short, scripted sequence against whatever they found.</p>
 <p>It is <b>not</b> good enough for the architecture this repo is a stand-in for: a control computer running a long-lived, LLM-generated Behavior Tree that calls robot capabilities over the course of a mission that can last minutes or hours. In that setting, treating discovery as a one-time snapshot breaks down in a few concrete ways:</p>
@@ -415,7 +431,7 @@ Capability discovery is a one-shot snapshot, not a live view</h3>
   `sleep_for`".</b> It would mean replacing the bounded collect-then-return function with a background-updated registry that the rest of the program reads from concurrently (thread-safety, not just a <span class="tt">std::map</span> behind a <span class="tt">std::mutex</span> as today, but something callers can iterate over safely while it's being mutated from a subscription callback). It also raises design questions this repo currently sidesteps entirely: what should happen to a goal that's already in flight when its capability's heartbeat stops arriving? Does the BT get notified, or does it just find out the hard way when <span class="tt">wait_for_result()</span> never returns? How long is "missing" before a capability is presumed gone rather than just late?</li>
 </ul>
 <p>None of this is implemented here. It's the single biggest gap between this mock/demo architecture and the real control-computer scenario it's meant to validate the plumbing for.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
 License</h2>
 <p>Apache-2.0 (see <span class="tt">easyfleet_core/LICENSE</span>). </p>
 </div></div><!-- PageDoc -->
