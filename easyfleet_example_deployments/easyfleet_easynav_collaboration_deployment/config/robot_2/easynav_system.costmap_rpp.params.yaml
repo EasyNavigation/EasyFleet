@@ -102,7 +102,19 @@
 /**/maps_manager_node:
   ros__parameters:
     use_sim_time: true
-    map_types: [costmap]
+    map_types: [costmap, routes]
+    routes:
+      freq: 10.0
+      plugin: easynav_routes_maps_manager/RoutesMapsManager
+      package: easynav_indoor_testcase
+      map_path_file: maps/routes_1.yaml
+      filters: [routes_costmap]
+      routes_costmap:
+        plugin: easynav_routes_maps_manager/RoutesCostmapFilter
+        min_cost: 200
+        route_width: 0.1
+      cycle_time_nort: 0.001
+      cycle_time_rt: 0.001
     costmap:
       freq: 10.0
       plugin: easynav_costmap_maps_manager/CostmapMapsManager
