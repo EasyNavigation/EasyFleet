@@ -303,6 +303,43 @@ for why that window is fixed and short). Either half can also be run
 standalone in its own terminal (see [Running](#running) below), which is
 how you'd poke at a robot by hand without a scripted mission at all.
 
+<a name="fleet-wide-navigation-easyfleet_navigation_manager"></a>
+## Fleet-wide navigation: `easyfleet_navigation_manager`
+
+Today every robot's own EasyNav instance loads its own local copy of the
+map and the route graph (`config/*/easynav_system.costmap_rpp.params.yaml`'s
+`maps_manager_node.costmap`/`.routes` blocks, both currently pointing at
+the same files in `easynav_indoor_testcase`).
+[`easyfleet_navigation_manager`](easyfleet_navigation_manager) is a third
+kind of process, alongside the robot and mission control above: one
+process, launched once per fleet (not per robot), that loads that same
+map/route data centrally and publishes it once — with transient_local
+durability, so a robot that starts afterward still receives it — on two
+topics:
+
+- `/global_map` (`nav_msgs/OccupancyGrid`)
+- `/global_routes` (`easynav_routes_maps_manager/RoutesMap`)
+
+Each robot's `maps_manager_node` picks this up by remapping its own
+per-plugin `incoming_map`/`incoming_routes` topics to these two global
+ones — `easynav_costmap_maps_manager`'s `incoming_map` and
+`easynav_routes_maps_manager`'s `incoming_routes` subscriptions both
+replace whatever the robot loaded from its own `map_path_file` at
+startup with whatever arrives there — so every robot ends up with the
+exact same map/routes without each having to load its own copy.
+`easyfleet_navigation_manager` is designed to support more than one map
+representation later (`map_type` parameter; only `"costmap"` is
+implemented today) — adding `"navmap"`/`"simple"` is a new
+`MapPublisherBase` implementation registered in one factory, not a
+rewrite.
+
+```bash
+ros2 run easyfleet_navigation_manager navigation_manager_node --ros-args \
+  -p map_type:=costmap \
+  -p map.package:=easynav_indoor_testcase -p map.map_path_file:=maps/home2.yaml \
+  -p routes.package:=easynav_indoor_testcase -p routes.map_path_file:=maps/routes_1.yaml
+```
+
 <a name="multi-robot-deployments"></a>
 ## Multi-robot deployments
 
@@ -382,6 +419,7 @@ Gazebo launch.
 | `easyfleet_core` | C++ library | `ActionServerBase<ActionT>`, `ActionClient<ActionT>`, `Capability<ActionServerT>`, `CapabilityClient<ActionT>`, plus `Navigation`/`Manipulation`/`PerceptionActionServerBase` |
 | `easyfleet_interfaces` | Interface package | `CapabilityDescription`, `CapabilityStatus`, and the `Navigation`/`Manipulation`/`Perception` actions |
 | `easyfleet_mission_manager` | C++ library | Capability discovery/print helpers, the generic `run_capability<ActionT>()` helper, and `StatusMarkerPublisher` (per-robot RViz status text) — no executables of its own |
+| [`easyfleet_navigation_manager`](easyfleet_navigation_manager) | C++ library + executable | `navigation_manager_node`: publishes a shared map/routes on `/global_map`/`/global_routes` for the whole fleet — see [Fleet-wide navigation](#fleet-wide-navigation-easyfleet_navigation_manager) above |
 | `easyfleet_easynav_navigation` | BT.CPP plugin library | The `Navigate` BT node (`libeasynav_navigate_bt_node.so`), loaded by path — no executable of its own |
 | `easyfleet_fake_alone_deployment` | C++ library + executables + launch/config | The `alone` scenario: all 3 fake capabilities hosted by `robot_node` on `robot_1`, + `alone_mission_node` (mission control) |
 | `easyfleet_fake_collaboration_deployment` | C++ library + executables + launch/config | The `collaboration` scenario: its own copy of the same 3 fake capabilities, `robot_node` reused across `robot_1`/`robot_2`/`robot_3`, + `collaboration_mission_node` |

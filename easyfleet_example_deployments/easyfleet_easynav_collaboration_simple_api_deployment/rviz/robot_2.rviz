@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Map1
         - /TF1/Frames1
         - /RobotModel1
       Splitter Ratio: 0.5
@@ -63,13 +64,13 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /robot_2/maps_manager_node/costmap/dynamic_map
+        Value: /robot_2/maps_manager_node/routes/routes_map
       Update Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /robot_2/maps_manager_node/costmap/dynamic_map_updates
+        Value: /robot_2/maps_manager_node/routes/routes_map_updates
       Use Timestamp: false
       Value: true
     - Class: rviz_default_plugins/TF
@@ -79,145 +80,187 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_footprint:
+        robot_1/base_footprint:
           Value: true
-        base_link:
-          Value: false
-        camera_depth_frame:
-          Value: false
-        camera_depth_optical_frame:
-          Value: false
-        camera_link:
-          Value: false
-        camera_rgb_frame:
-          Value: false
-        camera_rgb_optical_frame:
-          Value: false
-        caster_back_link:
-          Value: false
-        caster_front_link:
-          Value: false
-        cliff_sensor_front_link:
-          Value: false
-        cliff_sensor_left_link:
-          Value: false
-        cliff_sensor_right_link:
-          Value: false
-        gyro_link:
-          Value: false
-        laser_link:
-          Value: false
-        map:
+        robot_1/base_link:
           Value: true
-        odom:
+        robot_1/caster_back_link:
           Value: true
-        plate_bottom_link:
-          Value: false
-        plate_middle_link:
-          Value: false
-        plate_top_link:
-          Value: false
-        standoff_1in_0_link:
-          Value: false
-        standoff_1in_1_link:
-          Value: false
-        standoff_1in_2_link:
-          Value: false
-        standoff_1in_3_link:
-          Value: false
-        standoff_1in_4_link:
-          Value: false
-        standoff_1in_5_link:
-          Value: false
-        standoff_2in_0_link:
-          Value: false
-        standoff_2in_1_link:
-          Value: false
-        standoff_2in_2_link:
-          Value: false
-        standoff_2in_3_link:
-          Value: false
-        standoff_8in_0_link:
-          Value: false
-        standoff_8in_1_link:
-          Value: false
-        standoff_8in_2_link:
-          Value: false
-        standoff_8in_3_link:
-          Value: false
-        wheel_left_link:
-          Value: false
-        wheel_right_link:
-          Value: false
+        robot_1/caster_front_link:
+          Value: true
+        robot_1/cliff_sensor_front_link:
+          Value: true
+        robot_1/cliff_sensor_left_link:
+          Value: true
+        robot_1/cliff_sensor_right_link:
+          Value: true
+        robot_1/gyro_link:
+          Value: true
+        robot_1/laser_link:
+          Value: true
+        robot_1/map:
+          Value: true
+        robot_1/odom:
+          Value: true
+        robot_1/plate_bottom_link:
+          Value: true
+        robot_1/plate_middle_link:
+          Value: true
+        robot_1/plate_top_link:
+          Value: true
+        robot_1/standoff_1in_0_link:
+          Value: true
+        robot_1/standoff_1in_1_link:
+          Value: true
+        robot_1/standoff_1in_2_link:
+          Value: true
+        robot_1/standoff_1in_3_link:
+          Value: true
+        robot_1/standoff_1in_4_link:
+          Value: true
+        robot_1/standoff_1in_5_link:
+          Value: true
+        robot_1/standoff_2in_0_link:
+          Value: true
+        robot_1/standoff_2in_1_link:
+          Value: true
+        robot_1/standoff_2in_2_link:
+          Value: true
+        robot_1/standoff_2in_3_link:
+          Value: true
+        robot_1/standoff_8in_0_link:
+          Value: true
+        robot_1/standoff_8in_1_link:
+          Value: true
+        robot_1/standoff_8in_2_link:
+          Value: true
+        robot_1/standoff_8in_3_link:
+          Value: true
+        robot_1/wheel_left_link:
+          Value: true
+        robot_1/wheel_right_link:
+          Value: true
+        robot_2/base_footprint:
+          Value: true
+        robot_2/base_link:
+          Value: true
+        robot_2/caster_back_link:
+          Value: true
+        robot_2/caster_front_link:
+          Value: true
+        robot_2/cliff_sensor_front_link:
+          Value: true
+        robot_2/cliff_sensor_left_link:
+          Value: true
+        robot_2/cliff_sensor_right_link:
+          Value: true
+        robot_2/gyro_link:
+          Value: true
+        robot_2/laser_link:
+          Value: true
+        robot_2/map:
+          Value: true
+        robot_2/odom:
+          Value: true
+        robot_2/plate_bottom_link:
+          Value: true
+        robot_2/plate_middle_link:
+          Value: true
+        robot_2/plate_top_link:
+          Value: true
+        robot_2/standoff_1in_0_link:
+          Value: true
+        robot_2/standoff_1in_1_link:
+          Value: true
+        robot_2/standoff_1in_2_link:
+          Value: true
+        robot_2/standoff_1in_3_link:
+          Value: true
+        robot_2/standoff_1in_4_link:
+          Value: true
+        robot_2/standoff_1in_5_link:
+          Value: true
+        robot_2/standoff_2in_0_link:
+          Value: true
+        robot_2/standoff_2in_1_link:
+          Value: true
+        robot_2/standoff_2in_2_link:
+          Value: true
+        robot_2/standoff_2in_3_link:
+          Value: true
+        robot_2/standoff_8in_0_link:
+          Value: true
+        robot_2/standoff_8in_1_link:
+          Value: true
+        robot_2/standoff_8in_2_link:
+          Value: true
+        robot_2/standoff_8in_3_link:
+          Value: true
+        robot_2/wheel_left_link:
+          Value: true
+        robot_2/wheel_right_link:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          odom:
-            base_footprint:
-              base_link:
-                camera_rgb_frame:
-                  camera_depth_frame:
-                    camera_depth_optical_frame:
-                      {}
-                  camera_link:
-                    {}
-                  camera_rgb_optical_frame:
-                    {}
-                caster_back_link:
+        robot_2/map:
+          robot_2/odom:
+            robot_2/base_footprint:
+              robot_2/base_link:
+                robot_2/caster_back_link:
                   {}
-                caster_front_link:
+                robot_2/caster_front_link:
                   {}
-                cliff_sensor_front_link:
+                robot_2/cliff_sensor_front_link:
                   {}
-                cliff_sensor_left_link:
+                robot_2/cliff_sensor_left_link:
                   {}
-                cliff_sensor_right_link:
+                robot_2/cliff_sensor_right_link:
                   {}
-                gyro_link:
+                robot_2/gyro_link:
                   {}
-                laser_link:
+                robot_2/laser_link:
                   {}
-                plate_bottom_link:
+                robot_2/plate_bottom_link:
                   {}
-                plate_middle_link:
+                robot_2/plate_middle_link:
                   {}
-                plate_top_link:
+                robot_2/plate_top_link:
                   {}
-                standoff_1in_0_link:
+                robot_2/standoff_1in_0_link:
                   {}
-                standoff_1in_1_link:
+                robot_2/standoff_1in_1_link:
                   {}
-                standoff_1in_2_link:
+                robot_2/standoff_1in_2_link:
                   {}
-                standoff_1in_3_link:
+                robot_2/standoff_1in_3_link:
                   {}
-                standoff_1in_4_link:
+                robot_2/standoff_1in_4_link:
                   {}
-                standoff_1in_5_link:
+                robot_2/standoff_1in_5_link:
                   {}
-                standoff_2in_0_link:
+                robot_2/standoff_2in_0_link:
                   {}
-                standoff_2in_1_link:
+                robot_2/standoff_2in_1_link:
                   {}
-                standoff_2in_2_link:
+                robot_2/standoff_2in_2_link:
                   {}
-                standoff_2in_3_link:
+                robot_2/standoff_2in_3_link:
                   {}
-                standoff_8in_0_link:
+                robot_2/standoff_8in_0_link:
                   {}
-                standoff_8in_1_link:
+                robot_2/standoff_8in_1_link:
                   {}
-                standoff_8in_2_link:
+                robot_2/standoff_8in_2_link:
                   {}
-                standoff_8in_3_link:
+                robot_2/standoff_8in_3_link:
                   {}
-                wheel_left_link:
+                robot_2/wheel_left_link:
                   {}
-                wheel_right_link:
+                robot_2/wheel_right_link:
                   {}
       Update Interval: 0
       Value: true
@@ -352,158 +395,137 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_footprint:
+        robot_2/base_footprint:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        camera_depth_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        camera_depth_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        camera_link:
+        robot_2/base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        camera_rgb_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        camera_rgb_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        caster_back_link:
+        robot_2/caster_back_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        caster_front_link:
+        robot_2/caster_front_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cliff_sensor_front_link:
+        robot_2/cliff_sensor_front_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        cliff_sensor_left_link:
+        robot_2/cliff_sensor_left_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        cliff_sensor_right_link:
+        robot_2/cliff_sensor_right_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        gyro_link:
+        robot_2/gyro_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        laser_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        plate_bottom_link:
+        robot_2/laser_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        plate_middle_link:
+        robot_2/plate_bottom_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        plate_top_link:
+        robot_2/plate_middle_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_1in_0_link:
+        robot_2/plate_top_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_1in_1_link:
+        robot_2/standoff_1in_0_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_1in_2_link:
+        robot_2/standoff_1in_1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_1in_3_link:
+        robot_2/standoff_1in_2_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_1in_4_link:
+        robot_2/standoff_1in_3_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_1in_5_link:
+        robot_2/standoff_1in_4_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_2in_0_link:
+        robot_2/standoff_1in_5_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_2in_1_link:
+        robot_2/standoff_2in_0_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_2in_2_link:
+        robot_2/standoff_2in_1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_2in_3_link:
+        robot_2/standoff_2in_2_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_8in_0_link:
+        robot_2/standoff_2in_3_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_8in_1_link:
+        robot_2/standoff_8in_0_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_8in_2_link:
+        robot_2/standoff_8in_1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        standoff_8in_3_link:
+        robot_2/standoff_8in_2_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        wheel_left_link:
+        robot_2/standoff_8in_3_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        wheel_right_link:
+        robot_2/wheel_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        robot_2/wheel_right_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -520,11 +542,11 @@ Visualization Manager:
       Enabled: true
       Name: MissionStatus
       Namespaces:
-        {}
+        Value: true
+        mission_status: true
       Topic:
         Depth: 10
         Durability Policy: Transient Local
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /mission_status_markers
@@ -575,25 +597,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 3.1107726097106934
+      Distance: 6.876926898956299
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 0.1879083663225174
+        Y: 0.037696853280067444
+        Z: -0.1949782520532608
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6353981494903564
+      Pitch: 0.785398006439209
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.9203978776931763
+      Yaw: 1.000397801399231
     Saved: ~
 Window Geometry:
   Displays:

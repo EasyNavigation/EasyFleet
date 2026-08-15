@@ -41,6 +41,15 @@ launch:
             - from: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/robot_2/easynav_system.costmap_rpp.params.yaml"
             - name: "tf_prefix"
               value: "robot_2"
+          remap:
+            # Fleet-wide map/routes from easyfleet_navigation_manager's
+            # navigation_manager_node -- see
+            # easyfleet_easynav_deployment/launch/easynav_robot_gazebo_launch.yaml's
+            # own copy of this remap for the full explanation.
+            - from: "/global_map"
+              to: "maps_manager_node/costmap/incoming_map"
+            - from: "/global_routes"
+              to: "maps_manager_node/routes/incoming_routes"
 
       - node:
           pkg: "easyfleet_easynav_deployment"

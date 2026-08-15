@@ -43,6 +43,19 @@ launch:
         - name: "robot_namespace"
           value: "$(var robot_namespace)"
 
+  # Fleet-wide navigation manager: publishes the same map/routes the robot
+  # above would otherwise load locally on /global_map and /global_routes
+  # (see easynav_robot_gazebo_launch.yaml's "incoming_map"/"incoming_routes"
+  # remaps on system_main). transient_local durability means start order
+  # relative to the robot doesn't matter -- a late subscriber still gets
+  # the retained message.
+  - node:
+      pkg: "easyfleet_navigation_manager"
+      exec: "navigation_manager_node"
+      output: "screen"
+      param:
+        - from: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/navigation_manager.params.yaml"
+
   - timer:
       period: 3.0
       children:

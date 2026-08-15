@@ -110,7 +110,7 @@
     routes:
       freq: 10.0
       plugin: easynav_routes_maps_manager/RoutesMapsManager
-      package: easynav_indoor_testcase
+      package: easyfleet_easynav_deployment
       map_path_file: maps/routes_1.yaml
       filters: [routes_costmap]
       routes_costmap:
@@ -122,7 +122,7 @@
     costmap:
       freq: 10.0
       plugin: easynav_costmap_maps_manager/CostmapMapsManager
-      package: easynav_indoor_testcase
+      package: easyfleet_easynav_deployment
       map_path_file: maps/home2.yaml
       filters: [obstacles, inflation]
       obstacles:

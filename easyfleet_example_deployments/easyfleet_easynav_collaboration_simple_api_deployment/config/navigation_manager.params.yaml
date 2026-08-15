@@ -1,0 +1,36 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Parameters for easyfleet_navigation_manager's navigation_manager_node,
+# launched once for this whole scenario, fleet-wide, not per robot (see
+# launch/easynav_collaboration_launch.yaml) -- publishes the same
+# map/routes both robots' own config/robot_1|robot_2/easynav_system.costmap_rpp.params.yaml
+# point their maps_manager_node at locally (maps/home2.yaml,
+# maps/routes_1.yaml), centrally on /global_map and /global_routes.
+# Reuses easyfleet_easynav_deployment's own copies of those files (same
+# package this scenario already depends on for the navigation capability
+# itself) rather than duplicating them again here.
+#
+# Uses the "/**" wildcard, matching this package's other params files
+# (see navigation_params.yaml's own comment for why): navigation_manager_node
+# itself is never namespaced today, but this keeps the file correct if
+# that ever changes.
+/**:
+  ros__parameters:
+    map_type: "costmap"
+    map.package: "easyfleet_easynav_deployment"
+    map.map_path_file: "maps/home2.yaml"
+    routes.package: "easyfleet_easynav_deployment"
+    routes.map_path_file: "maps/routes_1.yaml"

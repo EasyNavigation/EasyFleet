@@ -38,6 +38,19 @@ launch:
   - include:
       file: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/launch/robot_2_launch.yaml"
 
+  # Fleet-wide navigation manager: publishes the same map/routes both
+  # robots above would otherwise load locally on /global_map and
+  # /global_routes (see robot_1_launch.yaml/robot_2_launch.yaml's
+  # "incoming_map"/"incoming_routes" remaps on system_main).
+  - node:
+      pkg: "easyfleet_navigation_manager"
+      exec: "navigation_manager_node"
+      output: "screen"
+      param:
+        - name: "use_sim_time"
+          value: true
+        - from: "$(find-pkg-share easyfleet_easynav_collaboration_deployment)/config/navigation_manager.params.yaml"
+
   - timer:
       period: 5.0
       children:

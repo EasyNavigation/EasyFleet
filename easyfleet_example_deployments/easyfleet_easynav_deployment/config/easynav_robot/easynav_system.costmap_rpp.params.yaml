@@ -15,12 +15,15 @@
 
 # Real EasyNav (easynav_system system_main), no Dummy* plugins: costmap
 # localizer/maps-manager/planner + the regulated pure-pursuit controller,
-# copied verbatim from
+# originally copied verbatim from
 # src/easynav_indoor_testcase/robots_params/costmap.rpp.params.yaml, with
 # one addition: maps_manager_node's routes map type (RoutesMapsManager +
 # RoutesCostmapFilter), not present in that upstream file, matching how
 # src/easynav_indoor_testcase/robots_params/costmap.mppi.routed.params.yaml
-# configures it -- same route file (maps/routes_1.yaml), same package.
+# configures it. The map/routes files themselves (maps/home2.yaml,
+# maps/routes_1.yaml) are this package's own local copies (package:
+# easyfleet_easynav_deployment below) -- this deployment no longer
+# depends on easynav_indoor_testcase at runtime for them.
 # For use with a real robot or Gazebo simulation of one -- see
 # launch/easynav_robot_gazebo_launch.yaml, which loads this file
 # instead of easynav_system.dummy.params.yaml (per the design intent from
@@ -115,7 +118,7 @@
     routes:
       freq: 10.0
       plugin: easynav_routes_maps_manager/RoutesMapsManager
-      package: easynav_indoor_testcase
+      package: easyfleet_easynav_deployment
       map_path_file: maps/routes_1.yaml
       filters: [routes_costmap]
       routes_costmap:
@@ -127,7 +130,7 @@
     costmap:
       freq: 10.0
       plugin: easynav_costmap_maps_manager/CostmapMapsManager
-      package: easynav_indoor_testcase
+      package: easyfleet_easynav_deployment
       map_path_file: maps/home2.yaml
       filters: [obstacles, inflation]
       obstacles:
