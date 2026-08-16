@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_mission_manager_py</name>
+  <version>0.1.0</version>
+  <description>
+    Python mirror of easyfleet_mission_manager: FleetSession/RobotHandle/
+    SimpleController for writing mission controllers in Python instead of
+    C++. Same wire protocol (/capabilities, /capabilities_status, the
+    easyfleet_interfaces actions), so a Python mission script and a C++ one
+    are interchangeable against the same fleet.
+  </description>
+
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+
+  <license>Apache-2.0</license>
+
+  <author>Francisco Martín Rico</author>
+
+  <depend>rclpy</depend>
+  <depend>easyfleet_interfaces</depend>
+  <depend>visualization_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>action_msgs</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>ament_xmllint</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
