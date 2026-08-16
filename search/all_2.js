@@ -6,9 +6,9 @@ var searchData=
   ['cancel_5fgoal_3',['cancel_goal',['../classeasyfleet__core_1_1ActionClient.html#a6fee662f1f12ef8ccf80974207983f3a',1,'easyfleet_core::ActionClient']]],
   ['capabilities_4',['capabilities',['../classeasyfleet_1_1Deployment.html#a569be16ccf327f97766277e93701d333',1,'easyfleet::Deployment::capabilities()'],['../classeasyfleet_1_1RobotHandle.html#ade08c373e45e9087611b628ecab93ef3',1,'easyfleet::RobotHandle::capabilities()']]],
   ['capability_5',['Capability',['../classeasyfleet__core_1_1Capability.html',1,'Capability&lt; ActionServerT &gt;'],['../classeasyfleet__core_1_1Capability.html#a4eb08cbf34b7578e1db0f870a226f7d9',1,'easyfleet_core::Capability::Capability()']]],
-  ['capability_6',['capability',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a586d4b3f6ee263311139695f7554f978',1,'easyfleet_mission_manager::CapabilityInfo::capability'],['../index.html#autotoc_md3',1,'The EasyNav-backed navigation capability'],['../index.html#autotoc_md5',1,'What&apos;s a &quot;capability&quot;?']]],
-  ['capability_20by_20hand_7',['Poking at a capability by hand',['../index.html#autotoc_md16',1,'']]],
-  ['capability_20discovery_20is_20a_20one_20shot_20snapshot_20not_20a_20live_20view_8',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md20',1,'']]],
+  ['capability_6',['capability',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a586d4b3f6ee263311139695f7554f978',1,'easyfleet_mission_manager::CapabilityInfo::capability'],['../index.html#autotoc_md4',1,'The EasyNav-backed navigation capability'],['../index.html#autotoc_md6',1,'What&apos;s a &quot;capability&quot;?']]],
+  ['capability_20by_20hand_7',['Poking at a capability by hand',['../index.html#autotoc_md17',1,'']]],
+  ['capability_20discovery_20is_20a_20one_20shot_20snapshot_20not_20a_20live_20view_8',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md21',1,'']]],
   ['capability_3c_20easynavnavigationactionserver_20_3e_9',['Capability&lt; EasynavNavigationActionServer &gt;',['../classeasyfleet__core_1_1Capability.html',1,'easyfleet_core']]],
   ['capability_3c_20manipulationfakeactionserver_20_3e_10',['Capability&lt; ManipulationFakeActionServer &gt;',['../classeasyfleet__core_1_1Capability.html',1,'easyfleet_core']]],
   ['capability_3c_20navigationfakeactionserver_20_3e_11',['Capability&lt; NavigationFakeActionServer &gt;',['../classeasyfleet__core_1_1Capability.html',1,'easyfleet_core']]],
@@ -25,8 +25,8 @@ var searchData=
   ['cleanup_5fnode_22',['cleanup_node',['../classeasyfleet__core_1_1Capability.html#a9e087a094c97761ae62aea6a96c47b98',1,'easyfleet_core::Capability::cleanup_node()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#a68bec521bd16a9bdc14292a0b50e1e16',1,'easyfleet_core::CapabilityNodeBase::cleanup_node()']]],
   ['client_23',['Client',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a84ee0895f18f0326a343e9c8d869a922',1,'easyfleet_mission_manager::detail::RunningCapability']]],
   ['clientgoalhandle_24',['ClientGoalHandle',['../classeasyfleet__core_1_1ActionClient.html#a55cd60304adaae9585a7f18ed390c610',1,'easyfleet_core::ActionClient']]],
-  ['collaboration_20scenario_25',['&lt;span class=&quot;tt&quot;&gt;collaboration&lt;/span&gt; scenario',['../index.html#autotoc_md13',1,'']]],
+  ['collaboration_20scenario_25',['&lt;span class=&quot;tt&quot;&gt;collaboration&lt;/span&gt; scenario',['../index.html#autotoc_md14',1,'']]],
   ['configure_5fnode_26',['configure_node',['../classeasyfleet__core_1_1Capability.html#ae34d57f5de79428ef2051f8588f4add2',1,'easyfleet_core::Capability::configure_node()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#a48a0afd007ad2289c86f7e490e6756b5',1,'easyfleet_core::CapabilityNodeBase::configure_node()']]],
-  ['control_27',['Robot vs. mission control',['../index.html#autotoc_md6',1,'']]],
+  ['control_27',['Robot vs. mission control',['../index.html#autotoc_md7',1,'']]],
   ['create_28',['create',['../classeasyfleet__core_1_1ActionClient.html#ae44619300788808260b37f04395527f1',1,'easyfleet_core::ActionClient::create()'],['../classeasyfleet__core_1_1CapabilityClient.html#a099be5740803bacbda06b80f2f3f37cd',1,'easyfleet_core::CapabilityClient::create()'],['../classeasyfleet__core_1_1CapabilityFactory.html#a3f3134e401d21e4593ad9eea845e14f9',1,'easyfleet_core::CapabilityFactory::create()'],['../classeasyfleet__core_1_1CapabilityFactoryFor.html#a6d103b37cae41837537fe9aca6f4641c',1,'easyfleet_core::CapabilityFactoryFor::create()']]]
 ];

@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['interfaces_0',['Interfaces',['../index.html#autotoc_md4',1,'']]],
-  ['is_20a_20one_20shot_20snapshot_20not_20a_20live_20view_1',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md20',1,'']]],
+  ['interfaces_0',['Interfaces',['../index.html#autotoc_md5',1,'']]],
+  ['is_20a_20one_20shot_20snapshot_20not_20a_20live_20view_1',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md21',1,'']]],
   ['is_5factive_2',['is_active',['../classeasyfleet__core_1_1ActionServerBase.html#aee71b01d2e4d055b188db7ce81f1a8b8',1,'easyfleet_core::ActionServerBase']]],
   ['is_5falive_3',['is_alive',['../classeasyfleet_1_1RobotHandle.html#a46b75bfed6190898834078d861e538d4',1,'easyfleet::RobotHandle']]],
   ['is_5fcapability_5frunning_4',['is_capability_running',['../classeasyfleet_1_1RobotHandle.html#ad2feeb52bc662cb9a1d8dc804fcb94c6',1,'easyfleet::RobotHandle']]],
