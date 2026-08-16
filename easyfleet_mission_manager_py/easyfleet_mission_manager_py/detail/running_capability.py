@@ -20,7 +20,7 @@ import time
 
 from .. import ansi
 from ..capability_client import CapabilityClient, Outcome
-from ..capability_state import CapabilityState
+from ..capability_state import CapabilityState, to_string
 from ..output import safe_print
 
 _OUTCOME_TO_STATE = {
@@ -74,10 +74,10 @@ class RunningCapability:
                 new_state = _OUTCOME_TO_STATE.get(response.outcome, CapabilityState.ABORTED)
                 self._state = new_state
             self._status.set_status(
-                self._robot_name, f'{self._capability_type} -> {new_state.value}')
+                self._robot_name, f'{self._capability_type} -> {to_string(new_state)}')
             safe_print(
                 f'  {ansi.DIM}[{self._robot_name}/{self._capability_type}] {ansi.RESET}'
-                f'finished with outcome {ansi.MAGENTA}{new_state.value}{ansi.RESET}')
+                f'finished with outcome {ansi.MAGENTA}{to_string(new_state)}{ansi.RESET}')
 
         self._client.request(goal, on_response)
 

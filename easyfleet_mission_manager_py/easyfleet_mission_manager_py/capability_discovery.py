@@ -48,8 +48,12 @@ def discover_capabilities(node, window_sec: float = 2.5) -> list[CapabilityInfo]
             info.description_json_raw = msg.description_json
             try:
                 parsed = json.loads(msg.description_json)
-                info.description_json = parsed if isinstance(parsed, dict) else {}
-                info.description_json_valid = True
+                if isinstance(parsed, dict):
+                    info.description_json = parsed
+                    info.description_json_valid = True
+                else:
+                    info.description_json = {}
+                    info.description_json_valid = False
             except (ValueError, TypeError):
                 info.description_json = {}
                 info.description_json_valid = False

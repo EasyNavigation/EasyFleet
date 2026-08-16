@@ -40,4 +40,4 @@ class CapabilityState(enum.Enum):
 
 
 def to_string(state: CapabilityState) -> str:
-    return state.value
+    return state.name

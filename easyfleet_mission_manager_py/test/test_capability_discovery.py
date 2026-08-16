@@ -16,10 +16,10 @@
 """Integration tests for discover_capabilities(), mirroring test_capability_discovery.cpp."""
 
 import itertools
-import threading
 
 from easyfleet_interfaces.msg import CapabilityDescription, CapabilityStatus
 from easyfleet_mission_manager_py.capability_discovery import discover_capabilities
+from easyfleet_mission_manager_py.mission_helpers import spin_in_background as _spin_in_background
 import pytest
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
@@ -30,14 +30,6 @@ _name_counter = itertools.count()
 
 def _unique_name(base: str) -> str:
     return f'{base}_{next(_name_counter)}'
-
-
-def _spin_in_background(executor) -> threading.Thread:
-    thread = threading.Thread(target=executor.spin, daemon=True)
-    thread.start()
-    while not executor.is_spinning:
-        pass
-    return thread
 
 
 def _make_description(capability: str, action_name: str, description_json: str, robot: str = ''):

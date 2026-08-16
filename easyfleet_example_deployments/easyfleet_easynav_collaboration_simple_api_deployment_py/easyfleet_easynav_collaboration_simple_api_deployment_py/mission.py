@@ -115,18 +115,21 @@ def main(args=None):
         safe_print(
             f'{ansi.BOLD}{ansi.RED}Both robots must have a navigation capability for this '
             f'demo to work.{ansi.RESET}')
+        controller.shutdown()
         return 1
 
     if not robot_1.has_capability('perception'):
         safe_print(
             f'{ansi.BOLD}{ansi.RED}Robot 1 must have a perception capability for this demo '
             f'to work.{ansi.RESET}')
+        controller.shutdown()
         return 1
 
     if not robot_2.has_capability('manipulation'):
         safe_print(
             f'{ansi.BOLD}{ansi.RED}Robot 2 must have a manipulation capability for this demo '
             f'to work.{ansi.RESET}')
+        controller.shutdown()
         return 1
 
     # Phase 1: robot_1 -> "kitchen" (perceiving throughout) while
