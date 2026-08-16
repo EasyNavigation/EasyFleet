@@ -116,7 +116,7 @@ install(
   RUNTIME DESTINATION bin
 )
 install(
-  DIRECTORY launch config behavior_trees
+  DIRECTORY launch config behavior_trees maps rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

@@ -41,6 +41,27 @@ launch:
             - from: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/config/robot_2/easynav_system.costmap_rpp.params.yaml"
             - name: "tf_prefix"
               value: "robot_2"
+          remap:
+            # Fleet-wide map/routes from easyfleet_navigation_manager's
+            # navigation_manager_node. Direction is "from what the code
+            # itself names its topic, to the name we actually want" --
+            # see
+            # easyfleet_easynav_deployment/launch/easynav_robot_gazebo_launch.yaml's
+            # own copy of this remap for the full explanation. This copy
+            # previously had `from`/`to` swapped, which is a silent
+            # no-op in ROS 2 (a remap only fires when some code actually
+            # requests the exact `from` name; CostmapMapsManager's/
+            # RoutesMapsManager's incoming_map/incoming_routes
+            # subscriptions build their own fully-qualified name
+            # directly via get_fully_qualified_name() and never request
+            # "/global_map"/"/global_routes" themselves, so that
+            # direction never had any effect) -- confirmed empirically
+            # with a minimal rclpy repro outside this codebase before
+            # fixing.
+            - from: "maps_manager_node/costmap/incoming_map"
+              to: "/global_map"
+            - from: "maps_manager_node/routes/incoming_routes"
+              to: "/global_routes"
 
       - node:
           pkg: "easyfleet_easynav_deployment"

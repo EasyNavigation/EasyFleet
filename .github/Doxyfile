@@ -1045,6 +1045,7 @@ WARN_LOGFILE           =docs/doxygen_warnings.log
 INPUT                  =README.md \
                          easyfleet_core \
                          easyfleet_mission_manager \
+                         easyfleet_navigation_manager \
                          easyfleet_interfaces \
                          easyfleet_easynav_navigation \
                          easyfleet_example_deployments

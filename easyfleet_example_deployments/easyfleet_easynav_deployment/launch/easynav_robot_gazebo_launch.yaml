@@ -85,6 +85,24 @@ launch:
             - from: "$(find-pkg-share easyfleet_easynav_deployment)/config/easynav_robot/easynav_system.costmap_rpp.params.yaml"
             - name: "tf_prefix"
               value: "$(var robot_namespace)"
+          remap:
+            # Fleet-wide map/routes, published once by
+            # easyfleet_navigation_manager's navigation_manager_node.
+            # Remap direction is "from what the code itself names its
+            # topic, to the name we actually want" -- given relative here
+            # (not /global_map itself), it resolves within
+            # push_ros_namespace above the same way CostmapMapsManager's/
+            # RoutesMapsManager's own get_fully_qualified_name()-based
+            # incoming_map/incoming_routes subscription names do, so this
+            # also works once robot_namespace is set. `to:` is left
+            # absolute since /global_map is deliberately fleet-wide, not
+            # per-robot. A message received there takes precedence over
+            # whatever costmap_rpp.params.yaml's own map_path_file would
+            # otherwise load locally.
+            - from: "maps_manager_node/costmap/incoming_map"
+              to: "/global_map"
+            - from: "maps_manager_node/routes/incoming_routes"
+              to: "/global_routes"
 
       - node:
           pkg: "easyfleet_easynav_deployment"
@@ -107,7 +125,7 @@ launch:
           pkg: "rviz2"
           exec: "rviz2"
           output: "screen"
-          args: "-d $(find-pkg-share easynav_indoor_testcase)/rviz_config/easynav_costmap.rviz -f $(path-join $(var robot_namespace) map)"
+          args: "-d $(find-pkg-share easyfleet_easynav_deployment)/rviz/easynav_costmap.rviz -f $(path-join $(var robot_namespace) map)"
           param:
             - name: "use_sim_time"
               value: true

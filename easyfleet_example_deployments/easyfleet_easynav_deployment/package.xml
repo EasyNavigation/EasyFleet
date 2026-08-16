@@ -41,7 +41,7 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>launch_yaml</exec_depend>
   <exec_depend>easyfleet_easynav_navigation</exec_depend>
-  <exec_depend>easynav_indoor_testcase</exec_depend>
+  <exec_depend>easyfleet_navigation_manager</exec_depend>
   <exec_depend>rviz2</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>

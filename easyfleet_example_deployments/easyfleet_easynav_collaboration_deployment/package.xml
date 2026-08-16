@@ -46,8 +46,8 @@
   <exec_depend>launch_yaml</exec_depend>
   <exec_depend>easyfleet_easynav_deployment</exec_depend>
   <exec_depend>easyfleet_easynav_navigation</exec_depend>
+  <exec_depend>easyfleet_navigation_manager</exec_depend>
   <exec_depend>easynav_system</exec_depend>
-  <exec_depend>easynav_indoor_testcase</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
