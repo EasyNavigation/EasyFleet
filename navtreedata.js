@@ -33,25 +33,26 @@ var NAVTREE =
       [ "Interfaces", "index.html#autotoc_md5", null ],
       [ "What's a \"capability\"?", "index.html#autotoc_md6", null ],
       [ "Robot vs. mission control", "index.html#autotoc_md7", null ],
-      [ "Multi-robot deployments", "index.html#autotoc_md8", null ],
-      [ "Packages", "index.html#autotoc_md9", null ],
-      [ "Prerequisites", "index.html#autotoc_md10", null ],
-      [ "Building", "index.html#autotoc_md11", null ],
-      [ "Running", "index.html#autotoc_md12", [
-        [ "<span class=\"tt\">alone</span> scenario", "index.html#autotoc_md13", null ],
-        [ "<span class=\"tt\">collaboration</span> scenario", "index.html#autotoc_md14", null ],
-        [ "<span class=\"tt\">easynav</span> scenario", "index.html#autotoc_md15", null ],
-        [ "<span class=\"tt\">easynav_collaboration</span> scenario", "index.html#autotoc_md16", null ],
-        [ "Poking at a capability by hand", "index.html#autotoc_md17", null ],
-        [ "Monitoring a running fleet: <span class=\"tt\">easyfleet_tools</span>", "index.html#autotoc_md18", null ]
+      [ "Fleet-wide navigation: <span class=\"tt\">easyfleet_navigation_manager</span>", "index.html#autotoc_md8", null ],
+      [ "Multi-robot deployments", "index.html#autotoc_md9", null ],
+      [ "Packages", "index.html#autotoc_md10", null ],
+      [ "Prerequisites", "index.html#autotoc_md11", null ],
+      [ "Building", "index.html#autotoc_md12", null ],
+      [ "Running", "index.html#autotoc_md13", [
+        [ "<span class=\"tt\">alone</span> scenario", "index.html#autotoc_md14", null ],
+        [ "<span class=\"tt\">collaboration</span> scenario", "index.html#autotoc_md15", null ],
+        [ "<span class=\"tt\">easynav</span> scenario", "index.html#autotoc_md16", null ],
+        [ "<span class=\"tt\">easynav_collaboration</span> scenario", "index.html#autotoc_md17", null ],
+        [ "Poking at a capability by hand", "index.html#autotoc_md18", null ],
+        [ "Monitoring a running fleet: <span class=\"tt\">easyfleet_tools</span>", "index.html#autotoc_md19", null ]
       ] ],
-      [ "Running the tests", "index.html#autotoc_md19", null ],
-      [ "Known limitations", "index.html#autotoc_md20", [
-        [ "Capability discovery is a one-shot snapshot, not a live view", "index.html#autotoc_md21", null ]
+      [ "Running the tests", "index.html#autotoc_md20", null ],
+      [ "Known limitations", "index.html#autotoc_md21", [
+        [ "Capability discovery is a one-shot snapshot, not a live view", "index.html#autotoc_md22", null ]
       ] ]
     ] ],
-    [ "validate the plumbing for.", "index.html#autotoc_md22", [
-      [ "License", "index.html#autotoc_md23", null ]
+    [ "validate the plumbing for.", "index.html#autotoc_md23", [
+      [ "License", "index.html#autotoc_md24", null ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
@@ -74,7 +75,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "action__client_8hpp_source.html",
-"dir_37490d02c556ffe6bbb797a69067a3c1.html"
+"classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4a91dede9f9a945f2d83b4357b34354e"
 ];
 
 const SYNCONMSG = 'click to disable panel synchronization';

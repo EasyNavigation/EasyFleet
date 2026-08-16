@@ -218,8 +218,21 @@ Robot vs. mission control</h2>
 <li><b>Mission control</b> — a separate process (<span class="tt">alone_mission_node</span>, <span class="tt">collaboration_mission_node</span>, <span class="tt">easynav_mission_node</span>) that discovers the robot's capabilities via <span class="tt">/capabilities</span> and drives them through <span class="tt">CapabilityClient</span>, exactly the way any other operator/control-computer program would. It has no compile-time dependency on any capability implementation, only on <span class="tt">easyfleet_interfaces</span>' action types.</li>
 </ul>
 <p>Each scenario's top-level launch file starts both: the robot immediately, then mission control after a few seconds' delay (a <span class="tt">timer</span> action) so the robot has finished activating — and published its <span class="tt">/capabilities</span> announcement — before mission control's discovery window opens (see <a class="el" href="#capability-discovery-is-a-one-shot-snapshot-not-a-live-view" title="capability-discovery-is-a-one-shot-snapshot-not-a-live-view">Known limitations</a>Known limitations for why that window is fixed and short). Either half can also be run standalone in its own terminal (see <a class="el" href="#running" title="running">Running</a>Running below), which is how you'd poke at a robot by hand without a scripted mission at all.</p>
-<p><a class="anchor" id="multi-robot-deployments"></a> </p>
+<p><a class="anchor" id="fleet-wide-navigation-easyfleet_navigation_manager"></a> </p>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md8"></a>
+Fleet-wide navigation: <span class="tt">easyfleet_navigation_manager</span></h2>
+<p>Today every robot's own EasyNav instance loads its own local copy of the map and the route graph (<span class="tt">config/*/easynav_system.costmap_rpp.params.yaml</span>'s <span class="tt">maps_manager_node.costmap</span>/<span class="tt">.routes</span> blocks, both currently pointing at the same files in <span class="tt">easynav_indoor_testcase</span>). [<span class="tt">easyfleet_navigation_manager</span>](easyfleet_navigation_manager) is a third kind of process, alongside the robot and mission control above: one process, launched once per fleet (not per robot), that loads that same map/route data centrally and publishes it once — with transient_local durability, so a robot that starts afterward still receives it — on two topics:</p>
+<ul>
+<li><span class="tt">/global_map</span> (<span class="tt">nav_msgs/OccupancyGrid</span>)</li>
+<li><span class="tt">/global_routes</span> (<span class="tt">easynav_routes_maps_manager/RoutesMap</span>)</li>
+</ul>
+<p>Each robot's <span class="tt">maps_manager_node</span> picks this up by remapping its own per-plugin <span class="tt">incoming_map</span>/<span class="tt">incoming_routes</span> topics to these two global ones — <span class="tt">easynav_costmap_maps_manager</span>'s <span class="tt">incoming_map</span> and <span class="tt">easynav_routes_maps_manager</span>'s <span class="tt">incoming_routes</span> subscriptions both replace whatever the robot loaded from its own <span class="tt">map_path_file</span> at startup with whatever arrives there — so every robot ends up with the exact same map/routes without each having to load its own copy. <span class="tt">easyfleet_navigation_manager</span> is designed to support more than one map representation later (<span class="tt">map_type</span> parameter; only <span class="tt">"costmap"</span> is implemented today) — adding <span class="tt">"navmap"</span>/<span class="tt">"simple"</span> is a new <span class="tt">MapPublisherBase</span> implementation registered in one factory, not a rewrite.</p>
+<div class="fragment"><div class="line">ros2 run easyfleet_navigation_manager navigation_manager_node --ros-args \</div>
+<div class="line">  -p map_type:=costmap \</div>
+<div class="line">  -p map.package:=easynav_indoor_testcase -p map.map_path_file:=maps/home2.yaml \</div>
+<div class="line">  -p routes.package:=easynav_indoor_testcase -p routes.map_path_file:=maps/routes_1.yaml</div>
+</div><!-- fragment --><p><a class="anchor" id="multi-robot-deployments"></a> </p>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
 Multi-robot deployments</h2>
 <p>Because a capability resolves its <span class="tt">robot</span>/<span class="tt">action_name</span> identity from its own ROS namespace, the same <span class="tt">robot_node</span> binary can be launched under any namespace (with different <span class="tt">capabilities</span>/<span class="tt">config_subdir</span> parameters) and will announce itself correctly — each of the four packages under <span class="tt">easyfleet_example_deployments/</span> uses this to assemble one example scenario, self-contained under its own <span class="tt">launch/</span> + <span class="tt">config/</span>:</p>
 <table class="markdownTable">
@@ -243,7 +256,7 @@ Multi-robot deployments</h2>
 <p>Each robot has its own per-robot launch file (e.g. <span class="tt">easyfleet_fake_collaboration_deployment/launch/robot_3_launch.yaml</span>) that can also be run standalone, and its own JSON/parameter files under that package's <span class="tt">config/&lt;robot&gt;/</span>. Namespacing keeps two robots that share a capability type (e.g. <span class="tt">navigation</span> on both <span class="tt">robot_1</span> and <span class="tt">robot_3</span>) fully distinct: their resolved <span class="tt">action_name</span>s (<span class="tt">/robot_1/navigation</span> vs. <span class="tt">/robot_3/navigation</span>) never collide, and each can be discovered and called independently.</p>
 <p>The <span class="tt">easynav</span> scenario takes this a step further: rather than hardcoding a robot id, <span class="tt">easynav_robot_gazebo_launch.yaml</span> exposes it as a <span class="tt">robot_namespace</span> launch argument (<span class="tt">push_ros_namespace</span>, plus a matching <span class="tt">tf_prefix</span> override on <span class="tt">system_main</span> and namespace-prefixed waypoint <span class="tt">frame_id</span>s — see <a class="el" href="#easynav-scenario" title="easynav-scenario">below</a>below), forwarded through the top-level <span class="tt">easynav_gazebo_launch.yaml</span>. <span class="tt">system_main</span>'s own <span class="tt">config/easynav_robot/easynav_system.costmap_rpp.params.yaml</span> uses the <span class="tt">/**/&lt;node_name&gt;</span> wildcard key, so it loads correctly whichever namespace (or none) <span class="tt">system_main</span> ends up under — the same pattern <span class="tt">config/easynav_robot/navigation_params.yaml</span> already used. This is one robot at a time, not true multi-robot yet (only one <span class="tt">GoalManagerClient</span> per capability, one waypoint set) — but it's what lets a namespaced <span class="tt">easynav</span> robot coexist on the same <span class="tt">ros2</span> graph as, say, an <span class="tt">alone</span>/<span class="tt">collaboration</span> <span class="tt">robot_1</span>, and is the namespace-per-robot convention full multi-robot support (see <a href="../easynav_playground_kobuki">easynav_playground_kobuki</a>) will build on.</p>
 <p><span class="tt">easyfleet_easynav_collaboration_deployment</span> is that next step: two robots, <span class="tt">robot_1</span> and <span class="tt">robot_2</span>, <b>both</b> running real EasyNav navigation at once (two separate <span class="tt">system_main</span> + <span class="tt">easynav_navigation_capability_node</span> processes, one per robot, both executables reused directly from <span class="tt">easyfleet_easynav_deployment</span> — no code duplicated for navigation), each also carrying one mock capability (<span class="tt">robot_1</span> perception, <span class="tt">robot_2</span> manipulation — own copies of the reference mock implementations, mirroring <span class="tt">easyfleet_fake_collaboration_deployment</span>'s own duplication rather than a cross-deployment dependency). Each robot's own <span class="tt">rviz2</span> window loads a pre-resolved <span class="tt">rviz/robot_1.rviz</span>/<span class="tt">robot_2.rviz</span> (every topic and the Fixed Frame already written as the actual <span class="tt">/robot_1/...</span>/<span class="tt">/robot_2/...</span> path) rather than a remapped copy of <span class="tt">easynav_costmap.rviz</span> — since this package's namespaces are fixed at authoring time (not a runtime argument, unlike <span class="tt">easynav</span>'s own <span class="tt">robot_namespace</span>), pre-resolving them outright is simpler and sidesteps a real, reproduced issue where RViz's own topic-selector/status UI didn't reliably reflect a display that needed a launch-time remap to resolve its saved (unremapped) Topic value — the map just didn't render until manually retyped in the GUI, even though the underlying subscription, per <span class="tt">ros2 topic info -v</span>, was already correctly connected via the remap. See <a class="el" href="#easynav_collaboration-scenario" title="easynav_collaboration-scenario">the `easynav_collaboration` scenario</a>the <span class="tt">easynav_collaboration</span> scenario below for how to run it against <a href="../easynav_playground_kobuki">easynav_playground_kobuki</a>'s own two-robot Gazebo launch.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md10"></a>
 Packages</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -255,20 +268,22 @@ Packages</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><span class="tt">easyfleet_mission_manager</span>  </td><td class="markdownTableBodyNone">C++ library  </td><td class="markdownTableBodyNone">Capability discovery/print helpers, the generic <span class="tt">run_capability&lt;ActionT&gt;()</span> helper, and <span class="tt">StatusMarkerPublisher</span> (per-robot RViz status text) — no executables of its own  </td></tr>
 <tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">[<span class="tt">easyfleet_navigation_manager</span>](easyfleet_navigation_manager)  </td><td class="markdownTableBodyNone">C++ library + executable  </td><td class="markdownTableBodyNone"><span class="tt">navigation_manager_node</span>: publishes a shared map/routes on <span class="tt">/global_map</span>/<span class="tt">/global_routes</span> for the whole fleet — see <a class="el" href="#fleet-wide-navigation-easyfleet_navigation_manager" title="fleet-wide-navigation-easyfleet_navigation_manager">Fleet-wide navigation</a>Fleet-wide navigation above  </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_navigation</span>  </td><td class="markdownTableBodyNone">BT.CPP plugin library  </td><td class="markdownTableBodyNone">The <span class="tt">Navigate</span> BT node (<span class="tt">libeasynav_navigate_bt_node.so</span>), loaded by path — no executable of its own  </td></tr>
-<tr class="markdownTableRowOdd">
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><span class="tt">easyfleet_fake_alone_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">alone</span> scenario: all 3 fake capabilities hosted by <span class="tt">robot_node</span> on <span class="tt">robot_1</span>, + <span class="tt">alone_mission_node</span> (mission control)  </td></tr>
-<tr class="markdownTableRowEven">
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><span class="tt">easyfleet_fake_collaboration_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">collaboration</span> scenario: its own copy of the same 3 fake capabilities, <span class="tt">robot_node</span> reused across <span class="tt">robot_1</span>/<span class="tt">robot_2</span>/<span class="tt">robot_3</span>, + <span class="tt">collaboration_mission_node</span>  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">easynav</span> scenario: <span class="tt">easynav_navigation_capability_node</span> (this package's own capability class, reusing <span class="tt">easyfleet_easynav_navigation</span>'s <span class="tt">Navigate</span> plugin) + <span class="tt">easynav_mission_node</span>, plus <span class="tt">libstart_off_bt_node.so</span>/<span class="tt">libfinish_bt_node.so</span> and the launch/config assembly for real navigation against a real robot or Gazebo  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_collaboration_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">easynav_collaboration</span> scenario: two robots each running real EasyNav navigation (executables reused from <span class="tt">easyfleet_easynav_deployment</span>, not duplicated) plus its own mock capability — <span class="tt">robot_node</span> hosting its own copies of <span class="tt">PerceptionFakeCapability</span>/<span class="tt">ManipulationFakeCapability</span> (one per robot, mirroring <span class="tt">easyfleet_fake_collaboration_deployment</span>'s own duplication) — + <span class="tt">easynav_collaboration_mission_node</span>  </td></tr>
+<td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">easynav</span> scenario: <span class="tt">easynav_navigation_capability_node</span> (this package's own capability class, reusing <span class="tt">easyfleet_easynav_navigation</span>'s <span class="tt">Navigate</span> plugin) + <span class="tt">easynav_mission_node</span>, plus <span class="tt">libstart_off_bt_node.so</span>/<span class="tt">libfinish_bt_node.so</span> and the launch/config assembly for real navigation against a real robot or Gazebo  </td></tr>
 <tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><span class="tt">easyfleet_easynav_collaboration_deployment</span>  </td><td class="markdownTableBodyNone">C++ library + executables + launch/config  </td><td class="markdownTableBodyNone">The <span class="tt">easynav_collaboration</span> scenario: two robots each running real EasyNav navigation (executables reused from <span class="tt">easyfleet_easynav_deployment</span>, not duplicated) plus its own mock capability — <span class="tt">robot_node</span> hosting its own copies of <span class="tt">PerceptionFakeCapability</span>/<span class="tt">ManipulationFakeCapability</span> (one per robot, mirroring <span class="tt">easyfleet_fake_collaboration_deployment</span>'s own duplication) — + <span class="tt">easynav_collaboration_mission_node</span>  </td></tr>
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">[<span class="tt">easyfleet_tools</span>](easyfleet_tools)  </td><td class="markdownTableBodyNone"><span class="tt">ament_python</span> package  </td><td class="markdownTableBodyNone">Read-only TUI (<span class="tt">ros2 run easyfleet_tools tui</span>) + CLI (<span class="tt">ros2 easyfleet &lt;verb&gt;</span>) for monitoring a running fleet — see <a class="el" href="#monitoring-a-running-fleet-easyfleet_tools" title="monitoring-a-running-fleet-easyfleet_tools">Monitoring a running fleet</a>Monitoring a running fleet above  </td></tr>
 </table>
 <p>All four live under <span class="tt">easyfleet_example_deployments/</span>, a plain container directory (no <span class="tt">package.xml</span> of its own) rather than a package.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md10"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md11"></a>
 Prerequisites</h2>
 <ul>
 <li>Ubuntu with <b>ROS 2 Rolling</b> installed (this workspace is pixi-managed; enter the environment with e.g. <span class="tt">pixi-set-ros rolling</span> before building).</li>
@@ -278,7 +293,7 @@ Prerequisites</h2>
 <li>For the <span class="tt">easynav</span> scenario specifically: <a href="../easynav_indoor_testcase">easynav_indoor_testcase</a> built in the same workspace (its <span class="tt">home2</span> map and the EasyNav plugins used by <span class="tt">costmap.rpp.params.yaml</span> — <span class="tt">easynav_costmap_localizer</span>, <span class="tt">easynav_costmap_maps_manager</span>, <span class="tt">easynav_costmap_planner</span>, <span class="tt">easynav_regulated_pp_controller</span>), <span class="tt">rviz2</span>, and a real robot or Gazebo simulation publishing <span class="tt">scan_raw</span>/odometry/TF, started separately.</li>
 <li>For the <span class="tt">easynav_collaboration</span> scenario specifically: the same <span class="tt">easynav_indoor_testcase</span> prerequisites above, plus <a href="../easynav_playground_kobuki">easynav_playground_kobuki</a> built in the same workspace, started separately (<span class="tt">playgorund_multirobot_kobuki.launch.py</span>) to spawn both robots.</li>
 </ul>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md11"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
 Building</h2>
 <div class="fragment"><div class="line">cd ~/ros/ros2/easyfleet_ws</div>
 <div class="line">pixi-set-ros rolling   # or: eval &quot;$(pixi shell-hook -e rolling --frozen)&quot;</div>
@@ -286,10 +301,10 @@ Building</h2>
 <div class="line">colcon build --symlink-install</div>
 <div class="line">source install/setup.bash</div>
 </div><!-- fragment --><p><a class="anchor" id="running"></a> </p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
 Running</h2>
 <p>Each capability node <b>activates itself on startup</b> — no external lifecycle manager or <span class="tt">ros2 lifecycle set</span> calls are needed. Each scenario's top-level launch file brings up both the robot and mission control together (see <a class="el" href="#robot-vs-mission-control" title="robot-vs-mission-control">Robot vs. mission control</a>Robot vs. mission control) — one command, one terminal.</p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
 <span class="tt">alone</span> scenario</h3>
 <p>A single robot, <span class="tt">robot_1</span>, carrying all three capabilities, all namespaced under <span class="tt">/robot_1</span>, hosted together by <span class="tt">robot_node</span>.</p>
 <div class="fragment"><div class="line">ros2 launch easyfleet_fake_alone_deployment alone_launch.yaml</div>
@@ -300,7 +315,7 @@ Running</h2>
 <li>Run <span class="tt">navigation</span>, <span class="tt">manipulation</span> and <span class="tt">perception</span> <b>sequentially</b>, each for up to 10 seconds or until it finishes on its own (whichever comes first), printing live feedback.</li>
 <li>Run all three <b>in parallel</b>, same 10-second rule, printing interleaved live feedback from all of them.</li>
 </ol>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
 <span class="tt">collaboration</span> scenario</h3>
 <p>Three robots: <span class="tt">robot_1</span> and <span class="tt">robot_2</span> (navigation + perception each), and <span class="tt">robot_3</span> (navigation + manipulation) — each hosted by its own <span class="tt">robot_node</span> process (same binary, different <span class="tt">capabilities</span>/<span class="tt">config_subdir</span> parameters).</p>
 <div class="fragment"><div class="line">ros2 launch easyfleet_fake_collaboration_deployment collaboration_launch.yaml</div>
@@ -312,7 +327,7 @@ Running</h2>
 <li><b>Phase 2</b>: <span class="tt">robot_3</span> runs <span class="tt">navigation</span> to completion, then, once it finishes, runs <span class="tt">manipulation</span>.</li>
 </ol>
 <p><a class="anchor" id="easynav-scenario"></a> </p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
 <span class="tt">easynav</span> scenario</h3>
 <p>A single robot whose <span class="tt">navigation</span> capability is the real EasyNav-backed one (<span class="tt">easyfleet_easynav_deployment</span>), not the mock: <span class="tt">AMCLLocalizer</span> + <span class="tt">CostmapMapsManager</span> (on <span class="tt">src/easynav_indoor_testcase</span>'s <span class="tt">home2</span> map) + <span class="tt">CostmapPlanner</span> + <span class="tt">RegulatedPurePursuitController</span> (see <span class="tt">config/easynav_robot/easynav_system.costmap_rpp.params.yaml</span>, copied from that package's <span class="tt">costmap.rpp.params.yaml</span>). Goals sent here actually complete once the robot reaches the waypoint. For use against a real robot, or a Gazebo simulation of one — <b>start that separately</b> (this launch file doesn't bring up Gazebo, the same way <span class="tt">easynav_indoor_testcase</span>'s own <span class="tt">easynav_costmap_rpp.launch.py</span> doesn't).</p>
 <p>Defaults to <b>unnamespaced</b> (<span class="tt">robot_namespace:=""</span>): <span class="tt">system_main</span>'s <span class="tt">sensors_node</span>/<span class="tt">localizer_node</span>/ <span class="tt">controller_node</span> need to see the same <span class="tt">scan_raw</span> topic and TF frames the robot/Gazebo publishes, which are themselves unnamespaced by default for a single real robot, and the navigation capability is launched in the same namespace alongside it so its <span class="tt">GoalManagerClient</span>'s relative <span class="tt">easynav_control</span> topic still resolves to <span class="tt">system_main</span>'s own <span class="tt">GoalManager</span>. Pass <span class="tt">robot_namespace:=robot_1</span> to run it namespaced instead — e.g. against <a href="../easynav_playground_kobuki">easynav_playground_kobuki</a>'s <span class="tt">playground_monorobot_kobuki.launch.py</span>, which spawns its Kobuki under that same namespace (<span class="tt">config/monorobot_config.yaml</span>). Gazebo's namespaced <em>topics</em> (<span class="tt">scan_raw</span>, <span class="tt">odom</span>, ...) resolve correctly either way since <span class="tt">push_ros_namespace</span> handles that automatically — but <span class="tt">kobuki_description</span> also unconditionally prefixes every TF <em>frame name</em> with the robot's namespace (<span class="tt">robot_1/base_link</span>, not <span class="tt">base_link</span>), independently of whether topics are namespaced, so <span class="tt">system_main</span>'s own <span class="tt">tf_prefix</span> parameter is set to the same <span class="tt">robot_namespace</span> value to match (it prefixes every <span class="tt">TFInfo</span> frame, <span class="tt">map_frame</span> included — see <span class="tt">easynav_common/RTTFBuffer.hpp</span>); empty by default, so the unnamespaced case is unaffected. Either way this only ever runs one robot at a time (one <span class="tt">GoalManagerClient</span>, one waypoint set) — true multi-robot support is future work (see <a class="el" href="#multi-robot-deployments" title="multi-robot-deployments">Multi-robot deployments</a>Multi-robot deployments).</p>
@@ -333,7 +348,7 @@ Running</h2>
 <div class="fragment"><div class="line">ros2 action send_goal /navigation easyfleet_interfaces/action/Navigation \</div>
 <div class="line">  &quot;{parameters_json: &#39;{\&quot;goal_id\&quot;: \&quot;dock\&quot;}&#39;}&quot; --feedback</div>
 </div><!-- fragment --><p><a class="anchor" id="easynav_collaboration-scenario"></a> </p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
 <span class="tt">easynav_collaboration</span> scenario</h3>
 <p>Two robots, <span class="tt">robot_1</span> and <span class="tt">robot_2</span>, both running real EasyNav navigation at once on the same shared <span class="tt">home2</span> map — <span class="tt">robot_1</span> also carries a mock <span class="tt">perception</span> capability, <span class="tt">robot_2</span> a mock <span class="tt">manipulation</span> one (see <a class="el" href="#multi-robot-deployments" title="multi-robot-deployments">Multi-robot deployments</a>Multi-robot deployments above for why). Unlike <span class="tt">easynav</span>, this scenario needs an actual two-robot Gazebo world, since two <span class="tt">system_main</span> instances need two real (or Gazebo-simulated) robots to localize against — start <a href="../easynav_playground_kobuki">easynav_playground_kobuki</a>'s own two-robot launch first, in its own terminal:</p>
 <div class="fragment"><div class="line">ros2 launch easynav_playground_kobuki playgorund_multirobot_kobuki.launch.py</div>
@@ -353,7 +368,7 @@ Running</h2>
 <blockquote class="doxtable">
 <p><b>Note:</b> verified in this repo's own sandbox that both robots spawn correctly namespaced (<span class="tt">/robot_1/...</span>/<span class="tt">/robot_2/...</span> topics, both reachable, <span class="tt">ros2 node list</span> showing every expected node under each namespace) and that <span class="tt">robot_1</span> navigates and localizes correctly end to end. <span class="tt">robot_2</span>'s lidar/camera produced no data in that same sandbox run (no GPU, software rendering) — likely a rendering-capacity limit on running two simultaneous Gazebo sensor instances without a GPU, not a bug in this launch setup (which is structurally identical between the two robots). Confirm both robots move on a machine with a GPU before relying on this for a real two-robot demo. </p>
 </blockquote>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
 Poking at a capability by hand</h3>
 <p>Every capability's action name is namespaced by robot (<span class="tt">/robot_1/...</span>, <span class="tt">/robot_2/...</span>, <span class="tt">/robot_3/...</span>). For example, against the <span class="tt">alone</span> scenario:</p>
 <div class="fragment"><div class="line"># What&#39;s running, and what does it look like?</div>
@@ -372,7 +387,7 @@ Poking at a capability by hand</h3>
 <div class="line">  &quot;{object_classes: [&#39;gato&#39;]}&quot; --feedback</div>
 </div><!-- fragment --><p>Perception (and any preempted/canceled goal) runs until stopped: press Ctrl-C on the <span class="tt">send_goal</span> command, or call <span class="tt">ros2 action cancel</span> / <span class="tt">CapabilityClient::cancel()</span> from another terminal/process, to stop it early.</p>
 <p><a class="anchor" id="monitoring-a-running-fleet-easyfleet_tools"></a> </p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
 Monitoring a running fleet: <span class="tt">easyfleet_tools</span></h3>
 <p>[<span class="tt">easyfleet_tools</span>](easyfleet_tools) is a read-only TUI + CLI for watching a running fleet without hand-assembling <span class="tt">ros2 topic
 echo</span>/<span class="tt">ros2 action send_goal --feedback</span> invocations like the ones above — it never launches, stops, or preempts a capability itself, only observes. It follows the same TUI/CLI split as EasyNavigation's own <a href="../EasyNavigation/easynav_tools"><span class="tt">easynav_tools</span></a>: one shared Python layer (<span class="tt">easyfleet_tools/controller/ros_controllers.py</span>) parses/formats every message once, reused by both the Textual TUI and the <span class="tt">ros2cli</span> verbs below.</p>
@@ -385,15 +400,15 @@ echo</span>/<span class="tt">ros2 action send_goal --feedback</span> invocations
 <div class="line">ros2 easyfleet status --duration 10                     # each robot&#39;s RViz status-marker text</div>
 <div class="line">ros2 easyfleet logs --robot robot_1 --duration 10       # colored /rosout tail</div>
 </div><!-- fragment --><p><span class="tt">describe</span>/<span class="tt">watch</span> accept a capability either as <span class="tt">&lt;robot&gt;/&lt;capability&gt;</span> (e.g. <span class="tt">robot_1/navigation</span>) or as its bare action name (e.g. <span class="tt">/robot_1/navigation</span>). <span class="tt">watch</span>'s Result section is fetched through the action's own <span class="tt">_action/get_result</span> service once a goal reaches a terminal state — the action protocol lets any client fetch a goal's result given its <span class="tt">goal_id</span>, not just the client that sent it, so this works even for a goal <span class="tt">watch</span> never sent itself (e.g. one from a mission script).</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
 Running the tests</h2>
 <div class="fragment"><div class="line">colcon test --packages-select easyfleet_core easyfleet_interfaces easyfleet_mission_manager easyfleet_easynav_navigation easyfleet_fake_alone_deployment easyfleet_fake_collaboration_deployment easyfleet_easynav_deployment</div>
 <div class="line">colcon test-result --verbose</div>
 </div><!-- fragment --><p>Each test binary that touches ROS communication runs on its own <span class="tt">ROS_DOMAIN_ID</span>, so the test suite is safe to run even while you have capability nodes launched interactively (as above) — they won't cross-talk on the shared <span class="tt">/capabilities</span> topics.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
 Known limitations</h2>
 <p><a class="anchor" id="capability-discovery-is-a-one-shot-snapshot-not-a-live-view"></a> </p>
-<h3 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
 Capability discovery is a one-shot snapshot, not a live view</h3>
 <p><span class="tt">easyfleet_mission_manager::discover_capabilities()</span> subscribes to <span class="tt">/capabilities</span> and <span class="tt">/capabilities_status</span>, waits for a fixed window (2.5s by default), and returns whatever it collected — a snapshot. That's good enough for the example missions in this repo: they discover once at startup and then run a short, scripted sequence against whatever they found.</p>
 <p>It is <b>not</b> good enough for the architecture this repo is a stand-in for: a control computer running a long-lived, LLM-generated Behavior Tree that calls robot capabilities over the course of a mission that can last minutes or hours. In that setting, treating discovery as a one-time snapshot breaks down in a few concrete ways:</p>
@@ -405,7 +420,7 @@ Capability discovery is a one-shot snapshot, not a live view</h3>
   `sleep_for`".</b> It would mean replacing the bounded collect-then-return function with a background-updated registry that the rest of the program reads from concurrently (thread-safety, not just a <span class="tt">std::map</span> behind a <span class="tt">std::mutex</span> as today, but something callers can iterate over safely while it's being mutated from a subscription callback). It also raises design questions this repo currently sidesteps entirely: what should happen to a goal that's already in flight when its capability's heartbeat stops arriving? Does the BT get notified, or does it just find out the hard way when <span class="tt">wait_for_result()</span> never returns? How long is "missing" before a capability is presumed gone rather than just late?</li>
 </ul>
 <p>None of this is implemented here. It's the single biggest gap between this mock/demo architecture and the real control-computer scenario it's meant to </p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
 validate the plumbing for.</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -428,7 +443,7 @@ validate the plumbing for.</h1>
 </blockquote>
 </blockquote>
 </blockquote>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md24"></a>
 License</h2>
 <p>Apache-2.0 (see <span class="tt">easyfleet_core/LICENSE</span>). </p>
 </div></div><!-- PageDoc -->

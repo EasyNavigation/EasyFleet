@@ -17,5 +17,6 @@ var functions_dup =
     [ "r", "functions_r.html", null ],
     [ "s", "functions_s.html", null ],
     [ "t", "functions_t.html", null ],
-    [ "w", "functions_w.html", null ]
+    [ "w", "functions_w.html", null ],
+    [ "y", "functions_y.html", null ]
 ];

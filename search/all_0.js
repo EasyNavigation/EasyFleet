@@ -1,10 +1,10 @@
 var searchData=
 [
   ['a_20capability_0',['What&apos;s a &quot;capability&quot;?',['../index.html#autotoc_md6',1,'']]],
-  ['a_20capability_20by_20hand_1',['Poking at a capability by hand',['../index.html#autotoc_md17',1,'']]],
-  ['a_20live_20view_2',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md21',1,'']]],
-  ['a_20one_20shot_20snapshot_20not_20a_20live_20view_3',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md21',1,'']]],
-  ['a_20running_20fleet_3a_20easyfleet_5ftools_4',['Monitoring a running fleet: &lt;span class=&quot;tt&quot;&gt;easyfleet_tools&lt;/span&gt;',['../index.html#autotoc_md18',1,'']]],
+  ['a_20capability_20by_20hand_1',['Poking at a capability by hand',['../index.html#autotoc_md18',1,'']]],
+  ['a_20live_20view_2',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md22',1,'']]],
+  ['a_20one_20shot_20snapshot_20not_20a_20live_20view_3',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md22',1,'']]],
+  ['a_20running_20fleet_3a_20easyfleet_5ftools_4',['Monitoring a running fleet: &lt;span class=&quot;tt&quot;&gt;easyfleet_tools&lt;/span&gt;',['../index.html#autotoc_md19',1,'']]],
   ['action_5fname_5',['action_name',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#ad3676d8b86e4566dedda99502650ba8c',1,'easyfleet_mission_manager::CapabilityInfo']]],
   ['actionclient_6',['ActionClient',['../classeasyfleet__core_1_1ActionClient.html',1,'easyfleet_core']]],
   ['actionserverbase_7',['ActionServerBase',['../classeasyfleet__core_1_1ActionServerBase.html',1,'ActionServerBase&lt; ActionT &gt;'],['../classeasyfleet__core_1_1ActionServerBase.html#a0ee35d599fa3c88c4672f7e878969be5',1,'easyfleet_core::ActionServerBase::ActionServerBase()']]],
@@ -20,6 +20,6 @@ var searchData=
   ['add_5fcapabilities_5ffrom_5fparameters_17',['add_capabilities_from_parameters',['../classeasyfleet_1_1Deployment.html#a95f73a2678e18b49dc81ba5405569e29',1,'easyfleet::Deployment']]],
   ['add_5fcapability_18',['add_capability',['../classeasyfleet_1_1Deployment.html#a4e800e42b34f508a19840793180a59ec',1,'easyfleet::Deployment']]],
   ['add_5frobot_19',['add_robot',['../classeasyfleet_1_1FleetSession.html#ac1a5c21c0fe829ae4c0ae48d884a3444',1,'easyfleet::FleetSession::add_robot()'],['../classeasyfleet_1_1SimpleController.html#ac1a5c21c0fe829ae4c0ae48d884a3444',1,'easyfleet::SimpleController::add_robot()']]],
-  ['alone_20scenario_20',['&lt;span class=&quot;tt&quot;&gt;alone&lt;/span&gt; scenario',['../index.html#autotoc_md13',1,'']]],
-  ['at_20a_20capability_20by_20hand_21',['Poking at a capability by hand',['../index.html#autotoc_md17',1,'']]]
+  ['alone_20scenario_20',['&lt;span class=&quot;tt&quot;&gt;alone&lt;/span&gt; scenario',['../index.html#autotoc_md14',1,'']]],
+  ['at_20a_20capability_20by_20hand_21',['Poking at a capability by hand',['../index.html#autotoc_md18',1,'']]]
 ];

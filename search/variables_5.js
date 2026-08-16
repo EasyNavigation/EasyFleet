@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['outcome_0',['outcome',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html#ad89d31755ca91a0a1091150f0edec711',1,'easyfleet_core::ActionClient::GoalResult::outcome'],['../structeasyfleet__core_1_1CapabilityClient_1_1Response.html#ac8379e2fc7afc943f38890977d381c0e',1,'easyfleet_core::CapabilityClient::Response::outcome']]]
+  ['in_5fconflict_0',['in_conflict',['../structeasyfleet_1_1ConflictDecision.html#a8ce16bfb8c066a8736bed9e8c7b461e0',1,'easyfleet::ConflictDecision']]]
 ];

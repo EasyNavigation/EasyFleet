@@ -54,6 +54,8 @@ var hierarchy =
       ] ],
       [ "Capability< ActionServerT >", "classeasyfleet__core_1_1Capability.html", null ]
     ] ],
+    [ "ConflictDecision", "structeasyfleet_1_1ConflictDecision.html", null ],
+    [ "ConflictParams", "structeasyfleet_1_1ConflictParams.html", null ],
     [ "Deployment", "classeasyfleet_1_1Deployment.html", null ],
     [ "FleetSession", "classeasyfleet_1_1FleetSession.html", null ],
     [ "ActionClient&lt; ActionT &gt;::GoalResult", "structeasyfleet__core_1_1ActionClient_1_1GoalResult.html", null ],
@@ -64,8 +66,16 @@ var hierarchy =
       [ "Capability< NavigationFakeActionServer >", "classeasyfleet__core_1_1Capability.html", null ],
       [ "Capability< ActionServerT >", "classeasyfleet__core_1_1Capability.html", null ]
     ] ],
+    [ "MapPublisherBase", "classeasyfleet_1_1MapPublisherBase.html", [
+      [ "CostmapMapPublisher", "classeasyfleet_1_1CostmapMapPublisher.html", null ]
+    ] ],
+    [ "Node", null, [
+      [ "NavigationManagerNode", "classeasyfleet_1_1NavigationManagerNode.html", null ]
+    ] ],
     [ "CapabilityClient&lt; ActionT &gt;::Response", "structeasyfleet__core_1_1CapabilityClient_1_1Response.html", null ],
     [ "RobotHandle", "classeasyfleet_1_1RobotHandle.html", null ],
+    [ "RobotNavigationWatcher", "classeasyfleet_1_1RobotNavigationWatcher.html", null ],
+    [ "RoutesPublisher", "classeasyfleet_1_1RoutesPublisher.html", null ],
     [ "RunningCapabilityBase", "classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html", [
       [ "RunningCapability< ActionT >", "classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html", null ]
     ] ],

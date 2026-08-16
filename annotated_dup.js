@@ -1,9 +1,16 @@
 var annotated_dup =
 [
     [ "easyfleet", null, [
+      [ "ConflictDecision", "structeasyfleet_1_1ConflictDecision.html", "structeasyfleet_1_1ConflictDecision" ],
+      [ "ConflictParams", "structeasyfleet_1_1ConflictParams.html", "structeasyfleet_1_1ConflictParams" ],
+      [ "CostmapMapPublisher", "classeasyfleet_1_1CostmapMapPublisher.html", "classeasyfleet_1_1CostmapMapPublisher" ],
       [ "Deployment", "classeasyfleet_1_1Deployment.html", "classeasyfleet_1_1Deployment" ],
       [ "FleetSession", "classeasyfleet_1_1FleetSession.html", "classeasyfleet_1_1FleetSession" ],
+      [ "MapPublisherBase", "classeasyfleet_1_1MapPublisherBase.html", "classeasyfleet_1_1MapPublisherBase" ],
+      [ "NavigationManagerNode", "classeasyfleet_1_1NavigationManagerNode.html", "classeasyfleet_1_1NavigationManagerNode" ],
       [ "RobotHandle", "classeasyfleet_1_1RobotHandle.html", "classeasyfleet_1_1RobotHandle" ],
+      [ "RobotNavigationWatcher", "classeasyfleet_1_1RobotNavigationWatcher.html", "classeasyfleet_1_1RobotNavigationWatcher" ],
+      [ "RoutesPublisher", "classeasyfleet_1_1RoutesPublisher.html", "classeasyfleet_1_1RoutesPublisher" ],
       [ "SimpleController", "classeasyfleet_1_1SimpleController.html", "classeasyfleet_1_1SimpleController" ]
     ] ],
     [ "easyfleet_core", null, [
