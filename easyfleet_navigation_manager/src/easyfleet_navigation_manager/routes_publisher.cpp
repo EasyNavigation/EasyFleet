@@ -81,6 +81,9 @@ void RoutesPublisher::publish(rclcpp::Node & node)
   if (!markers_republish_timer_) {
     const double republish_rate_hz =
       node.declare_parameter("routes.markers_republish_rate_hz", 1.0);
+    if (republish_rate_hz <= 0.0) {
+      throw std::runtime_error("Parameter 'routes.markers_republish_rate_hz' must be > 0");
+    }
     markers_republish_timer_ = node.create_wall_timer(
       std::chrono::duration<double>(1.0 / republish_rate_hz),
       [this] {

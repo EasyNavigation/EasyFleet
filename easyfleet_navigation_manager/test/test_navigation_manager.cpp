@@ -254,6 +254,24 @@ TEST_F(NavigationManagerTest, RoutesPublisherPeriodicallyRepublishesMarkers)
   EXPECT_GE(received_count, 3);
 }
 
+// routes.markers_republish_rate_hz is used as a timer-period divisor
+// (1.0 / rate) -- a zero or negative value would produce an invalid
+// duration, so it must be rejected up front rather than handed to
+// create_wall_timer().
+TEST_F(NavigationManagerTest, RoutesPublisherThrowsWhenMarkersRepublishRateIsNonPositive)
+{
+  auto node = rclcpp::Node::make_shared(
+    "test_routes_publisher_bad_rate", make_options(
+  {
+    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
+    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("routes.markers_republish_rate_hz", 0.0),
+  }));
+
+  easyfleet::RoutesPublisher publisher;
+  EXPECT_THROW(publisher.publish(*node), std::runtime_error);
+}
+
 TEST_F(NavigationManagerTest, RoutesPublisherThrowsWhenUnconfigured)
 {
   auto node = rclcpp::Node::make_shared("test_routes_publisher_unconfigured");

@@ -72,6 +72,13 @@ NavigationManagerNode::NavigationManagerNode(const rclcpp::NodeOptions & options
 
   planner_plugin_key_ = this->declare_parameter("robots.planner_plugin_key", std::string("simple"));
   const double check_rate_hz = this->declare_parameter("conflict.check_rate_hz", 2.0);
+  if (check_rate_hz <= 0.0) {
+    RCLCPP_FATAL(
+      get_logger(),
+      "Parameter 'conflict.check_rate_hz' must be > 0 (got %.3f), exiting.", check_rate_hz);
+    rclcpp::shutdown();
+    std::exit(1);
+  }
   conflict_params_.lookahead_distance_m =
     this->declare_parameter("conflict.lookahead_distance_m", conflict_params_.lookahead_distance_m);
   conflict_params_.path_conflict_distance_m = this->declare_parameter(
@@ -96,6 +103,13 @@ NavigationManagerNode::NavigationManagerNode(const rclcpp::NodeOptions & options
     // reconciled on reconcile_timer_.
     robot_staleness_sec_ = this->declare_parameter("robots.staleness_sec", robot_staleness_sec_);
     const double rescan_rate_hz = this->declare_parameter("robots.rescan_rate_hz", 1.0);
+    if (rescan_rate_hz <= 0.0) {
+      RCLCPP_FATAL(
+        get_logger(),
+        "Parameter 'robots.rescan_rate_hz' must be > 0 (got %.3f), exiting.", rescan_rate_hz);
+      rclcpp::shutdown();
+      std::exit(1);
+    }
 
     capabilities_status_sub_ = this->create_subscription<easyfleet_interfaces::msg::CapabilityStatus>(
       "/capabilities_status", rclcpp::QoS(10).reliable(),
