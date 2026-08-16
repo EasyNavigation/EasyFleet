@@ -27,32 +27,8 @@ var NAVTREE =
   [ "EasyFleet", "index.html", [
     [ "EasyFleet", "index.html#autotoc_md0", [
       [ "📦 Packages", "index.html#autotoc_md1", null ],
-      [ "👥 Project Maintainers", "index.html#autotoc_md3", [
-        [ "The EasyNav-backed navigation capability", "index.html#autotoc_md4", null ]
-      ] ],
-      [ "Interfaces", "index.html#autotoc_md5", null ],
-      [ "What's a \"capability\"?", "index.html#autotoc_md6", null ],
-      [ "Robot vs. mission control", "index.html#autotoc_md7", null ],
-      [ "Fleet-wide navigation: <span class=\"tt\">easyfleet_navigation_manager</span>", "index.html#autotoc_md8", null ],
-      [ "Multi-robot deployments", "index.html#autotoc_md9", null ],
-      [ "Packages", "index.html#autotoc_md10", null ],
-      [ "Prerequisites", "index.html#autotoc_md11", null ],
-      [ "Building", "index.html#autotoc_md12", null ],
-      [ "Running", "index.html#autotoc_md13", [
-        [ "<span class=\"tt\">alone</span> scenario", "index.html#autotoc_md14", null ],
-        [ "<span class=\"tt\">collaboration</span> scenario", "index.html#autotoc_md15", null ],
-        [ "<span class=\"tt\">easynav</span> scenario", "index.html#autotoc_md16", null ],
-        [ "<span class=\"tt\">easynav_collaboration</span> scenario", "index.html#autotoc_md17", null ],
-        [ "Poking at a capability by hand", "index.html#autotoc_md18", null ],
-        [ "Monitoring a running fleet: <span class=\"tt\">easyfleet_tools</span>", "index.html#autotoc_md19", null ]
-      ] ],
-      [ "Running the tests", "index.html#autotoc_md20", null ],
-      [ "Known limitations", "index.html#autotoc_md21", [
-        [ "Capability discovery is a one-shot snapshot, not a live view", "index.html#autotoc_md22", null ]
-      ] ]
-    ] ],
-    [ "validate the plumbing for.", "index.html#autotoc_md23", [
-      [ "License", "index.html#autotoc_md24", null ]
+      [ "👥 Project Maintainers", "index.html#autotoc_md3", null ],
+      [ "License", "index.html#autotoc_md4", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ]

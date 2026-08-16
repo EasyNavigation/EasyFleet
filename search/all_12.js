@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['validate_20the_20plumbing_20for_0',['validate the plumbing for.',['../index.html#autotoc_md23',1,'']]],
-  ['view_1',['Capability discovery is a one-shot snapshot, not a live view',['../index.html#autotoc_md22',1,'']]],
-  ['vs_20mission_20control_2',['Robot vs. mission control',['../index.html#autotoc_md7',1,'']]]
+  ['yielding_5frobot_0',['yielding_robot',['../structeasyfleet_1_1ConflictDecision.html#a1bc6a052ef01904658378110e22367c6',1,'easyfleet::ConflictDecision']]]
 ];
