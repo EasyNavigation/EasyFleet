@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_easynav_collaboration_simple_api_deployment_py</name>
+  <version>0.1.0</version>
+  <description>
+    The Python-mission-controller mirror of
+    easyfleet_easynav_collaboration_simple_api_deployment: the exact same
+    two-robot scenario (real EasyNav navigation on both robots, robot_1
+    also carrying a fake perception capability, robot_2 a fake
+    manipulation one, same Gazebo world/map, same launch/config/rviz
+    shape, reused directly from that sibling package -- robot_node,
+    perception/manipulation capabilities, navigation, launch files), but
+    the mission script is written in Python against
+    easyfleet_mission_manager_py's RobotHandle/SimpleController instead
+    of the sibling package's C++ one. Only the mission controller
+    differs; everything else is the same package, included directly.
+  </description>
+
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+
+  <license>Apache-2.0</license>
+
+  <author>Francisco Martín Rico</author>
+
+  <depend>rclpy</depend>
+  <depend>easyfleet_mission_manager_py</depend>
+
+  <exec_depend>easyfleet_easynav_collaboration_simple_api_deployment</exec_depend>
+  <exec_depend>easyfleet_navigation_manager</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch_yaml</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>ament_xmllint</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

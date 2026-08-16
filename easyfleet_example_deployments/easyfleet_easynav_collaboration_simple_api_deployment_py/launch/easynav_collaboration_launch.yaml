@@ -1,0 +1,74 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# This file is part of the project EasyFleet
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This deployment's top-level launch file -- identical to
+# easyfleet_easynav_collaboration_simple_api_deployment's own
+# easynav_collaboration_launch.yaml except for the very last node: the
+# mission controller here is easyfleet_easynav_collaboration_simple_api_deployment_py's
+# Python one instead of that package's C++ one. Everything else (both
+# robots, the navigation manager, the fleet-wide RViz) is reused
+# directly from the sibling C++ package -- only the mission controller
+# differs, per this package's own purpose.
+#
+# Does NOT launch Gazebo -- start
+# `ros2 launch easynav_playground_kobuki playgorund_multirobot_kobuki.launch.py`
+# separately first, so both robots are already spawned (namespaced
+# "robot_1"/"robot_2") and publishing scan_raw/odom/TF before
+# system_main tries to localize against them.
+#
+# easynav_collaboration_mission_node is delayed a few seconds so both
+# robots have finished activating (and published their /capabilities
+# announcements) before mission control's discovery window opens --
+# launching everything at literally the same instant risks discovering
+# nothing.
+launch:
+  - include:
+      file: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/launch/robot_1_launch.yaml"
+  - include:
+      file: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/launch/robot_2_launch.yaml"
+
+  # Fleet-wide navigation manager: publishes the same map/routes both
+  # robots above would otherwise load locally on /global_map and
+  # /global_routes.
+  - node:
+      pkg: "easyfleet_navigation_manager"
+      exec: "navigation_manager_node"
+      output: "screen"
+      param:
+        - name: "use_sim_time"
+          value: true
+        - from: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/config/navigation_manager.params.yaml"
+
+  # Fleet-wide view: navigation_manager_node's own topics are all
+  # unnamespaced, so this rviz2 needs no remap.
+  - node:
+      pkg: "rviz2"
+      exec: "rviz2"
+      output: "screen"
+      args: "-d $(find-pkg-share easyfleet_easynav_deployment)/rviz/navigation_manager.rviz"
+      param:
+        - name: "use_sim_time"
+          value: true
+
+  - timer:
+      period: 5.0
+      children:
+        - node:
+            pkg: "easyfleet_easynav_collaboration_simple_api_deployment_py"
+            exec: "easynav_collaboration_mission_node"
+            output: "screen"
+            param:
+              - name: "use_sim_time"
+                value: true
