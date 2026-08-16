@@ -5,13 +5,16 @@
   <version>0.1.0</version>
   <description>
     Fleet-wide navigation manager. Publishes one shared map on
-    /global_map and one shared route set on /global_routes, so every
-    robot's own EasyNav instance can be pointed at the same data (by
-    remapping its "incoming_map"/"incoming_routes" topics) instead of
-    each robot loading its own local copy. Also continuously watches
-    every robot's planned navigation path and pauses/resumes robots
-    (over EasyNav's GoalManager control protocol) on imminent path
-    conflicts. Ships one executable, navigation_manager_node.
+    /global_map and one shared, live-editable (RViz interactive
+    markers) route set on /global_routes, so every robot's own EasyNav
+    instance can be pointed at the same data (by remapping its
+    "incoming_map"/"incoming_routes" topics) instead of each robot
+    loading its own local copy. Broadcasts one static, identity /tf_static
+    transform from "map" to each watched robot's own "&lt;robot_id&gt;/map"
+    frame, tying the two together. Also continuously watches every
+    robot's planned navigation path and pauses/resumes robots (over
+    EasyNav's GoalManager control protocol) on imminent path conflicts.
+    Ships one executable, navigation_manager_node.
   </description>
   <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
   <license>Apache-2.0</license>
@@ -21,6 +24,9 @@
   <depend>rclcpp</depend>
   <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>interactive_markers</depend>
+  <depend>tf2_ros</depend>
   <depend>ament_index_cpp</depend>
   <depend>easynav_costmap_maps_manager</depend>
   <depend>easynav_routes_maps_manager</depend>
@@ -30,6 +36,7 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>tf2_msgs</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

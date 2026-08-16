@@ -119,7 +119,7 @@
       freq: 10.0
       plugin: easynav_costmap_maps_manager/CostmapMapsManager
       package: easyfleet_easynav_deployment
-      map_path_file: maps/home2.yaml
+      map_path_file: maps/home1.yaml
       filters: [obstacles, inflation]
       obstacles:
         plugin: easynav_costmap_maps_manager/CostmapMapsManager/ObstaclesFilter

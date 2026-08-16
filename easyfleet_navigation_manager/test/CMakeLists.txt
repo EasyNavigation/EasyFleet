@@ -1,4 +1,5 @@
 find_package(ament_cmake_gtest REQUIRED)
+find_package(tf2_msgs REQUIRED)
 
 # Pure logic, no ROS node/topics involved -- no domain isolation needed.
 ament_add_gtest(conflict_detector_tests conflict_detector_tests.cpp)
@@ -16,5 +17,6 @@ ament_add_gtest(test_navigation_manager test_navigation_manager.cpp
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=95)
 target_link_libraries(test_navigation_manager
   ${PROJECT_NAME}
+  ${tf2_msgs_TARGETS}
   GTest::gtest
 )

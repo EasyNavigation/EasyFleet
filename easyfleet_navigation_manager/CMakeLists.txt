@@ -13,6 +13,9 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(interactive_markers REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(easynav_costmap_maps_manager REQUIRED)
 find_package(easynav_routes_maps_manager REQUIRED)
@@ -34,6 +37,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rclcpp::rclcpp
   ${nav_msgs_TARGETS}
   ${geometry_msgs_TARGETS}
+  ${visualization_msgs_TARGETS}
+  interactive_markers::interactive_markers
+  tf2_ros::tf2_ros
   ament_index_cpp::ament_index_cpp
   easynav_costmap_maps_manager::easynav_costmap_maps_manager
   easynav_routes_maps_manager::easynav_routes_maps_manager_lib
@@ -68,6 +74,9 @@ ament_export_dependencies(
   rclcpp
   nav_msgs
   geometry_msgs
+  visualization_msgs
+  interactive_markers
+  tf2_ros
   ament_index_cpp
   easynav_costmap_maps_manager
   easynav_routes_maps_manager

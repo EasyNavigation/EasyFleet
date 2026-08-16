@@ -28,6 +28,7 @@
 #include "easyfleet_navigation_manager/robot_navigation_watcher.hpp"
 #include "easyfleet_navigation_manager/routes_publisher.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "tf2_ros/static_transform_broadcaster.hpp"
 
 namespace easyfleet
 {
@@ -63,6 +64,21 @@ namespace easyfleet
  * -- like the conflict-check below -- is plain subscription callbacks
  * plus a periodic timer on this one node; no extra rclcpp::Node,
  * executor, or thread is created anywhere in this class.
+ *
+ * Every robot's own EasyNav instance applies its `tf_prefix` to its
+ * local "map" frame (see RTTFBuffer::set_tf_info() in easynav_common),
+ * so e.g. robot_1's own map frame is literally "robot_1/map" -- while
+ * /global_map and /global_routes (published above) are both stamped
+ * with the plain, unprefixed "map" frame. For the two to actually line
+ * up in one TF tree, this node also broadcasts one static, identity
+ * transform "map" -> "<robot_id>/map" per watched robot (via
+ * publish_robot_map_tf(), on /tf_static through a single
+ * tf2_ros::StaticTransformBroadcaster) as soon as that robot starts
+ * being watched -- every robot in this fleet is assumed to share the
+ * exact same map, only their pose *within* it differs, so identity is
+ * the correct transform (see e.g. GpsLocalizer's own identical
+ * map->odom identity broadcast for the same kind of "these two frames
+ * are just aliases of each other" case).
  *
  * ROS parameters:
  * - `map_type` (string, default `"costmap"`): which MapPublisherBase
@@ -117,6 +133,13 @@ private:
   /// that set.
   void check_conflicts();
 
+  /// @brief Broadcast a static, identity transform from the fleet-wide
+  /// "map" frame to `robot_id`'s own "<robot_id>/map" frame, on
+  /// /tf_static. Safe to call more than once for the same robot_id
+  /// (StaticTransformBroadcaster keys its retained set by
+  /// child_frame_id, so a repeat call just re-sends the same transform).
+  void publish_robot_map_tf(const std::string & robot_id);
+
   std::unique_ptr<MapPublisherBase> map_publisher_;
   RoutesPublisher routes_publisher_;
 
@@ -124,6 +147,8 @@ private:
   ConflictParams conflict_params_;
   std::vector<std::unique_ptr<RobotNavigationWatcher>> watchers_;
   std::set<std::string> currently_paused_;
+
+  std::shared_ptr<tf2_ros::StaticTransformBroadcaster> map_tf_broadcaster_;
 
   /// @brief Only used when `robots.static_list` is empty.
   rclcpp::Subscription<easyfleet_interfaces::msg::CapabilityStatus>::SharedPtr

@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -30,9 +31,12 @@
 #include "easyfleet_navigation_manager/routes_publisher.hpp"
 #include "easynav_interfaces/msg/navigation_control.hpp"
 #include "easynav_routes_maps_manager/msg/routes_map.hpp"
+#include "easynav_routes_maps_manager/route_io.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "tf2_msgs/msg/tf_message.hpp"
+#include "visualization_msgs/msg/interactive_marker_feedback.hpp"
 
 // These tests deliberately load the exact same real map/routes files
 // every EasyFleet real-EasyNav deployment already points its own
@@ -207,12 +211,227 @@ TEST_F(NavigationManagerTest, RoutesPublisherPublishesTheConfiguredRoutes)
   EXPECT_EQ(received->routes[4].id, "route8");
 }
 
+// A late-joining subscriber reliably getting the retained
+// transient_local sample turned out NOT to be guaranteed in practice
+// for visualization_msgs/MarkerArray specifically (verified outside
+// this codebase with a minimal std_msgs/String control case using the
+// exact same QoS, which *did* always deliver) -- so
+// /global_routes_markers is volatile, kept alive by a low-rate
+// republish timer instead of durability-service replay (see the class
+// doc comment: a topic that needs periodic republishing to reach late
+// joiners isn't really transient_local). This test drives that timer
+// fast (`routes.markers_republish_rate_hz`) and asserts more than one
+// message actually arrives.
+TEST_F(NavigationManagerTest, RoutesPublisherPeriodicallyRepublishesMarkers)
+{
+  auto node = rclcpp::Node::make_shared(
+    "test_routes_publisher_markers_timer", make_options(
+  {
+    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
+    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("routes.markers_republish_rate_hz", 20.0),
+  }));
+
+  easyfleet::RoutesPublisher publisher;
+  ASSERT_NO_THROW(publisher.publish(*node));
+
+  int received_count = 0;
+  auto sub = node->create_subscription<visualization_msgs::msg::MarkerArray>(
+    "/global_routes_markers", rclcpp::QoS(10).reliable(),
+    [&received_count](visualization_msgs::msg::MarkerArray::SharedPtr) {++received_count;});
+
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+
+  const auto start = std::chrono::steady_clock::now();
+  while (received_count < 3 &&
+    std::chrono::steady_clock::now() - start < std::chrono::seconds(5))
+  {
+    executor.spin_some();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+
+  EXPECT_GE(received_count, 3);
+}
+
 TEST_F(NavigationManagerTest, RoutesPublisherThrowsWhenUnconfigured)
 {
   auto node = rclcpp::Node::make_shared("test_routes_publisher_unconfigured");
 
   easyfleet::RoutesPublisher publisher;
   EXPECT_THROW(publisher.publish(*node), std::runtime_error);
+}
+
+// Exercises the interactive-marker editing mechanism end-to-end, via the
+// real /global_routes_imarkers/feedback topic the InteractiveMarkerServer
+// itself subscribes to (see interactive_marker_server.py's own
+// `namespace + '/feedback'` convention, mirrored by the C++
+// implementation) -- not by calling RoutesPublisher's private handler
+// directly. Confirms the user's explicit requirement #3: every
+// geometry-changing edit (drag/add/remove) must both republish on
+// /global_routes and re-save to the routes YAML file, while merely
+// toggling edit mode must do neither.
+TEST_F(NavigationManagerTest, InteractiveMarkerEditRepublishesAndSavesRoutes)
+{
+  const std::string yaml_path =
+    (std::filesystem::temp_directory_path() / "easyfleet_test_routes_edit.yaml").string();
+  std::filesystem::remove(yaml_path);
+
+  auto node = rclcpp::Node::make_shared(
+    "test_routes_publisher_edit", make_options(
+  {
+    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
+    // Absolute path: std::filesystem::path's operator/ discards the
+    // left-hand side entirely when the right-hand side is absolute, so
+    // this bypasses the package share directory and points straight at
+    // our own disposable temp file -- the shared fixture YAML under
+    // easynav_indoor_testcase is never touched by this test.
+    rclcpp::Parameter("routes.map_path_file", yaml_path),
+  }));
+
+  easyfleet::RoutesPublisher publisher;
+  ASSERT_NO_THROW(publisher.publish(*node));
+
+  // No file exists yet at yaml_path, so load_routes_from_yaml() fell
+  // back to its single default segment, id "route0".
+  ASSERT_FALSE(std::filesystem::exists(yaml_path));
+
+  easynav_routes_maps_manager::msg::RoutesMap::SharedPtr received;
+  auto sub = node->create_subscription<easynav_routes_maps_manager::msg::RoutesMap>(
+    "/global_routes", rclcpp::QoS(1).transient_local().reliable(),
+    [&received](easynav_routes_maps_manager::msg::RoutesMap::SharedPtr msg) {received = msg;});
+
+  auto feedback_pub = node->create_publisher<visualization_msgs::msg::InteractiveMarkerFeedback>(
+    "/global_routes_imarkers/feedback", rclcpp::QoS(1).reliable());
+
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  executor.spin_some();
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  executor.spin_some();
+
+  ASSERT_TRUE(received != nullptr);
+  received.reset();
+
+  auto spin_for = [&](std::chrono::milliseconds duration) {
+      const auto start = std::chrono::steady_clock::now();
+      while (std::chrono::steady_clock::now() - start < duration) {
+        executor.spin_some();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    };
+
+  // 1) Toggle edit mode on: reveals the draggable start/end markers, but
+  // is purely a UI-editor-state change -- must NOT republish or save.
+  visualization_msgs::msg::InteractiveMarkerFeedback toggle_fb;
+  toggle_fb.marker_name = "route0_mode";
+  toggle_fb.control_name = "toggle_edit";
+  toggle_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK;
+  toggle_fb.pose.orientation.w = 1.0;
+
+  feedback_pub->publish(toggle_fb);
+  spin_for(std::chrono::milliseconds(300));
+
+  EXPECT_TRUE(received == nullptr);
+  EXPECT_FALSE(std::filesystem::exists(yaml_path));
+
+  // 2) Drag the "route0_start" endpoint to a new pose: a
+  // geometry-changing edit, must republish on /global_routes AND save to
+  // yaml_path.
+  visualization_msgs::msg::InteractiveMarkerFeedback drag_fb;
+  drag_fb.marker_name = "route0_start";
+  drag_fb.control_name = "move_x";
+  drag_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::POSE_UPDATE;
+  drag_fb.pose.position.x = 3.5;
+  drag_fb.pose.position.y = -2.0;
+  drag_fb.pose.orientation.w = 1.0;
+
+  feedback_pub->publish(drag_fb);
+
+  {
+    const auto start = std::chrono::steady_clock::now();
+    while (received == nullptr &&
+      std::chrono::steady_clock::now() - start < std::chrono::seconds(5))
+    {
+      executor.spin_some();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+  }
+
+  ASSERT_TRUE(received != nullptr);
+  ASSERT_EQ(received->routes.size(), 1u);
+  EXPECT_NEAR(received->routes[0].start.position.x, 3.5, 1e-6);
+  EXPECT_NEAR(received->routes[0].start.position.y, -2.0, 1e-6);
+
+  ASSERT_TRUE(std::filesystem::exists(yaml_path));
+  {
+    const auto saved = easynav::load_routes_from_yaml(yaml_path);
+    ASSERT_EQ(saved.size(), 1u);
+    EXPECT_NEAR(saved[0].start.position.x, 3.5, 1e-6);
+    EXPECT_NEAR(saved[0].start.position.y, -2.0, 1e-6);
+  }
+
+  // 3) Add a new segment from "route0_end": also a geometry-changing
+  // edit, republish + save again, and the new segment gets a fresh id.
+  received.reset();
+  visualization_msgs::msg::InteractiveMarkerFeedback add_fb;
+  add_fb.marker_name = "route0_end";
+  add_fb.control_name = "add_segment";
+  add_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK;
+  add_fb.pose.position.x = 1.0;
+  add_fb.pose.orientation.w = 1.0;
+
+  feedback_pub->publish(add_fb);
+
+  {
+    const auto start = std::chrono::steady_clock::now();
+    while ((received == nullptr || received->routes.size() < 2) &&
+      std::chrono::steady_clock::now() - start < std::chrono::seconds(5))
+    {
+      executor.spin_some();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+  }
+
+  ASSERT_TRUE(received != nullptr);
+  ASSERT_EQ(received->routes.size(), 2u);
+  EXPECT_EQ(received->routes[1].id, "route1");
+  {
+    const auto saved = easynav::load_routes_from_yaml(yaml_path);
+    EXPECT_EQ(saved.size(), 2u);
+  }
+
+  // 4) Remove the original segment via "route0_start": back down to one
+  // segment, republished and saved.
+  received.reset();
+  visualization_msgs::msg::InteractiveMarkerFeedback remove_fb;
+  remove_fb.marker_name = "route0_start";
+  remove_fb.control_name = "remove_segment";
+  remove_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK;
+  remove_fb.pose.orientation.w = 1.0;
+
+  feedback_pub->publish(remove_fb);
+
+  {
+    const auto start = std::chrono::steady_clock::now();
+    while ((received == nullptr || received->routes.size() != 1) &&
+      std::chrono::steady_clock::now() - start < std::chrono::seconds(5))
+    {
+      executor.spin_some();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+  }
+
+  ASSERT_TRUE(received != nullptr);
+  ASSERT_EQ(received->routes.size(), 1u);
+  EXPECT_EQ(received->routes[0].id, "route1");
+  {
+    const auto saved = easynav::load_routes_from_yaml(yaml_path);
+    ASSERT_EQ(saved.size(), 1u);
+    EXPECT_EQ(saved[0].id, "route1");
+  }
+
+  std::filesystem::remove(yaml_path);
 }
 
 TEST_F(NavigationManagerTest, NodeConstructsAndPublishesBothWhenConfiguredWithCostmap)
@@ -328,6 +547,67 @@ TEST_F(NavigationManagerTest, PausesTheRobotFartherFromGoalOnConvergingPaths)
 
   fake_executor.cancel();
   fake_thread.join();
+}
+
+// Every robot's own EasyNav instance applies its tf_prefix to its local
+// "map" frame (e.g. robot_1's own frame is literally "robot_1/map"),
+// while /global_map and /global_routes are both stamped with the plain
+// "map" frame -- so for the two to line up in one TF tree, the node
+// must also broadcast a static, identity "map" -> "<robot_id>/map"
+// transform per watched robot, on /tf_static.
+TEST_F(NavigationManagerTest, PublishesStaticMapToRobotMapTransforms)
+{
+  auto node = std::make_shared<easyfleet::NavigationManagerNode>(
+    make_options(
+  {
+    rclcpp::Parameter("map_type", std::string("costmap")),
+    rclcpp::Parameter("map.package", std::string("easynav_indoor_testcase")),
+    rclcpp::Parameter("map.map_path_file", std::string("maps/home2.yaml")),
+    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
+    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter(
+      "robots.static_list", std::vector<std::string>{"robot_a", "robot_b"}),
+  }));
+
+  std::vector<geometry_msgs::msg::TransformStamped> received_transforms;
+  auto tf_sub = node->create_subscription<tf2_msgs::msg::TFMessage>(
+    "/tf_static", rclcpp::QoS(10).transient_local().reliable(),
+    [&received_transforms](tf2_msgs::msg::TFMessage::SharedPtr msg) {
+      for (const auto & t : msg->transforms) {
+        received_transforms.push_back(t);
+      }
+    });
+
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+
+  const auto start = std::chrono::steady_clock::now();
+  while (received_transforms.size() < 2 &&
+    std::chrono::steady_clock::now() - start < std::chrono::seconds(5))
+  {
+    executor.spin_some();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+
+  auto find_transform = [&](const std::string & child_frame_id) {
+      return std::find_if(
+        received_transforms.begin(), received_transforms.end(),
+        [&](const geometry_msgs::msg::TransformStamped & t) {
+          return t.child_frame_id == child_frame_id;
+        });
+    };
+
+  const auto tf_a = find_transform("robot_a/map");
+  ASSERT_NE(tf_a, received_transforms.end());
+  EXPECT_EQ(tf_a->header.frame_id, "map");
+  EXPECT_NEAR(tf_a->transform.translation.x, 0.0, 1e-9);
+  EXPECT_NEAR(tf_a->transform.translation.y, 0.0, 1e-9);
+  EXPECT_NEAR(tf_a->transform.translation.z, 0.0, 1e-9);
+  EXPECT_NEAR(tf_a->transform.rotation.w, 1.0, 1e-9);
+
+  const auto tf_b = find_transform("robot_b/map");
+  ASSERT_NE(tf_b, received_transforms.end());
+  EXPECT_EQ(tf_b->header.frame_id, "map");
 }
 
 // Without robots.static_list, the robot set is tracked dynamically from

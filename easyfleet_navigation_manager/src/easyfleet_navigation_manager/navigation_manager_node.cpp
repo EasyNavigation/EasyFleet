@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "easyfleet_navigation_manager/costmap_map_publisher.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 
 namespace easyfleet
 {
@@ -67,6 +68,8 @@ NavigationManagerNode::NavigationManagerNode(const rclcpp::NodeOptions & options
   map_publisher_->publish(*this);
   routes_publisher_.publish(*this);
 
+  map_tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+
   planner_plugin_key_ = this->declare_parameter("robots.planner_plugin_key", std::string("simple"));
   const double check_rate_hz = this->declare_parameter("conflict.check_rate_hz", 2.0);
   conflict_params_.lookahead_distance_m =
@@ -85,6 +88,7 @@ NavigationManagerNode::NavigationManagerNode(const rclcpp::NodeOptions & options
       RCLCPP_INFO(get_logger(), "Conflict monitor: watching robot '%s'", robot_id.c_str());
       watchers_.push_back(
         std::make_unique<RobotNavigationWatcher>(*this, robot_id, planner_plugin_key_));
+      publish_robot_map_tf(robot_id);
     }
   } else {
     // Dynamic robot set: track it via plain subscription callbacks (no
@@ -123,6 +127,18 @@ NavigationManagerNode::get_watched_robots() const
 }
 
 void
+NavigationManagerNode::publish_robot_map_tf(const std::string & robot_id)
+{
+  geometry_msgs::msg::TransformStamped transform;
+  transform.header.stamp = this->now();
+  transform.header.frame_id = "map";
+  transform.child_frame_id = robot_id + "/map";
+  transform.transform.rotation.w = 1.0;
+
+  map_tf_broadcaster_->sendTransform(transform);
+}
+
+void
 NavigationManagerNode::reconcile_watchers()
 {
   const auto now = this->now();
@@ -142,6 +158,7 @@ NavigationManagerNode::reconcile_watchers()
       RCLCPP_INFO(get_logger(), "Conflict monitor: watching robot '%s'", robot_id.c_str());
       watchers_.push_back(
         std::make_unique<RobotNavigationWatcher>(*this, robot_id, planner_plugin_key_));
+      publish_robot_map_tf(robot_id);
     }
   }
 

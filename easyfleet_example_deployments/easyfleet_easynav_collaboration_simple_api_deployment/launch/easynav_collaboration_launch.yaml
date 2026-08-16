@@ -51,6 +51,20 @@ launch:
           value: true
         - from: "$(find-pkg-share easyfleet_easynav_collaboration_simple_api_deployment)/config/navigation_manager.params.yaml"
 
+  # Fleet-wide view: navigation_manager_node's own topics
+  # (/global_map, /global_routes_markers, /global_routes_imarkers/...)
+  # are all unnamespaced, so this rviz2 needs no remap -- unlike
+  # robot_1_launch.yaml/robot_2_launch.yaml's own rviz2, which is
+  # per-robot-namespaced.
+  - node:
+      pkg: "rviz2"
+      exec: "rviz2"
+      output: "screen"
+      args: "-d $(find-pkg-share easyfleet_easynav_deployment)/rviz/navigation_manager.rviz"
+      param:
+        - name: "use_sim_time"
+          value: true
+
   - timer:
       period: 5.0
       children:
