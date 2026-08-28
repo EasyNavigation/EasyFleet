@@ -7,7 +7,7 @@
 [![rolling](https://github.com/EasyNavigation/EasyFleet/actions/workflows/rolling.yaml/badge.svg?branch=rolling)](https://github.com/EasyNavigation/EasyFleet/actions/workflows/rolling.yaml)
 [![codecov](https://codecov.io/github/EasyNavigation/EasyFleet/graph/badge.svg)](https://codecov.io/github/EasyNavigation/EasyFleet)
 
-Web: [https://easyfleet.github.io](https://easyfleet.github.io/)
+Web: [https://easynavigation.github.io/easyfleet_web/](https://easynavigation.github.io/easyfleet_web/)
 
 Doxygen documentation: [https://EasyNavigation.github.io/EasyFleet/](https://EasyNavigation.github.io/EasyFleet/)
 
