@@ -31,8 +31,9 @@ EasyFleet is developed by the **[Intelligent Robotics Lab](https://intelligentro
 | [**easyfleet_mission_manager**](easyfleet_mission_manager) | `FleetSession`, `RobotHandle`, `SimpleController`: the client-side API for discovering and driving a fleet's capabilities. |
 | [**easyfleet_navigation_manager**](easyfleet_navigation_manager) | `navigation_manager_node`: a shared map/route graph for the whole fleet, live-editable from RViz, plus multi-robot path-conflict detection and pause/resume. |
 | [**easyfleet_easynav_navigation**](easyfleet_easynav_navigation) | The `Navigate` BehaviorTree.CPP plugin node — EasyFleet's own EasyNav-backed navigation capability building block. |
-| [**easyfleet_example_deployments**](easyfleet_example_deployments) | Four self-contained example deployments, from mocked single-robot to two robots both running real EasyNav navigation at once. |
 | [**easyfleet_tools**](easyfleet_tools) | A read-only TUI/CLI for monitoring a running fleet. |
+
+Example deployments, from mocked capabilities to fleets running real EasyNav navigation, live in their own repository: [**easyfleet_example_deployments**](https://github.com/EasyNavigation/easyfleet_example_deployments).
 
 ---
 

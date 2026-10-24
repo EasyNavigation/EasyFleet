@@ -1047,8 +1047,7 @@ INPUT                  =README.md \
                          easyfleet_mission_manager \
                          easyfleet_navigation_manager \
                          easyfleet_interfaces \
-                         easyfleet_easynav_navigation \
-                         easyfleet_example_deployments
+                         easyfleet_easynav_navigation
 
 # This tag can be used to specify the character encoding of the source files
 # that Doxygen parses. Internally Doxygen uses the UTF-8 encoding. Doxygen uses
