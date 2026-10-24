@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['goalresult_0',['GoalResult',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html',1,'easyfleet_core::ActionClient']]]
+  ['manipulationactionserverbase_0',['ManipulationActionServerBase',['../classeasyfleet__core_1_1ManipulationActionServerBase.html',1,'easyfleet_core']]],
+  ['mappublisherbase_1',['MapPublisherBase',['../classeasyfleet_1_1MapPublisherBase.html',1,'easyfleet']]]
 ];

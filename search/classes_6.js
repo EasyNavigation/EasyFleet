@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['manipulationactionserverbase_0',['ManipulationActionServerBase',['../classeasyfleet__core_1_1ManipulationActionServerBase.html',1,'easyfleet_core']]],
-  ['manipulationfakeactionserver_1',['ManipulationFakeActionServer',['../classeasyfleet__easynav__collaboration__deployment_1_1ManipulationFakeActionServer.html',1,'ManipulationFakeActionServer'],['../classeasyfleet__easynav__collaboration__simple__api__deployment_1_1ManipulationFakeActionServer.html',1,'ManipulationFakeActionServer'],['../classeasyfleet__fake__alone__deployment_1_1ManipulationFakeActionServer.html',1,'ManipulationFakeActionServer'],['../classeasyfleet__fake__collaboration__deployment_1_1ManipulationFakeActionServer.html',1,'ManipulationFakeActionServer']]],
-  ['manipulationfakecapability_2',['ManipulationFakeCapability',['../classeasyfleet__easynav__collaboration__deployment_1_1ManipulationFakeCapability.html',1,'ManipulationFakeCapability'],['../classeasyfleet__easynav__collaboration__simple__api__deployment_1_1ManipulationFakeCapability.html',1,'ManipulationFakeCapability'],['../classeasyfleet__fake__alone__deployment_1_1ManipulationFakeCapability.html',1,'ManipulationFakeCapability'],['../classeasyfleet__fake__collaboration__deployment_1_1ManipulationFakeCapability.html',1,'ManipulationFakeCapability']]],
-  ['mappublisherbase_3',['MapPublisherBase',['../classeasyfleet_1_1MapPublisherBase.html',1,'easyfleet']]]
+  ['navigate_0',['Navigate',['../classeasyfleet__easynav__navigation_1_1Navigate.html',1,'easyfleet_easynav_navigation']]],
+  ['navigationactionserverbase_1',['NavigationActionServerBase',['../classeasyfleet__core_1_1NavigationActionServerBase.html',1,'easyfleet_core']]],
+  ['navigationmanagernode_2',['NavigationManagerNode',['../classeasyfleet_1_1NavigationManagerNode.html',1,'easyfleet']]]
 ];

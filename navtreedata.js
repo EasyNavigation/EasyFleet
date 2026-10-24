@@ -30,15 +30,12 @@ var NAVTREE =
       [ "👥 Project Maintainers", "index.html#autotoc_md3", null ],
       [ "License", "index.html#autotoc_md4", null ]
     ] ],
-    [ "Namespaces", "namespaces.html", [
-      [ "Namespace List", "namespaces.html", "namespaces_dup" ]
-    ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
       [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
-        [ "All", "functions.html", "functions_dup" ],
+        [ "All", "functions.html", null ],
         [ "Functions", "functions_func.html", null ],
         [ "Variables", "functions_vars.html", null ],
         [ "Typedefs", "functions_type.html", null ],
@@ -54,7 +51,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "action__client_8hpp_source.html",
-"classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4a91dede9f9a945f2d83b4357b34354e"
+"structeasyfleet__core_1_1ActionClient_1_1GoalResult.html#ae8e9865945c82f006c60fc5e3dc27964"
 ];
 
 const SYNCONMSG = 'click to disable panel synchronization';

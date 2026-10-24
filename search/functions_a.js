@@ -1,9 +1,7 @@
 var searchData=
 [
-  ['name_0',['name',['../classeasyfleet_1_1Deployment.html#a24efda839dcb5101dbb0befdac4a5b2e',1,'easyfleet::Deployment::name()'],['../classeasyfleet_1_1RobotHandle.html#a24efda839dcb5101dbb0befdac4a5b2e',1,'easyfleet::RobotHandle::name()']]],
-  ['navigate_1',['Navigate',['../classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92',1,'easyfleet_easynav_navigation::Navigate']]],
-  ['navigationfakeactionserver_2',['NavigationFakeActionServer',['../classeasyfleet__fake__alone__deployment_1_1NavigationFakeActionServer.html#a94e887c3219b82cf092e6d3503c2038a',1,'easyfleet_fake_alone_deployment::NavigationFakeActionServer::NavigationFakeActionServer()'],['../classeasyfleet__fake__collaboration__deployment_1_1NavigationFakeActionServer.html#a94e887c3219b82cf092e6d3503c2038a',1,'easyfleet_fake_collaboration_deployment::NavigationFakeActionServer::NavigationFakeActionServer()']]],
-  ['navigationfakecapability_3',['NavigationFakeCapability',['../classeasyfleet__fake__alone__deployment_1_1NavigationFakeCapability.html#a8624e440af8da1f4d1ec93a6c4552682',1,'easyfleet_fake_alone_deployment::NavigationFakeCapability::NavigationFakeCapability()'],['../classeasyfleet__fake__collaboration__deployment_1_1NavigationFakeCapability.html#a8624e440af8da1f4d1ec93a6c4552682',1,'easyfleet_fake_collaboration_deployment::NavigationFakeCapability::NavigationFakeCapability()']]],
-  ['navigationmanagernode_4',['NavigationManagerNode',['../classeasyfleet_1_1NavigationManagerNode.html#a1ef39609487ac608ef8bc22f7cfa9ed3',1,'easyfleet::NavigationManagerNode']]],
-  ['node_5',['node',['../classeasyfleet_1_1FleetSession.html#a50081cc22e4f4699d396fc9f6e42746e',1,'easyfleet::FleetSession::node()'],['../classeasyfleet_1_1SimpleController.html#a50081cc22e4f4699d396fc9f6e42746e',1,'easyfleet::SimpleController::node()']]]
+  ['pause_0',['pause',['../classeasyfleet_1_1RobotNavigationWatcher.html#a7167f5c196fc5e167bfabde1a730e81d',1,'easyfleet::RobotNavigationWatcher']]],
+  ['print_5fcapabilities_1',['print_capabilities',['../classeasyfleet_1_1RobotHandle.html#a82bf88ee3a36bda4679e444cd40869dd',1,'easyfleet::RobotHandle']]],
+  ['providedports_2',['providedPorts',['../classeasyfleet__easynav__navigation_1_1Navigate.html#af917f167381981f8cfc7b479e9a76f49',1,'easyfleet_easynav_navigation::Navigate']]],
+  ['publish_3',['publish',['../classeasyfleet_1_1CostmapMapPublisher.html#aae8616f5ddb14a8e9775b2f3d63aea93',1,'easyfleet::CostmapMapPublisher::publish()'],['../classeasyfleet_1_1MapPublisherBase.html#a46cd4f6a9e240a9e04ce44c122ff1047',1,'easyfleet::MapPublisherBase::publish()'],['../classeasyfleet_1_1RoutesPublisher.html#a5ef994293bb7e8d140c2732ff12f9be5',1,'easyfleet::RoutesPublisher::publish()']]]
 ];

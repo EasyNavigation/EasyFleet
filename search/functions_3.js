@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['easynavnavigationactionserver_0',['EasynavNavigationActionServer',['../classeasyfleet__easynav__deployment_1_1EasynavNavigationActionServer.html#a605cd78cac4be6ab1356b317bd8efbc5',1,'easyfleet_easynav_deployment::EasynavNavigationActionServer']]],
-  ['easynavnavigationcapability_1',['EasynavNavigationCapability',['../classeasyfleet__easynav__deployment_1_1EasynavNavigationCapability.html#a6054d78110f84ddb175a5bc958b3de8c',1,'easyfleet_easynav_deployment::EasynavNavigationCapability']]]
+  ['find_5frobot_0',['find_robot',['../classeasyfleet_1_1FleetSession.html#a210967943c258249e0d8311ca6047996',1,'easyfleet::FleetSession::find_robot()'],['../classeasyfleet_1_1SimpleController.html#a210967943c258249e0d8311ca6047996',1,'easyfleet::SimpleController::find_robot()']]]
 ];

@@ -1,5 +1,12 @@
 var searchData=
 [
-  ['find_5frobot_0',['find_robot',['../classeasyfleet_1_1FleetSession.html#a210967943c258249e0d8311ca6047996',1,'easyfleet::FleetSession::find_robot()'],['../classeasyfleet_1_1SimpleController.html#a210967943c258249e0d8311ca6047996',1,'easyfleet::SimpleController::find_robot()']]],
-  ['finish_1',['Finish',['../classeasyfleet__easynav__deployment_1_1Finish.html#a69731c7ba0b4c2a7e8f8ea10b3b1dd66',1,'easyfleet_easynav_deployment::Finish']]]
+  ['get_5faction_5fname_0',['get_action_name',['../classeasyfleet__core_1_1ActionClient.html#a26fe2cea18d7ec3a6a5c28d1fa16fecc',1,'easyfleet_core::ActionClient::get_action_name()'],['../classeasyfleet__core_1_1ActionServerBase.html#a26fe2cea18d7ec3a6a5c28d1fa16fecc',1,'easyfleet_core::ActionServerBase::get_action_name()']]],
+  ['get_5faction_5fserver_1',['get_action_server',['../classeasyfleet__core_1_1Capability.html#a89362d343484765cbacb9f7e8f1ba1a0',1,'easyfleet_core::Capability']]],
+  ['get_5fcapability_5fname_2',['get_capability_name',['../classeasyfleet__core_1_1Capability.html#ae025ac0333a0c2db8b0e9acccf0fb0c3',1,'easyfleet_core::Capability::get_capability_name()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#addf8c1df75c102b6b8eb255803d382b1',1,'easyfleet_core::CapabilityNodeBase::get_capability_name()']]],
+  ['get_5fcurrent_5fstate_5fid_3',['get_current_state_id',['../classeasyfleet__core_1_1Capability.html#aa0a55e1ec816be3dd4ef5955d8d4bdec',1,'easyfleet_core::Capability::get_current_state_id()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#af7b1c2651d2a5c16293f17abad47b58b',1,'easyfleet_core::CapabilityNodeBase::get_current_state_id()']]],
+  ['get_5flatest_5fpath_4',['get_latest_path',['../classeasyfleet_1_1RobotNavigationWatcher.html#ac0e8fc360964ccfa658e6600bc448586',1,'easyfleet::RobotNavigationWatcher']]],
+  ['get_5fnode_5fbase_5finterface_5',['get_node_base_interface',['../classeasyfleet__core_1_1Capability.html#ad74588143f460ec578bceef02e8ba25a',1,'easyfleet_core::Capability::get_node_base_interface()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#a2f20e4ff15b8cb20c8fd1d6441f2febb',1,'easyfleet_core::CapabilityNodeBase::get_node_base_interface()']]],
+  ['get_5fresolved_5faction_5fname_6',['get_resolved_action_name',['../classeasyfleet__core_1_1Capability.html#a309d9dc01ab8e63ac203d27d8ea452ed',1,'easyfleet_core::Capability']]],
+  ['get_5frobot_5fname_7',['get_robot_name',['../classeasyfleet__core_1_1Capability.html#af5dbc6a1ccad50b9795816bf71568a68',1,'easyfleet_core::Capability::get_robot_name()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#a4e9e61eaf42e3e8b2190821071c85c55',1,'easyfleet_core::CapabilityNodeBase::get_robot_name()']]],
+  ['get_5fwatched_5frobots_8',['get_watched_robots',['../classeasyfleet_1_1NavigationManagerNode.html#a166435b8e9d2c0503e221d433f7c8116',1,'easyfleet::NavigationManagerNode']]]
 ];
