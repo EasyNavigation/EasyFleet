@@ -152,6 +152,12 @@ public:
    */
   void add_capabilities_from_parameters(const std::string & package_name);
 
+  /// @brief Same as `add_capabilities_from_parameters()`, but returns
+  /// `false` instead of exiting when `"capabilities"` is empty.
+  /// @param package_name See `add_capabilities_from_parameters()`.
+  /// @return Whether at least one capability was configured.
+  bool try_add_capabilities_from_parameters(const std::string & package_name);
+
   /// @brief Configures, then activates, every added capability, in the order
   /// they were added.
   /**
@@ -163,6 +169,12 @@ public:
    * looking for it.
    */
   void start();
+
+  /// @brief Same as `start()`, but returns `false` instead of exiting. On
+  /// failure, every capability already configured or activated is brought
+  /// back to UNCONFIGURED, so no half-started robot is left running.
+  /// @return Whether every capability reached ACTIVE.
+  bool try_start();
 
   /// @brief Adds every capability's node to one shared executor and blocks until
   /// SIGINT/SIGTERM (see `spin_until_shutdown()`), then deactivates and

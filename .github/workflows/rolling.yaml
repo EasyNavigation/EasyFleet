@@ -17,16 +17,27 @@ jobs:
       image: ghcr.io/ros-tooling/setup-ros-docker/setup-ros-docker-ubuntu-resolute-ros-rolling-ros-base:master
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: rolling
+      # The image can lag behind the published packages, and mixing them breaks the ABI.
+      - name: Upgrade the image's packages
+        run: apt-get update && apt-get -y dist-upgrade
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.4.8
         with:
-          package-name: easyfleet_interfaces easyfleet_core easyfleet_mission_manager
+          package-name: >-
+            easyfleet_interfaces
+            easyfleet_core
+            easyfleet_mission_manager
+            easyfleet_mission_manager_py
+            easyfleet_navigation_manager
+            easyfleet_easynav_navigation
+            easyfleet_bt_nodes
+            easyfleet_tools
           target-ros2-distro: rolling
+          vcs-repo-file-url: ${GITHUB_WORKSPACE}/.github/thirdparty_rolling.repos
           colcon-defaults: |
             {
               "build": {
+                "packages-up-to": true,
                 "mixin": ["coverage-gcc"]
               },
               "test": {

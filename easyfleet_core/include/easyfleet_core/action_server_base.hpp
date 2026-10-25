@@ -51,6 +51,15 @@ namespace easyfleet_core
  *    (and `is_shutdown_requested()`) and return promptly, having settled the
  *    goal handle (succeeded/aborted/canceled).
  *
+ * Goals are only accepted while goals are enabled (the default).
+ * `disable_goals()` rejects new goals, aborts a queued one and waits for the
+ * running one to return; `Capability` uses it to follow its lifecycle state.
+ *
+ * A derived class must call `stop()` from its own destructor (or its owner
+ * before destroying it): the worker thread calls the pure virtual
+ * `on_execute()`, so it must be joined while the derived object still exists.
+ * `stop()` is idempotent, and `~ActionServerBase()` calls it as a last resort.
+ *
  * This class is not copyable and does not itself derive from `rclcpp::Node`,
  * so a node can inherit from several `ActionServerBase<ActionT>` (one per
  * action) without any diamond-inheritance issues.
@@ -92,6 +101,23 @@ public:
   /// @brief Whether a goal is currently executing.
   /// @return Whether a goal is currently executing.
   bool is_active() const;
+
+  /// @brief Accept new goals again after `disable_goals()`.
+  void enable_goals();
+
+  /// @brief Reject new goals, abort a queued goal and wait for the running
+  /// one to return. `is_shutdown_requested()` is true while waiting. Must not
+  /// be called from `on_execute()`.
+  void disable_goals();
+
+  /// @brief Whether new goals are currently accepted.
+  /// @return Whether new goals are currently accepted.
+  bool goals_enabled() const noexcept;
+
+  /// @brief Disable goals and join the worker thread. Idempotent. Call it
+  /// from the derived class' destructor. Must not be called from
+  /// `on_execute()`.
+  void stop();
 
   /// @brief Current value of the "allow_preemption" parameter for this action.
   /// @return Current value of the "allow_preemption" parameter for this
@@ -159,14 +185,16 @@ protected:
   /// @param preempted_goal_handle Handle of the goal being preempted.
   virtual void on_preempted(const GoalHandleSharedPtr & preempted_goal_handle);
 
-  /// @brief Whether a newer goal has been accepted and is waiting to replace the one currently executing.
+  /// @brief Whether a newer goal has been accepted and is waiting to replace the
+  /// one currently executing.
   /// @return Whether a newer goal has been accepted and is waiting to
   ///   replace the one currently executing. Only meaningful from within
   ///   `on_execute()`.
   bool is_preempt_requested() const noexcept;
 
-  /// @brief Whether this object is being destroyed.
-  /// @return Whether this object is being destroyed. Long-running
+  /// @brief Whether the running goal must stop because goals are being
+  /// disabled or the server is being stopped.
+  /// @return Whether the running goal must stop. Long-running
   ///   `on_execute()` implementations should treat this the same as a
   ///   preemption request.
   bool is_shutdown_requested() const noexcept;
@@ -194,6 +222,9 @@ private:
   rclcpp_action::CancelResponse handle_cancel(const GoalHandleSharedPtr goal_handle);
   void handle_accepted(GoalHandleSharedPtr goal_handle);
   void on_parameters_set(const std::vector<rclcpp::Parameter> & params);
+  /// Settle a goal that will not (or no longer) run: canceled if a cancel
+  /// was requested, aborted otherwise.
+  void settle_unstarted(const GoalHandleSharedPtr & goal_handle);
   void worker_loop();
 
   rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_;
@@ -212,7 +243,10 @@ private:
 
   mutable std::mutex mutex_;
   std::condition_variable cv_;
+  std::condition_variable idle_cv_;
   std::atomic_bool shutting_down_{false};
+  std::atomic_bool halt_requested_{false};
+  std::atomic_bool goals_enabled_{true};
   std::atomic_bool preempt_requested_{false};
   GoalHandleSharedPtr active_handle_;
   GoalHandleSharedPtr pending_handle_;

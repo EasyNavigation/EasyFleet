@@ -35,10 +35,10 @@ class FleetSession;
 /// @brief A remote robot's capabilities, as seen and commanded from a mission
 /// script.
 /**
- * The client-side counterpart to `easyfleet_core::Robot` (which *hosts*
+ * The client-side counterpart to `easyfleet::Deployment` (which *hosts*
  * real capability nodes) -- deliberately a different type, since a
  * `RobotHandle` owns no nodes at all: it's a thin proxy over whatever this
- * robot announced on `/capabilities`, discovered by the `FleetSession`
+ * robot announces on `/capabilities`, tracked live by the `FleetSession`
  * it's added to (directly, or through whichever `Controller`-flavored
  * class owns that session -- see `FleetSession`'s own doc comment for why
  * `RobotHandle` depends on the shared session, not on any one controller
@@ -64,11 +64,12 @@ class FleetSession;
  *
  * if (!robot_1.has_capability("navigation")) { ... }
  *
- * robot_1.run_capability("navigation", "kitchen");
+ * robot_1.run_capability<easyfleet_interfaces::action::Navigation>(
+ *   "navigation", easyfleet_mission_manager::make_navigation_goal("kitchen"));
  * while (robot_1.is_capability_running("navigation")) {
  *   controller.spin_some();
  * }
- * if (robot_1.capability_state("navigation") == easyfleet::CapabilityState::FAILED) { ... }
+ * if (robot_1.capability_state("navigation") != easyfleet::CapabilityState::SUCCEEDED) { ... }
  * \endcode
  */
 class RobotHandle
@@ -79,12 +80,19 @@ public:
   ///   it announces on /capabilities (e.g. its ROS namespace).
   explicit RobotHandle(std::string name);
 
+  /// @brief Detaches from its `FleetSession`, if any, dropping running goals.
+  ~RobotHandle();
+
+  // The session keeps a reference to this handle: it must not be copied or moved.
+  RobotHandle(const RobotHandle &) = delete;
+  RobotHandle & operator=(const RobotHandle &) = delete;
+
   /// @brief This robot's identity, as passed to the constructor.
   /// @return This robot's identity, as passed to the constructor.
   const std::string & name() const noexcept;
 
-  /// @brief True if this robot announced an *active* capability of this type
-  /// (per the `SimpleController`'s last `discover_capabilities()` pass).
+  /// @brief True if this robot has a capability of this type with a recent
+  /// heartbeat, as tracked live by its `FleetSession`.
   /// @param capability_type Capability type to look up (e.g. "navigation").
   /// @return Whether the capability is currently active on this robot.
   bool has_capability(const std::string & capability_type) const;
@@ -159,44 +167,36 @@ public:
   /// functions.
   void print_capabilities() const;
 
-  /// @brief Every capability this robot announced, as discovered -- the full
+  /// @brief Every capability this robot announced, as known right now -- the full
   /// `CapabilityInfo` (type, action name, description JSON, active/busy
   /// state), not just a yes/no check like `has_capability()`. Meant for
   /// code that needs to *reason about* what a robot can do, not just
   /// command a specific known capability by name -- e.g. a controller
   /// that builds an LLM prompt describing every robot's capabilities, or
   /// generates a PDDL problem instance from them.
-  /// @return Every capability this robot announced, as discovered.
-  const std::vector<easyfleet_mission_manager::CapabilityInfo> & capabilities() const noexcept;
+  /// @return Every capability this robot announced, as known right now
+  ///   (empty if this handle was never added to a `FleetSession`).
+  std::vector<easyfleet_mission_manager::CapabilityInfo> capabilities() const;
 
 private:
   friend class FleetSession;
 
-  /// @brief Called by the owning `FleetSession` once, when this handle is added,
-  /// and again after every `discover_capabilities()` pass -- supplies the
-  /// node/executor context this handle needs to build `CapabilityClient`s
-  /// and this robot's slice of the session's one shared discovery scan
-  /// (never a redundant per-robot re-scan).
+  /// @brief Called by the owning `FleetSession` once, when this handle is
+  /// added -- supplies the node and the live capability registry this
+  /// handle needs to build `CapabilityClient`s and answer queries.
   void attach(FleetSession & session);
-  void set_capabilities(std::vector<easyfleet_mission_manager::CapabilityInfo> capabilities);
 
-  /// Records that a heartbeat was just seen for `capability_type`, for
-  /// `is_alive()` to consult later. Called by `FleetSession`'s own
-  /// `/capabilities_status` subscription, dispatched to whichever
-  /// `RobotHandle` matches the message's `robot` field.
-  void note_heartbeat(
-    const std::string & capability_type,
-    std::chrono::steady_clock::time_point when);
+  /// Called by ~FleetSession(): drops running goals (their status markers
+  /// belong to the session) and forgets the session.
+  void detach() noexcept;
 
-  /// Called by `FleetSession::spin_some()` so a `run_capability()` timeout
-  /// actually gets enforced without blocking the caller.
+  /// Called by `FleetSession::spin_some()` so `run_capability()` timeouts
+  /// and liveness actually get enforced without blocking the caller.
   void check_timeouts();
 
   std::string name_;
-  std::vector<easyfleet_mission_manager::CapabilityInfo> capabilities_;
   std::map<std::string,
     std::unique_ptr<easyfleet_mission_manager::detail::RunningCapabilityBase>> running_;
-  std::map<std::string, std::chrono::steady_clock::time_point> last_heartbeat_;
   // Deliberately a raw pointer, not a reference: unlike every other
   // non-owning back-reference in this codebase, this one is genuinely
   // nullable (a RobotHandle can exist before attach() ever runs -- e.g.

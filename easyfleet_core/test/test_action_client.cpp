@@ -22,6 +22,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -294,6 +295,94 @@ TEST_F(ActionClientTest, MultipleIndependentClientsCanTalkToSameServer)
 
   EXPECT_EQ(result_a.outcome, FibonacciClient::GoalOutcome::SUCCEEDED);
   EXPECT_EQ(result_b.outcome, FibonacciClient::GoalOutcome::SUCCEEDED);
+}
+
+TEST_F(ActionClientTest, CancelAllGoalsLeavesOtherClientsGoalsAlone)
+{
+  server_node_->set_step_delay(30ms);
+  auto owner = FibonacciClient::create(*owner_node_, action_name_);
+  auto bystander = FibonacciClient::create(*owner_node_, action_name_);
+  ASSERT_TRUE(owner->wait_for_server(5s));
+  ASSERT_TRUE(bystander->wait_for_server(5s));
+
+  auto result_promise = std::make_shared<std::promise<FibonacciClient::GoalResult>>();
+  auto result_future = result_promise->get_future();
+  Fibonacci::Goal goal;
+  goal.order = 8;
+  owner->send_goal(
+    goal, [result_promise](const FibonacciClient::GoalResult & result) {
+      result_promise->set_value(result);
+    });
+  ASSERT_TRUE(wait_until([&] {return owner->active_goal_count() == 1u;}, 2s));
+
+  bystander->cancel_all_goals();
+
+  ASSERT_EQ(result_future.wait_for(5s), std::future_status::ready);
+  EXPECT_EQ(result_future.get().outcome, FibonacciClient::GoalOutcome::SUCCEEDED);
+}
+
+TEST_F(ActionClientTest, CancelAllGoalsRightAfterSendingCancelsTheGoalOnceAccepted)
+{
+  server_node_->set_step_delay(100ms);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
+  ASSERT_TRUE(client->wait_for_server(5s));
+
+  auto result_promise = std::make_shared<std::promise<FibonacciClient::GoalResult>>();
+  auto result_future = result_promise->get_future();
+  Fibonacci::Goal goal;
+  goal.order = 30;
+  client->send_goal(
+    goal, [result_promise](const FibonacciClient::GoalResult & result) {
+      result_promise->set_value(result);
+    });
+  // Most likely before the goal response has arrived.
+  client->cancel_all_goals();
+
+  ASSERT_EQ(result_future.wait_for(5s), std::future_status::ready);
+  EXPECT_EQ(result_future.get().outcome, FibonacciClient::GoalOutcome::CANCELED);
+}
+
+TEST_F(ActionClientTest, CancelAllGoalsDoesNotCancelGoalsSentAfterwards)
+{
+  server_node_->set_step_delay(10ms);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
+  ASSERT_TRUE(client->wait_for_server(5s));
+  client->cancel_all_goals();
+
+  Fibonacci::Goal goal;
+  goal.order = 3;
+  auto result = client->send_goal_and_wait(goal, nullptr, 5s);
+  EXPECT_EQ(result.outcome, FibonacciClient::GoalOutcome::SUCCEEDED);
+}
+
+TEST_F(ActionClientTest, SendGoalAndWaitTimeoutCancelsTheGoalOnTheServer)
+{
+  server_node_->set_step_delay(100ms);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
+  ASSERT_TRUE(client->wait_for_server(5s));
+
+  Fibonacci::Goal goal;
+  goal.order = 50;
+  auto result = client->send_goal_and_wait(goal, nullptr, 300ms);
+  ASSERT_EQ(result.outcome, FibonacciClient::GoalOutcome::TIMEOUT);
+
+  // The goal does not keep running behind the caller's back.
+  EXPECT_TRUE(wait_until([&] {return !server_node_->is_active();}, 2s));
+  EXPECT_TRUE(wait_until([&] {return client->active_goal_count() == 0u;}, 2s));
+}
+
+TEST_F(ActionClientTest, SendGoalAndWaitWithTimeoutBeforeAcceptanceStillCancels)
+{
+  server_node_->set_step_delay(100ms);
+  auto client = FibonacciClient::create(*owner_node_, action_name_);
+  ASSERT_TRUE(client->wait_for_server(5s));
+
+  Fibonacci::Goal goal;
+  goal.order = 50;
+  // Shorter than one wait slice: times out before (or right as) the server answers.
+  auto result = client->send_goal_and_wait(goal, nullptr, 1ms);
+  ASSERT_EQ(result.outcome, FibonacciClient::GoalOutcome::TIMEOUT);
+  EXPECT_TRUE(wait_until([&] {return !server_node_->is_active();}, 3s));
 }
 
 int main(int argc, char ** argv)

@@ -25,6 +25,20 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from .capability_info import CapabilityInfo
 
 
+def apply_description(info: CapabilityInfo, msg: CapabilityDescription) -> None:
+    """Fill `info` from a /capabilities message; only a JSON object counts as valid."""
+    info.robot = msg.robot
+    info.capability = msg.capability
+    info.action_name = msg.action_name
+    info.description_json_raw = msg.description_json
+    try:
+        parsed = json.loads(msg.description_json)
+    except (ValueError, TypeError):
+        parsed = None
+    info.description_json_valid = isinstance(parsed, dict)
+    info.description_json = parsed if info.description_json_valid else {}
+
+
 def discover_capabilities(node, window_sec: float = 2.5) -> list[CapabilityInfo]:
     """
     Listen on /capabilities and /capabilities_status for `window_sec`.
@@ -41,22 +55,7 @@ def discover_capabilities(node, window_sec: float = 2.5) -> list[CapabilityInfo]
 
     def on_description(msg: CapabilityDescription) -> None:
         with lock:
-            info = by_action_name.setdefault(msg.action_name, CapabilityInfo())
-            info.robot = msg.robot
-            info.capability = msg.capability
-            info.action_name = msg.action_name
-            info.description_json_raw = msg.description_json
-            try:
-                parsed = json.loads(msg.description_json)
-                if isinstance(parsed, dict):
-                    info.description_json = parsed
-                    info.description_json_valid = True
-                else:
-                    info.description_json = {}
-                    info.description_json_valid = False
-            except (ValueError, TypeError):
-                info.description_json = {}
-                info.description_json_valid = False
+            apply_description(by_action_name.setdefault(msg.action_name, CapabilityInfo()), msg)
 
     def on_status(msg: CapabilityStatus) -> None:
         with lock:

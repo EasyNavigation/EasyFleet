@@ -41,6 +41,8 @@ class Outcome(enum.Enum):
     ABORTED = 'ABORTED'
     CANCELED = 'CANCELED'
     REJECTED = 'REJECTED'
+    # The request did not settle in time (e.g. run_capability()'s own wait).
+    TIMEOUT = 'TIMEOUT'
     SERVER_UNAVAILABLE = 'SERVER_UNAVAILABLE'
 
 

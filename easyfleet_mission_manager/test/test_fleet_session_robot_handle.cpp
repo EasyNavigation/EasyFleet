@@ -16,7 +16,9 @@
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <functional>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <thread>
 
@@ -63,13 +65,16 @@ std::string make_capabilities_file(const std::string & content)
 class FakeRobotProcess
 {
 public:
-  explicit FakeRobotProcess(const std::string & robot_name, double mock_duration_s = 0.0)
+  explicit FakeRobotProcess(
+    const std::string & robot_name, double mock_duration_s = 0.0, bool reject_cancel = false,
+    bool start_active = true)
   {
     rclcpp::NodeOptions options;
     options.arguments({"--ros-args", "-r", "__ns:=/" + robot_name});
     options.parameter_overrides(
       {rclcpp::Parameter("capabilities_file", make_capabilities_file(R"({"name":"navigation"})")),
-        rclcpp::Parameter("navigation.mock_duration_seconds", mock_duration_s)});
+        rclcpp::Parameter("navigation.mock_duration_seconds", mock_duration_s),
+        rclcpp::Parameter("navigation.reject_cancel", reject_cancel)});
     capability_ = std::make_shared<TestNavCapability>("navigation", options);
     executor_.add_node(capability_->get_node_base_interface());
     spin_thread_ = std::thread([this] {executor_.spin();});
@@ -77,7 +82,9 @@ public:
       std::this_thread::yield();
     }
     capability_->configure_node();
-    capability_->activate_node();
+    if (start_active) {
+      capability_->activate_node();
+    }
   }
 
   ~FakeRobotProcess()
@@ -86,6 +93,26 @@ public:
     if (spin_thread_.joinable()) {
       spin_thread_.join();
     }
+  }
+
+  void activate() {capability_->activate_node();}
+  void deactivate() {capability_->deactivate_node();}
+
+  /// Simulates a hung process: no more heartbeats, no more answers.
+  void freeze()
+  {
+    executor_.cancel();
+    if (spin_thread_.joinable()) {
+      spin_thread_.join();
+    }
+  }
+
+  int cancel_requests() const
+  {
+    const auto server =
+      std::dynamic_pointer_cast<easyfleet_mission_manager_test::TestNavActionServer>(
+      capability_->get_action_server());
+    return server ? server->cancel_requests() : -1;
   }
 
 private:
@@ -361,6 +388,247 @@ TEST(FleetSessionRobotHandleIntegrationTest, IsAliveTrueAfterDiscoveryOfAnActive
   // discovery -- give it a moment to see at least the first 1 Hz beat.
   ASSERT_TRUE(
     wait_until([&] {return robot.is_alive("navigation");}, std::chrono::milliseconds(2000)));
+}
+
+TEST(FleetSessionLiveRegistryTest, CapabilityThatAppearsAfterDiscoveryIsSeenWithoutRediscovering)
+{
+  const auto robot_name = unique_test_name("robot");
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities(std::chrono::milliseconds(500));
+  EXPECT_FALSE(robot.has_capability("navigation"));
+
+  FakeRobotProcess fake_robot(robot_name);
+  EXPECT_TRUE(
+    wait_until(
+      [&] {return robot.has_capability("navigation");}, std::chrono::milliseconds(4000)));
+  EXPECT_EQ(robot.capabilities().size(), 1u);
+  EXPECT_TRUE(robot.capabilities()[0].description_json_valid);
+}
+
+TEST(FleetSessionLiveRegistryTest, DeactivatedCapabilityStopsBeingAvailable)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities();
+  ASSERT_TRUE(robot.has_capability("navigation"));
+  ASSERT_TRUE(robot.is_alive("navigation"));
+
+  fake_robot.deactivate();
+  EXPECT_TRUE(
+    wait_until(
+      [&] {return !robot.has_capability("navigation");}, std::chrono::milliseconds(5000)));
+  EXPECT_FALSE(robot.is_alive("navigation"));
+  // Still known (its description is retained), just not active.
+  ASSERT_EQ(robot.capabilities().size(), 1u);
+  EXPECT_FALSE(robot.capabilities()[0].active);
+
+  fake_robot.activate();
+  EXPECT_TRUE(
+    wait_until(
+      [&] {return robot.has_capability("navigation");}, std::chrono::milliseconds(4000)));
+}
+
+TEST(FleetSessionLiveRegistryTest, InactiveCapabilityIsNotRun)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name, 0.0, false, /*start_active=*/ false);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities(std::chrono::milliseconds(1500));
+  EXPECT_FALSE(robot.has_capability("navigation"));
+
+  robot.run_capability<Navigation>("navigation", make_navigation_goal("kitchen"));
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::IDLE);
+}
+
+TEST(FleetSessionLiveRegistryTest, CapabilitiesOfOtherRobotsAreNotMixedIn)
+{
+  const auto robot_a = unique_test_name("robot_a");
+  const auto robot_b = unique_test_name("robot_b");
+  FakeRobotProcess fake_a(robot_a);
+  FakeRobotProcess fake_b(robot_b);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle handle_a(robot_a);
+  session.add_robot(handle_a);
+  session.discover_capabilities();
+  ASSERT_EQ(handle_a.capabilities().size(), 1u);
+  EXPECT_EQ(handle_a.capabilities()[0].robot, robot_a);
+  EXPECT_EQ(session.capabilities_of(robot_b).size(), 1u);
+}
+
+TEST(RunningCapabilityLivenessTest, GoalOnACapabilityThatHangsEndsUnreachable)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name, /*mock_duration_s=*/ 30.0);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities();
+  ASSERT_TRUE(robot.has_capability("navigation"));
+
+  robot.run_capability<Navigation>(
+    "navigation", make_navigation_goal("kitchen"), std::chrono::seconds(60));
+  session.spin_for(std::chrono::milliseconds(300));
+  ASSERT_TRUE(robot.is_capability_running("navigation"));
+
+  fake_robot.freeze();
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8);
+  while (robot.is_capability_running("navigation") &&
+    std::chrono::steady_clock::now() < deadline)
+  {
+    session.spin_some();
+  }
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::UNREACHABLE);
+}
+
+TEST(RunningCapabilityLivenessTest, TimeoutCancelsOnlyOnceAndEndsTimeoutIfIgnored)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(
+    robot_name, /*mock_duration_s=*/ 30.0, /*reject_cancel=*/ true);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities();
+  ASSERT_TRUE(robot.has_capability("navigation"));
+
+  robot.run_capability<Navigation>(
+    "navigation", make_navigation_goal("kitchen"), std::chrono::seconds(1));
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+  while (robot.is_capability_running("navigation") &&
+    std::chrono::steady_clock::now() < deadline)
+  {
+    session.spin_some();
+  }
+  // The capability is alive but ignored the cancel: given up after the grace period.
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::TIMEOUT);
+  EXPECT_EQ(fake_robot.cancel_requests(), 1) << "the cancel must not be repeated";
+}
+
+TEST(RunningCapabilityLivenessTest, StopOnAGoalThatIgnoresCancelEndsTimeout)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(
+    robot_name, /*mock_duration_s=*/ 30.0, /*reject_cancel=*/ true);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities();
+
+  robot.run_capability<Navigation>(
+    "navigation", make_navigation_goal("kitchen"), std::chrono::seconds(60));
+  session.spin_for(std::chrono::milliseconds(300));
+  robot.stop_capability("navigation");
+  robot.stop_capability("navigation");
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+  while (robot.is_capability_running("navigation") &&
+    std::chrono::steady_clock::now() < deadline)
+  {
+    session.spin_some();
+  }
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::TIMEOUT);
+  EXPECT_EQ(fake_robot.cancel_requests(), 1);
+}
+
+TEST(RunningCapabilityLivenessTest, StopWhenIdleSendsNoCancel)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities();
+
+  robot.run_capability<Navigation>("navigation", make_navigation_goal("kitchen"));
+  ASSERT_TRUE(
+    wait_until(
+      [&] {return !robot.is_capability_running("navigation");},
+      std::chrono::milliseconds(3000)));
+  robot.stop_capability("navigation");
+  session.spin_for(std::chrono::milliseconds(300));
+  EXPECT_EQ(fake_robot.cancel_requests(), 0);
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::SUCCEEDED);
+}
+
+TEST(RunningCapabilityLivenessTest, StopThenRunImmediatelyReportsTheNewGoal)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name, /*mock_duration_s=*/ 30.0);
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(robot_name);
+  session.add_robot(robot);
+  session.discover_capabilities();
+
+  robot.run_capability<Navigation>(
+    "navigation", make_navigation_goal("kitchen"), std::chrono::seconds(60));
+  session.spin_for(std::chrono::milliseconds(300));
+  robot.stop_capability("navigation");
+  robot.run_capability<Navigation>(
+    "navigation", make_navigation_goal("hall"), std::chrono::seconds(60));
+  // The first goal's CANCELED arrives meanwhile and must be ignored.
+  session.spin_for(std::chrono::milliseconds(1500));
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::RUNNING);
+}
+
+TEST(FleetSessionLifetimeTest, AddingTheSameRobotTwiceThrows)
+{
+  easyfleet::FleetSession session;
+  easyfleet::RobotHandle robot(unique_test_name("robot"));
+  session.add_robot(robot);
+  EXPECT_THROW(session.add_robot(robot), std::logic_error);
+  EXPECT_EQ(session.robots().size(), 1u);
+}
+
+TEST(FleetSessionLifetimeTest, RobotDestroyedBeforeTheSessionLeavesIt)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name, /*mock_duration_s=*/ 30.0);
+  easyfleet::FleetSession session;
+  {
+    easyfleet::RobotHandle robot(robot_name);
+    session.add_robot(robot);
+    session.discover_capabilities();
+    robot.run_capability<Navigation>(
+      "navigation", make_navigation_goal("kitchen"), std::chrono::seconds(60));
+    session.spin_for(std::chrono::milliseconds(200));
+  }
+  EXPECT_TRUE(session.robots().empty());
+  EXPECT_FALSE(session.find_robot(robot_name));
+  session.spin_for(std::chrono::milliseconds(200));  // must not touch the dead handle
+}
+
+TEST(FleetSessionLifetimeTest, SessionDestroyedBeforeTheRobotDetachesIt)
+{
+  const auto robot_name = unique_test_name("robot");
+  FakeRobotProcess fake_robot(robot_name, /*mock_duration_s=*/ 30.0);
+  easyfleet::RobotHandle robot(robot_name);
+  {
+    easyfleet::FleetSession session;
+    session.add_robot(robot);
+    session.discover_capabilities();
+    robot.run_capability<Navigation>(
+      "navigation", make_navigation_goal("kitchen"), std::chrono::seconds(60));
+    session.spin_for(std::chrono::milliseconds(200));
+  }
+  EXPECT_TRUE(robot.capabilities().empty());
+  EXPECT_FALSE(robot.has_capability("navigation"));
+  EXPECT_FALSE(robot.is_alive("navigation"));
+  EXPECT_EQ(robot.capability_state("navigation"), easyfleet::CapabilityState::IDLE);
+  EXPECT_THROW(
+    robot.run_capability<Navigation>("navigation", make_navigation_goal("kitchen")),
+    std::logic_error);
+
+  // And it can join a new session.
+  easyfleet::FleetSession other;
+  other.add_robot(robot);
+  other.discover_capabilities();
+  EXPECT_TRUE(robot.has_capability("navigation"));
 }
 
 TEST(SimpleControllerTest, ForwardsToAWorkingFleetSession)

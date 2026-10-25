@@ -16,22 +16,13 @@
 """RobotHandle, mirroring easyfleet_mission_manager's robot_handle.hpp/.cpp."""
 
 import threading
-import time
 
 from . import ansi
 from .capability_info import print_capability_info, print_capability_summary_line
 from .capability_state import CapabilityState
 from .detail.running_capability import RunningCapability
+from .mission_helpers import RUN_TIMEOUT_SEC
 from .output import safe_print
-
-# How long without a heartbeat before is_alive() gives up on a capability
-# -- a few times the 1 Hz heartbeat period a capability itself publishes
-# at, so one or two dropped messages don't flip it.
-_ALIVE_TIMEOUT_SEC = 3.0
-
-# Default: how long a mission script lets a capability run before
-# stopping it, if it hasn't finished on its own by then.
-RUN_TIMEOUT_SEC = 10.0
 
 
 class MissionManagerError(RuntimeError):
@@ -66,15 +57,13 @@ class RobotHandle:
         robot_1.run_capability('navigation', Navigation, make_navigation_goal('kitchen'))
         while robot_1.is_capability_running('navigation'):
             controller.spin_some()
-        if robot_1.capability_state('navigation') == CapabilityState.FAILED:
+        if robot_1.capability_state('navigation') != CapabilityState.SUCCEEDED:
             ...
     """
 
     def __init__(self, name: str):
         self._name = name
-        self._capabilities = []
         self._running: dict[str, _RunningEntry] = {}
-        self._last_heartbeat: dict[str, float] = {}
         self._session = None
         self._lock = threading.Lock()
 
@@ -83,10 +72,10 @@ class RobotHandle:
         return self._name
 
     def has_capability(self, capability_type: str) -> bool:
-        """Return whether this robot announced an *active* capability of this type."""
+        """Return whether this robot has a capability of this type with a recent heartbeat."""
         return any(
             info.capability == capability_type and info.active
-            for info in self._capabilities)
+            for info in self.capabilities)
 
     def run_capability(
         self, capability_type: str, action_type, goal=None, timeout_sec=RUN_TIMEOUT_SEC,
@@ -109,7 +98,7 @@ class RobotHandle:
                 'SimpleController.add_robot() first).')
 
         info = next(
-            (i for i in self._capabilities if i.capability == capability_type and i.active),
+            (i for i in self.capabilities if i.capability == capability_type and i.active),
             None)
         if info is None:
             safe_print(
@@ -156,37 +145,35 @@ class RobotHandle:
 
     def is_alive(self, capability_type: str) -> bool:
         """Return whether a heartbeat has been seen recently on /capabilities_status."""
-        with self._lock:
-            last = self._last_heartbeat.get(capability_type)
-        if last is None:
-            return False
-        return (time.monotonic() - last) < _ALIVE_TIMEOUT_SEC
+        session = self._session
+        return session is not None and session.is_alive(self._name, capability_type)
 
     def print_capabilities(self) -> None:
-        for info in self._capabilities:
+        capabilities = self.capabilities
+        for info in capabilities:
             print_capability_summary_line(info)
-        for info in self._capabilities:
+        for info in capabilities:
             safe_print('')
             print_capability_info(info)
 
     @property
     def capabilities(self) -> list:
-        return list(self._capabilities)
+        """Every capability this robot announced, as known right now (empty if detached)."""
+        session = self._session
+        return session.capabilities_of(self._name) if session is not None else []
 
     # --- Internal: called by FleetSession only, not part of the public API ---
 
     def _attach(self, session) -> None:
         self._session = session
 
-    def _set_capabilities(self, capabilities: list) -> None:
-        self._capabilities = capabilities
-
-    def _note_heartbeat(self, capability_type: str, when: float) -> None:
+    def _detach(self) -> None:
         with self._lock:
-            self._last_heartbeat[capability_type] = when
+            self._running.clear()
+        self._session = None
 
     def _check_timeouts(self) -> None:
         with self._lock:
-            entries = list(self._running.values())
-        for entry in entries:
-            entry.running.check_timeout()
+            entries = list(self._running.items())
+        for capability_type, entry in entries:
+            entry.running.check_timeout(self.is_alive(capability_type))

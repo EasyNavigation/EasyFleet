@@ -107,5 +107,9 @@ class StatusMarkerPublisher:
             marker.lifetime = Duration(seconds=0.5).to_msg()
             array.markers.append(marker)
 
-        if array.markers:
-            self._pub.publish(array)
+        # A result may still arrive while the context shuts down.
+        if array.markers and self._node.context.ok():
+            try:
+                self._pub.publish(array)
+            except RuntimeError:  # rclpy's RCLError: context became invalid meanwhile.
+                pass

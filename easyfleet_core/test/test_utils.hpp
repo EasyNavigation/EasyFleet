@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_CORE__TEST__TEST_UTILS_HPP_
-#define EASYFLEET_CORE__TEST__TEST_UTILS_HPP_
+#ifndef TEST_UTILS_HPP_
+#define TEST_UTILS_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -75,4 +75,4 @@ bool wait_until(
 
 }  // namespace easyfleet_core_test
 
-#endif  // EASYFLEET_CORE__TEST__TEST_UTILS_HPP_
+#endif  // TEST_UTILS_HPP_

@@ -16,9 +16,11 @@
 #include "easyfleet_mission_manager/capability_discovery.hpp"
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "easyfleet_interfaces/msg/capability_description.hpp"
 #include "easyfleet_interfaces/msg/capability_status.hpp"
@@ -33,21 +35,28 @@ std::vector<CapabilityInfo> discover_capabilities(
   using easyfleet_interfaces::msg::CapabilityDescription;
   using easyfleet_interfaces::msg::CapabilityStatus;
 
-  std::mutex mutex;
-  std::map<std::string, CapabilityInfo> by_action_name;
+  // Shared with the callbacks, not captured by reference: one may still be
+  // running on the spin thread after this function returns.
+  struct State
+  {
+    std::mutex mutex;
+    std::map<std::string, CapabilityInfo> by_action_name;
+  };
+  auto state = std::make_shared<State>();
 
   auto capabilities_sub = node.create_subscription<CapabilityDescription>(
     "/capabilities", rclcpp::QoS(10).reliable().transient_local(),
-    [&mutex, &by_action_name](const CapabilityDescription::SharedPtr msg) {
-      std::lock_guard<std::mutex> lock(mutex);
-      auto & info = by_action_name[msg->action_name];
+    [state](const CapabilityDescription::SharedPtr msg) {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      auto & info = state->by_action_name[msg->action_name];
       info.robot = msg->robot;
       info.capability = msg->capability;
       info.action_name = msg->action_name;
       info.description_json_raw = msg->description_json;
       try {
         info.description_json = nlohmann::json::parse(msg->description_json);
-        info.description_json_valid = true;
+        // Only a JSON object is a valid description (same rule as Python).
+        info.description_json_valid = info.description_json.is_object();
       } catch (const nlohmann::json::parse_error &) {
         info.description_json_valid = false;
       }
@@ -55,9 +64,9 @@ std::vector<CapabilityInfo> discover_capabilities(
 
   auto status_sub = node.create_subscription<CapabilityStatus>(
     "/capabilities_status", rclcpp::QoS(10).reliable(),
-    [&mutex, &by_action_name](const CapabilityStatus::SharedPtr msg) {
-      std::lock_guard<std::mutex> lock(mutex);
-      auto & info = by_action_name[msg->action_name];
+    [state](const CapabilityStatus::SharedPtr msg) {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      auto & info = state->by_action_name[msg->action_name];
       info.robot = msg->robot;
       info.capability = msg->capability;
       info.action_name = msg->action_name;
@@ -69,11 +78,11 @@ std::vector<CapabilityInfo> discover_capabilities(
 
   std::vector<CapabilityInfo> result;
   {
-    std::lock_guard<std::mutex> lock(mutex);
-    result.reserve(by_action_name.size());
-    for (auto & [action_name, info] : by_action_name) {
+    std::lock_guard<std::mutex> lock(state->mutex);
+    result.reserve(state->by_action_name.size());
+    for (const auto & [action_name, info] : state->by_action_name) {
       (void)action_name;
-      result.push_back(std::move(info));
+      result.push_back(info);
     }
   }
   return result;

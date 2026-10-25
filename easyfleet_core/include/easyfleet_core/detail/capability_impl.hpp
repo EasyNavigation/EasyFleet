@@ -47,6 +47,8 @@ Capability<ActionServerT>::Capability(
 {
   this->declare_parameter(detail::kCapabilitiesFileParam, std::string());
   action_server_ = std::make_shared<ActionServerT>(*this, capability_name_);
+  // Goals are only accepted while the capability is ACTIVE.
+  action_server_->disable_goals();
 
   robot_name_ = detail::strip_leading_slash(this->get_namespace());
   resolved_action_name_ = this->get_node_base_interface()->resolve_topic_or_service_name(
@@ -64,6 +66,8 @@ template<typename ActionServerT>
 Capability<ActionServerT>::~Capability()
 {
   stop_heartbeat();
+  // Join the worker while the derived action server still exists.
+  action_server_->stop();
 }
 
 template<typename ActionServerT>
@@ -106,11 +110,6 @@ template<typename ActionServerT>
 typename Capability<ActionServerT>::CallbackReturn
 Capability<ActionServerT>::on_activate(const rclcpp_lifecycle::State & previous_state)
 {
-  // Activates capabilities_pub_/status_pub_ so publish() below actually
-  // sends; a subclass overriding on_activate must call this or the
-  // lifecycle-managed publishers stay muted.
-  rclcpp_lifecycle::LifecycleNode::on_activate(previous_state);
-
   const auto file_path = this->get_parameter(detail::kCapabilitiesFileParam).as_string();
   if (file_path.empty()) {
     RCLCPP_ERROR(
@@ -131,6 +130,11 @@ Capability<ActionServerT>::on_activate(const rclcpp_lifecycle::State & previous_
   std::ostringstream contents;
   contents << file.rdbuf();
 
+  // Activates capabilities_pub_/status_pub_ so publish() below actually
+  // sends, only once the file is known to be valid; a subclass overriding
+  // on_activate must call this or the lifecycle-managed publishers stay muted.
+  rclcpp_lifecycle::LifecycleNode::on_activate(previous_state);
+
   easyfleet_interfaces::msg::CapabilityDescription description_msg;
   description_msg.robot = robot_name_;
   description_msg.capability = capability_name_;
@@ -140,6 +144,7 @@ Capability<ActionServerT>::on_activate(const rclcpp_lifecycle::State & previous_
 
   heartbeat_timer_ = this->create_wall_timer(
     std::chrono::seconds(1), std::bind(&Capability::publish_heartbeat, this));
+  action_server_->enable_goals();
 
   return CallbackReturn::SUCCESS;
 }
@@ -148,6 +153,8 @@ template<typename ActionServerT>
 typename Capability<ActionServerT>::CallbackReturn
 Capability<ActionServerT>::on_deactivate(const rclcpp_lifecycle::State & previous_state)
 {
+  // Rejects new goals and waits for the running one to stop.
+  action_server_->disable_goals();
   stop_heartbeat();
   rclcpp_lifecycle::LifecycleNode::on_deactivate(previous_state);
   return CallbackReturn::SUCCESS;
@@ -167,6 +174,7 @@ template<typename ActionServerT>
 typename Capability<ActionServerT>::CallbackReturn
 Capability<ActionServerT>::on_shutdown(const rclcpp_lifecycle::State &)
 {
+  action_server_->disable_goals();
   stop_heartbeat();
   capabilities_pub_.reset();
   status_pub_.reset();

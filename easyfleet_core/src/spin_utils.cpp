@@ -30,8 +30,9 @@ namespace
 // within a single process.
 std::function<void()> * g_cancel_callback = nullptr;
 
-void handle_signal(int /*signal_number*/)
+void handle_signal(int signal_number)
 {
+  (void)signal_number;
   if (g_cancel_callback) {
     (*g_cancel_callback)();
   }

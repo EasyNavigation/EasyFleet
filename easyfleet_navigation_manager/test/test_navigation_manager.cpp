@@ -14,15 +14,22 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
+#include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <stdexcept>
+#include <set>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "easyfleet_interfaces/msg/capability_status.hpp"
@@ -32,20 +39,18 @@
 #include "easynav_interfaces/msg/navigation_control.hpp"
 #include "easynav_routes_maps_manager/msg/routes_map.hpp"
 #include "easynav_routes_maps_manager/route_io.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
 #include "visualization_msgs/msg/interactive_marker_feedback.hpp"
 
-// These tests deliberately load the exact same real map/routes files
-// every EasyFleet real-EasyNav deployment already points its own
-// per-robot maps_manager_node at (see
-// easyfleet_easynav_deployment/config/easynav_robot/easynav_system.costmap_rpp.params.yaml):
-// package "easynav_indoor_testcase", "maps/home2.yaml"/"maps/routes_1.yaml".
-// That both keeps these tests fixture-free (no need to write a
-// temporary map/PGM/YAML to disk just to have something loadable) and
-// exercises the exact real-world path this package is meant for.
+// Map and routes fixtures are written once per process to a temporary
+// directory (see fixtures()) and loaded by absolute path, so these tests
+// don't depend on any other package's data.
 
 namespace
 {
@@ -54,6 +59,48 @@ rclcpp::NodeOptions make_options(const std::vector<rclcpp::Parameter> & params)
   rclcpp::NodeOptions options;
   options.parameter_overrides(params);
   return options;
+}
+
+/// Paths of the map/routes files every test loads.
+struct Fixtures
+{
+  std::string map_yaml;
+  std::string routes_yaml;
+};
+
+/// A 20x10 free map at 0.05 m/cell, and five routes with non-contiguous ids.
+const Fixtures & fixtures()
+{
+  static const Fixtures files = [] {
+      const auto dir = std::filesystem::temp_directory_path() /
+        ("easyfleet_navigation_manager_test_" + std::to_string(::getpid()));
+      std::filesystem::create_directories(dir);
+      {
+        std::ofstream pgm(dir / "map.pgm", std::ios::binary);
+        pgm << "P5\n20 10\n255\n" << std::string(20 * 10, static_cast<char>(254));
+      }
+      {
+        std::ofstream yaml(dir / "map.yaml");
+        yaml << "image: map.pgm\nmode: trinary\nresolution: 0.05\norigin: [0.0, 0.0, 0.0]\n"
+          "negate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.25\n";
+      }
+      easynav::RoutesMap routes;
+      for (const auto & id : {"route1", "route2", "route3", "route5", "route8"}) {
+        easynav::RouteSegment segment;
+        segment.id = id;
+        segment.start.orientation.w = 1.0;
+        segment.end.position.x = 1.0;
+        segment.end.orientation.w = 1.0;
+        routes.push_back(segment);
+      }
+      std::string error;
+      const auto routes_path = (dir / "routes.yaml").string();
+      if (!easynav::save_routes_to_yaml(routes_path, routes, error)) {
+        throw std::runtime_error("could not write routes fixture: " + error);
+      }
+      return Fixtures{(dir / "map.yaml").string(), routes_path};
+    }();
+  return files;
 }
 
 // A straight-line path from (x0, y0) to (x1, y1), sampled every ~step_m --
@@ -107,10 +154,16 @@ public:
         response.nav_current_user_id = msg->user_id;
 
         if (msg->type == easynav_interfaces::msg::NavigationControl::PAUSE) {
-          paused_ = true;
-          response.type = easynav_interfaces::msg::NavigationControl::PAUSED;
+          pause_requests_++;
+          if (idle_) {
+            response.type = easynav_interfaces::msg::NavigationControl::REJECT;
+          } else {
+            paused_ = true;
+            response.type = easynav_interfaces::msg::NavigationControl::PAUSED;
+          }
           pub_->publish(response);
         } else if (msg->type == easynav_interfaces::msg::NavigationControl::RESUME) {
+          resume_requests_++;
           paused_ = false;
           response.type = easynav_interfaces::msg::NavigationControl::RESUMED;
           pub_->publish(response);
@@ -120,12 +173,49 @@ public:
 
   [[nodiscard]] rclcpp::Node::SharedPtr get_node() const {return node_;}
   [[nodiscard]] bool paused() const {return paused_;}
+  [[nodiscard]] int pause_requests() const {return pause_requests_;}
+  [[nodiscard]] int resume_requests() const {return resume_requests_;}
+
+  /// A new goal from the robot's own client: GoalManager clears the pause.
+  void new_goal()
+  {
+    paused_ = false;
+    idle_ = false;
+    report(easynav_interfaces::msg::NavigationControl::ACCEPT, "robot_client");
+  }
+
+  /// The robot reached its goal: GoalManager goes idle.
+  void finish()
+  {
+    paused_ = false;
+    idle_ = true;
+    report(easynav_interfaces::msg::NavigationControl::FINISHED, "robot_client");
+  }
+
+  /// Someone else (an operator tool) pauses the robot.
+  void operator_pause()
+  {
+    paused_ = true;
+    report(easynav_interfaces::msg::NavigationControl::PAUSED, "operator");
+  }
 
 private:
+  void report(uint8_t type, const std::string & addressee)
+  {
+    easynav_interfaces::msg::NavigationControl msg;
+    msg.type = type;
+    msg.user_id = "fake_gm_server";
+    msg.nav_current_user_id = addressee;
+    pub_->publish(msg);
+  }
+
   rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<easynav_interfaces::msg::NavigationControl>::SharedPtr pub_;
   rclcpp::Subscription<easynav_interfaces::msg::NavigationControl>::SharedPtr sub_;
-  bool paused_ {false};
+  std::atomic_bool paused_ {false};
+  std::atomic_bool idle_ {false};
+  std::atomic_int pause_requests_ {0};
+  std::atomic_int resume_requests_ {0};
 };
 
 }  // namespace
@@ -149,8 +239,8 @@ TEST_F(NavigationManagerTest, CostmapMapPublisherPublishesTheConfiguredMap)
   auto node = rclcpp::Node::make_shared(
     "test_costmap_map_publisher", make_options(
   {
-    rclcpp::Parameter("map.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("map.map_path_file", std::string("maps/home2.yaml")),
+    rclcpp::Parameter("map.package", std::string()),
+    rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
   }));
 
   easyfleet::CostmapMapPublisher publisher;
@@ -187,8 +277,8 @@ TEST_F(NavigationManagerTest, RoutesPublisherPublishesTheConfiguredRoutes)
   auto node = rclcpp::Node::make_shared(
     "test_routes_publisher", make_options(
   {
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
   }));
 
   easyfleet::RoutesPublisher publisher;
@@ -227,8 +317,8 @@ TEST_F(NavigationManagerTest, RoutesPublisherPeriodicallyRepublishesMarkers)
   auto node = rclcpp::Node::make_shared(
     "test_routes_publisher_markers_timer", make_options(
   {
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
     rclcpp::Parameter("routes.markers_republish_rate_hz", 20.0),
   }));
 
@@ -263,8 +353,8 @@ TEST_F(NavigationManagerTest, RoutesPublisherThrowsWhenMarkersRepublishRateIsNon
   auto node = rclcpp::Node::make_shared(
     "test_routes_publisher_bad_rate", make_options(
   {
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
     rclcpp::Parameter("routes.markers_republish_rate_hz", 0.0),
   }));
 
@@ -298,12 +388,8 @@ TEST_F(NavigationManagerTest, InteractiveMarkerEditRepublishesAndSavesRoutes)
   auto node = rclcpp::Node::make_shared(
     "test_routes_publisher_edit", make_options(
   {
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    // Absolute path: std::filesystem::path's operator/ discards the
-    // left-hand side entirely when the right-hand side is absolute, so
-    // this bypasses the package share directory and points straight at
-    // our own disposable temp file -- the shared fixture YAML under
-    // easynav_indoor_testcase is never touched by this test.
+    rclcpp::Parameter("routes.package", std::string()),
+    // Absolute path: no package needed, and the shared fixture is never touched.
     rclcpp::Parameter("routes.map_path_file", yaml_path),
   }));
 
@@ -364,6 +450,20 @@ TEST_F(NavigationManagerTest, InteractiveMarkerEditRepublishesAndSavesRoutes)
   drag_fb.pose.position.y = -2.0;
   drag_fb.pose.orientation.w = 1.0;
 
+  // While dragging: nothing is sent to the robots, nothing is saved.
+  feedback_pub->publish(drag_fb);
+  {
+    const auto start = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds(500)) {
+      executor.spin_some();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+  }
+  EXPECT_TRUE(received == nullptr);
+  EXPECT_FALSE(std::filesystem::exists(yaml_path));
+
+  // Releasing the endpoint commits the edit.
+  drag_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP;
   feedback_pub->publish(drag_fb);
 
   {
@@ -452,16 +552,90 @@ TEST_F(NavigationManagerTest, InteractiveMarkerEditRepublishesAndSavesRoutes)
   std::filesystem::remove(yaml_path);
 }
 
+TEST_F(NavigationManagerTest, EditsGoToSavePathFileAndStrayMouseUpOnAButtonDoesNothing)
+{
+  const auto save_path =
+    (std::filesystem::temp_directory_path() /
+    ("easyfleet_test_routes_saved_" + std::to_string(::getpid()) + ".yaml")).string();
+  std::filesystem::remove(save_path);
+  const auto original = easynav::load_routes_from_yaml(fixtures().routes_yaml);
+
+  auto node = rclcpp::Node::make_shared(
+    "test_routes_publisher_save_path", make_options(
+  {
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
+    rclcpp::Parameter("routes.save_path_file", save_path),
+  }));
+  easyfleet::RoutesPublisher publisher;
+  ASSERT_NO_THROW(publisher.publish(*node));
+
+  auto feedback_pub = node->create_publisher<visualization_msgs::msg::InteractiveMarkerFeedback>(
+    "/global_routes_imarkers/feedback", rclcpp::QoS(1).reliable());
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  auto spin_for = [&](std::chrono::milliseconds duration) {
+      const auto start = std::chrono::steady_clock::now();
+      while (std::chrono::steady_clock::now() - start < duration) {
+        executor.spin_some();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    };
+  spin_for(std::chrono::milliseconds(300));
+
+  // Edit mode first: the endpoint markers (and their buttons) only exist then.
+  visualization_msgs::msg::InteractiveMarkerFeedback toggle_fb;
+  toggle_fb.marker_name = "route1_mode";
+  toggle_fb.control_name = "toggle_edit";
+  toggle_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK;
+  feedback_pub->publish(toggle_fb);
+  spin_for(std::chrono::milliseconds(300));
+
+  // RViz sends MOUSE_UP along with BUTTON_CLICK: alone it must not add a segment.
+  visualization_msgs::msg::InteractiveMarkerFeedback add_fb;
+  add_fb.marker_name = "route1_end";
+  add_fb.control_name = "add_segment";
+  add_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP;
+  add_fb.pose.orientation.w = 1.0;
+  feedback_pub->publish(add_fb);
+  spin_for(std::chrono::milliseconds(300));
+  EXPECT_FALSE(std::filesystem::exists(save_path));
+
+  add_fb.event_type = visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK;
+  feedback_pub->publish(add_fb);
+  const auto start = std::chrono::steady_clock::now();
+  while (!std::filesystem::exists(save_path) &&
+    std::chrono::steady_clock::now() - start < std::chrono::seconds(5))
+  {
+    spin_for(std::chrono::milliseconds(20));
+  }
+  ASSERT_TRUE(std::filesystem::exists(save_path));
+  EXPECT_EQ(easynav::load_routes_from_yaml(save_path).size(), original.size() + 1);
+  EXPECT_EQ(easynav::load_routes_from_yaml(fixtures().routes_yaml).size(), original.size())
+    << "the loaded file must stay untouched";
+  std::filesystem::remove(save_path);
+}
+
+TEST_F(NavigationManagerTest, RelativeMapPathWithoutPackageThrows)
+{
+  auto node = rclcpp::Node::make_shared(
+    "test_costmap_relative_no_package", make_options(
+  {
+    rclcpp::Parameter("map.map_path_file", std::string("maps/some.yaml")),
+  }));
+  easyfleet::CostmapMapPublisher publisher;
+  EXPECT_THROW(publisher.publish(*node), std::runtime_error);
+}
+
 TEST_F(NavigationManagerTest, NodeConstructsAndPublishesBothWhenConfiguredWithCostmap)
 {
   auto node = std::make_shared<easyfleet::NavigationManagerNode>(
     make_options(
   {
     rclcpp::Parameter("map_type", std::string("costmap")),
-    rclcpp::Parameter("map.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("map.map_path_file", std::string("maps/home2.yaml")),
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("map.package", std::string()),
+    rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
     // No capabilities are announced in this test process: keep the
     // (otherwise irrelevant here) robot-discovery window short rather
     // than blocking construction for its 2.5s default.
@@ -512,10 +686,10 @@ TEST_F(NavigationManagerTest, PausesTheRobotFartherFromGoalOnConvergingPaths)
     make_options(
   {
     rclcpp::Parameter("map_type", std::string("costmap")),
-    rclcpp::Parameter("map.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("map.map_path_file", std::string("maps/home2.yaml")),
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("map.package", std::string()),
+    rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
     rclcpp::Parameter(
       "robots.static_list", std::vector<std::string>{"robot_a", "robot_b"}),
     rclcpp::Parameter("conflict.check_rate_hz", 20.0),
@@ -579,10 +753,10 @@ TEST_F(NavigationManagerTest, PublishesStaticMapToRobotMapTransforms)
     make_options(
   {
     rclcpp::Parameter("map_type", std::string("costmap")),
-    rclcpp::Parameter("map.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("map.map_path_file", std::string("maps/home2.yaml")),
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("map.package", std::string()),
+    rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
     rclcpp::Parameter(
       "robots.static_list", std::vector<std::string>{"robot_a", "robot_b"}),
   }));
@@ -641,10 +815,10 @@ TEST_F(NavigationManagerTest, TracksRobotsDynamicallyViaCapabilityHeartbeats)
     make_options(
   {
     rclcpp::Parameter("map_type", std::string("costmap")),
-    rclcpp::Parameter("map.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("map.map_path_file", std::string("maps/home2.yaml")),
-    rclcpp::Parameter("routes.package", std::string("easynav_indoor_testcase")),
-    rclcpp::Parameter("routes.map_path_file", std::string("maps/routes_1.yaml")),
+    rclcpp::Parameter("map.package", std::string()),
+    rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+    rclcpp::Parameter("routes.package", std::string()),
+    rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
     rclcpp::Parameter("robots.staleness_sec", 0.3),
     rclcpp::Parameter("robots.rescan_rate_hz", 20.0),
     rclcpp::Parameter("conflict.check_rate_hz", 20.0),
@@ -690,6 +864,496 @@ TEST_F(NavigationManagerTest, TracksRobotsDynamicallyViaCapabilityHeartbeats)
 
   // Heartbeats resume: the robot must be watched again.
   ASSERT_TRUE(spin_while_publishing(is_watched, true));
+}
+
+namespace
+{
+
+tf2_msgs::msg::TFMessage make_tf(const std::string & parent, const std::string & child)
+{
+  geometry_msgs::msg::TransformStamped transform;
+  transform.header.frame_id = parent;
+  transform.child_frame_id = child;
+  transform.transform.rotation.w = 1.0;
+  tf2_msgs::msg::TFMessage msg;
+  msg.transforms.push_back(transform);
+  return msg;
+}
+
+struct RelayedTf
+{
+  std::set<std::string> dynamic_frames;
+  std::set<std::string> static_frames;
+  int base_footprint_count {0};  // robot_a/base_footprint messages on /tf
+};
+
+/// Runs a node that watches robot_a and robot_b and records what reaches
+/// /tf and /tf_static while each robot publishes on its own TF topics, for 2 s
+/// at 50 Hz (plus a wheel frame that only a full relay lets through).
+RelayedTf relayed_frames(
+  bool relay_tf, const std::vector<std::string> & frames = {}, double rate_hz = 0.0)
+{
+  auto node = std::make_shared<easyfleet::NavigationManagerNode>(
+    make_options(
+    {
+      rclcpp::Parameter("map_type", std::string("costmap")),
+      rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+      rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
+      rclcpp::Parameter("robots.static_list", std::vector<std::string>{"robot_a", "robot_b"}),
+      rclcpp::Parameter("robots.relay_tf", relay_tf),
+      rclcpp::Parameter("robots.relay_tf_frames", frames),
+      rclcpp::Parameter("robots.relay_tf_rate_hz", rate_hz),
+  }));
+
+  rclcpp::NodeOptions options;
+  options.use_global_arguments(false);
+  auto robots = std::make_shared<rclcpp::Node>("fake_robot_tf", options);
+  auto tf_a = robots->create_publisher<tf2_msgs::msg::TFMessage>("/robot_a/tf", 10);
+  auto tf_b = robots->create_publisher<tf2_msgs::msg::TFMessage>("/robot_b/tf", 10);
+  auto static_a = robots->create_publisher<tf2_msgs::msg::TFMessage>(
+    "/robot_a/tf_static", rclcpp::QoS(1).transient_local());
+  auto static_b = robots->create_publisher<tf2_msgs::msg::TFMessage>(
+    "/robot_b/tf_static", rclcpp::QoS(1).transient_local());
+
+  RelayedTf relayed;
+  auto & dynamic_frames = relayed.dynamic_frames;
+  auto & static_frames = relayed.static_frames;
+  auto listener = std::make_shared<rclcpp::Node>("tf_listener", options);
+  auto tf_sub = listener->create_subscription<tf2_msgs::msg::TFMessage>(
+    "/tf", rclcpp::QoS(100),
+    [&](tf2_msgs::msg::TFMessage::SharedPtr msg) {
+      for (const auto & tr : msg->transforms) {
+        dynamic_frames.insert(tr.child_frame_id);
+        relayed.base_footprint_count += tr.child_frame_id == "robot_a/base_footprint";
+      }
+    });
+
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  executor.add_node(robots);
+  executor.add_node(listener);
+  static_a->publish(make_tf("robot_a/base_footprint", "robot_a/base_link"));
+  static_b->publish(make_tf("robot_b/base_footprint", "robot_b/base_link"));
+  const auto start = std::chrono::steady_clock::now();
+  while (std::chrono::steady_clock::now() - start < std::chrono::seconds(2)) {
+    tf_a->publish(make_tf("robot_a/odom", "robot_a/base_footprint"));
+    tf_a->publish(make_tf("robot_a/base_link", "robot_a/wheel_left_link"));
+    tf_b->publish(make_tf("robot_b/odom", "robot_b/base_footprint"));
+    executor.spin_some();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+
+  // A late subscriber must get every robot's static frames, not only the last.
+  auto late = std::make_shared<rclcpp::Node>("late_tf_static_listener", options);
+  auto static_sub = late->create_subscription<tf2_msgs::msg::TFMessage>(
+    "/tf_static", rclcpp::QoS(10).transient_local().reliable(),
+    [&](tf2_msgs::msg::TFMessage::SharedPtr msg) {
+      for (const auto & tr : msg->transforms) {
+        static_frames.insert(tr.child_frame_id);
+      }
+    });
+  executor.add_node(late);
+  const auto late_start = std::chrono::steady_clock::now();
+  while (std::chrono::steady_clock::now() - late_start < std::chrono::seconds(1)) {
+    executor.spin_some();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+  return relayed;
+}
+
+}  // namespace
+
+TEST_F(NavigationManagerTest, RelaysEveryWatchedRobotsOwnTfOntoTheFleetTf)
+{
+  const auto relayed = relayed_frames(true);
+  const auto & dynamic_frames = relayed.dynamic_frames;
+  const auto & static_frames = relayed.static_frames;
+  EXPECT_TRUE(dynamic_frames.count("robot_a/wheel_left_link")) << "no filter: everything";
+  EXPECT_TRUE(dynamic_frames.count("robot_a/base_footprint"));
+  EXPECT_TRUE(dynamic_frames.count("robot_b/base_footprint"));
+  EXPECT_TRUE(static_frames.count("robot_a/base_link"));
+  EXPECT_TRUE(static_frames.count("robot_b/base_link"));
+  // The manager's own map -> <robot>/map frames are still there too.
+  EXPECT_TRUE(static_frames.count("robot_a/map"));
+}
+
+TEST_F(NavigationManagerTest, DoesNotRelayTfUnlessAskedTo)
+{
+  const auto relayed = relayed_frames(false);
+  const auto & dynamic_frames = relayed.dynamic_frames;
+  const auto & static_frames = relayed.static_frames;
+  EXPECT_TRUE(dynamic_frames.empty());
+  EXPECT_FALSE(static_frames.count("robot_a/base_link"));
+  EXPECT_TRUE(static_frames.count("robot_a/map"));
+}
+
+TEST_F(NavigationManagerTest, RelaysOnlyTheSelectedFrames)
+{
+  const auto relayed = relayed_frames(true, {"base_footprint", "base_link"});
+  EXPECT_TRUE(relayed.dynamic_frames.count("robot_a/base_footprint"));
+  EXPECT_TRUE(relayed.dynamic_frames.count("robot_b/base_footprint"));
+  EXPECT_FALSE(relayed.dynamic_frames.count("robot_a/wheel_left_link"))
+    << "robot-local frames stay inside the robot";
+  EXPECT_TRUE(relayed.static_frames.count("robot_a/base_link"));
+  EXPECT_TRUE(relayed.static_frames.count("robot_b/base_link"));
+}
+
+TEST_F(NavigationManagerTest, RelayedFramesAreRateLimited)
+{
+  // ~100 messages published in 2 s; at 5 Hz only a handful may pass.
+  const auto unlimited = relayed_frames(true, {"base_footprint"});
+  const auto limited = relayed_frames(true, {"base_footprint"}, 5.0);
+  EXPECT_GT(unlimited.base_footprint_count, 40);
+  EXPECT_GE(limited.base_footprint_count, 5);
+  EXPECT_LT(limited.base_footprint_count * 3, unlimited.base_footprint_count);
+}
+
+namespace
+{
+
+/// Map -> odom -> base_footprint of `robot`, with base_footprint at (x, y).
+tf2_msgs::msg::TFMessage robot_at(const std::string & robot, double x, double y, int32_t sec)
+{
+  auto msg = make_tf(robot + "/map", robot + "/odom");
+  msg.transforms[0].header.stamp.sec = sec;
+  auto base = make_tf(robot + "/odom", robot + "/base_footprint");
+  base.transforms[0].header.stamp.sec = sec;
+  base.transforms[0].transform.translation.x = x;
+  base.transforms[0].transform.translation.y = y;
+  msg.transforms.push_back(base.transforms[0]);
+  return msg;
+}
+
+/// Points of `cloud` (x, y).
+std::vector<std::pair<float, float>> cloud_points(const sensor_msgs::msg::PointCloud2 & cloud)
+{
+  std::vector<std::pair<float, float>> out;
+  if (cloud.width == 0) {
+    return out;
+  }
+  sensor_msgs::PointCloud2ConstIterator<float> x(cloud, "x");
+  sensor_msgs::PointCloud2ConstIterator<float> y(cloud, "y");
+  for (; x != x.end(); ++x, ++y) {
+    out.emplace_back(*x, *y);
+  }
+  return out;
+}
+
+std::shared_ptr<easyfleet::NavigationManagerNode> obstacles_node(bool share, bool relay)
+{
+  return std::make_shared<easyfleet::NavigationManagerNode>(
+    make_options(
+    {
+      rclcpp::Parameter("map_type", std::string("costmap")),
+      rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+      rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
+      rclcpp::Parameter("robots.static_list", std::vector<std::string>{"robot_a", "robot_b"}),
+      rclcpp::Parameter("robots.relay_tf", relay),
+      rclcpp::Parameter("robots.share_obstacles", share),
+      rclcpp::Parameter("robots.obstacle_radius_m", 0.3),
+      rclcpp::Parameter("robots.obstacles_pose_timeout_sec", 0.5),
+  }));
+}
+
+}  // namespace
+
+TEST_F(NavigationManagerTest, SharesEachRobotAsAnObstacleOfTheOthers)
+{
+  auto node = obstacles_node(true, false);
+  rclcpp::NodeOptions options;
+  options.use_global_arguments(false);
+  auto robots = std::make_shared<rclcpp::Node>("fake_robots", options);
+  auto tf_a = robots->create_publisher<tf2_msgs::msg::TFMessage>("/robot_a/tf", 10);
+  auto tf_b = robots->create_publisher<tf2_msgs::msg::TFMessage>("/robot_b/tf", 10);
+  std::optional<sensor_msgs::msg::PointCloud2> cloud_a, cloud_b;
+  auto sub_a = robots->create_subscription<sensor_msgs::msg::PointCloud2>(
+    "/robot_a/fleet_obstacles", rclcpp::QoS(1),
+    [&](sensor_msgs::msg::PointCloud2::SharedPtr msg) {cloud_a = *msg;});
+  auto sub_b = robots->create_subscription<sensor_msgs::msg::PointCloud2>(
+    "/robot_b/fleet_obstacles", rclcpp::QoS(1),
+    [&](sensor_msgs::msg::PointCloud2::SharedPtr msg) {cloud_b = *msg;});
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  executor.add_node(robots);
+
+  // Sim time only goes forward: an older transform is ignored.
+  int32_t sec = 10;
+  auto run = [&](std::chrono::milliseconds duration, bool publish_b) {
+      const auto start = std::chrono::steady_clock::now();
+      while (std::chrono::steady_clock::now() - start < duration) {
+        tf_a->publish(robot_at("robot_a", 1.0, 2.0, sec));
+        if (publish_b) {
+          tf_b->publish(robot_at("robot_b", 6.0, -3.0, sec));
+        }
+        ++sec;
+        executor.spin_some();
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      }
+    };
+  run(std::chrono::milliseconds(1500), true);
+
+  ASSERT_TRUE(cloud_a);
+  ASSERT_TRUE(cloud_b);
+  EXPECT_EQ(cloud_a->header.frame_id, "robot_a/map");
+  EXPECT_EQ(cloud_b->header.frame_id, "robot_b/map");
+  EXPECT_GT(cloud_a->header.stamp.sec, 10) << "stamped with the robot's own TF time";
+  const auto a = cloud_points(*cloud_a);
+  const auto b = cloud_points(*cloud_b);
+  ASSERT_FALSE(a.empty());
+  ASSERT_FALSE(b.empty());
+  for (const auto & [x, y] : a) {
+    EXPECT_LE(std::hypot(x - 6.0, y + 3.0), 0.3 + 1e-4) << "robot_a sees only robot_b";
+  }
+  for (const auto & [x, y] : b) {
+    EXPECT_LE(std::hypot(x - 1.0, y - 2.0), 0.3 + 1e-4) << "robot_b sees only robot_a";
+  }
+
+  // robot_b goes silent: after the pose timeout robot_a has nobody to see and gets no more
+  // clouds; never an empty one.
+  int clouds_a = 0;
+  auto count_a = robots->create_subscription<sensor_msgs::msg::PointCloud2>(
+    "/robot_a/fleet_obstacles", rclcpp::QoS(1),
+    [&](sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+      ++clouds_a;
+      EXPECT_GT(msg->width, 0u) << "never an empty cloud";
+    });
+  run(std::chrono::milliseconds(800), false);  // longer than the 0.5 s pose timeout
+  clouds_a = 0;
+  run(std::chrono::milliseconds(1000), false);
+  EXPECT_EQ(clouds_a, 0);
+}
+
+TEST_F(NavigationManagerTest, SharesNoObstaclesUnlessAskedTo)
+{
+  auto node = obstacles_node(false, true);
+  rclcpp::NodeOptions options;
+  options.use_global_arguments(false);
+  auto robots = std::make_shared<rclcpp::Node>("fake_robots_off", options);
+  auto tf_a = robots->create_publisher<tf2_msgs::msg::TFMessage>("/robot_a/tf", 10);
+  auto tf_b = robots->create_publisher<tf2_msgs::msg::TFMessage>("/robot_b/tf", 10);
+  int clouds = 0;
+  auto sub_a = robots->create_subscription<sensor_msgs::msg::PointCloud2>(
+    "/robot_a/fleet_obstacles", rclcpp::QoS(1),
+    [&](sensor_msgs::msg::PointCloud2::SharedPtr) {++clouds;});
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  executor.add_node(robots);
+  const auto start = std::chrono::steady_clock::now();
+  while (std::chrono::steady_clock::now() - start < std::chrono::seconds(1)) {
+    tf_a->publish(robot_at("robot_a", 1.0, 2.0, 10));
+    tf_b->publish(robot_at("robot_b", 6.0, -3.0, 10));
+    executor.spin_some();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+  EXPECT_EQ(clouds, 0);
+}
+
+/// Two robots (fake GoalManagers + path publishers) watched by a
+/// NavigationManagerNode, for the pause/resume reconciliation tests.
+class ConflictMonitorTest : public NavigationManagerTest
+{
+protected:
+  void SetUp() override
+  {
+    fake_a_ = std::make_unique<FakeGoalManagerServer>("robot_a");
+    fake_b_ = std::make_unique<FakeGoalManagerServer>("robot_b");
+    fake_executor_.add_node(fake_a_->get_node());
+    fake_executor_.add_node(fake_b_->get_node());
+    fake_thread_ = std::thread([this] {fake_executor_.spin();});
+    while (!fake_executor_.is_spinning()) {std::this_thread::yield();}
+
+    rclcpp::NodeOptions options;
+    options.use_global_arguments(false);
+    path_node_ = std::make_shared<rclcpp::Node>("fake_path_pub", options);
+    path_pub_a_ = path_node_->create_publisher<nav_msgs::msg::Path>(
+      "/robot_a/planner_node/simple/path", 10);
+    path_pub_b_ = path_node_->create_publisher<nav_msgs::msg::Path>(
+      "/robot_b/planner_node/simple/path", 10);
+    status_pub_ = path_node_->create_publisher<easyfleet_interfaces::msg::CapabilityStatus>(
+      "/capabilities_status", rclcpp::QoS(10).reliable());
+  }
+
+  void TearDown() override
+  {
+    fake_executor_.cancel();
+    fake_thread_.join();
+  }
+
+  void make_node(std::vector<rclcpp::Parameter> extra, bool static_list = true)
+  {
+    std::vector<rclcpp::Parameter> params{
+      rclcpp::Parameter("map_type", std::string("costmap")),
+      rclcpp::Parameter("map.map_path_file", fixtures().map_yaml),
+      rclcpp::Parameter("routes.map_path_file", fixtures().routes_yaml),
+      rclcpp::Parameter("conflict.check_rate_hz", 20.0),
+    };
+    if (static_list) {
+      params.emplace_back(
+        "robots.static_list", std::vector<std::string>{"robot_a", "robot_b"});
+    }
+    params.insert(params.end(), extra.begin(), extra.end());
+    node_ = std::make_shared<easyfleet::NavigationManagerNode>(make_options(params));
+    executor_.add_node(node_);
+  }
+
+  /// Spins until `predicate` holds (or `timeout`), publishing the given paths
+  /// (and heartbeats for the given robots) every 20 ms.
+  bool spin_until(
+    const std::function<bool()> & predicate, const nav_msgs::msg::Path * path_a,
+    const nav_msgs::msg::Path * path_b, std::chrono::milliseconds timeout = std::chrono::seconds(5),
+    const std::vector<std::string> & heartbeats = {})
+  {
+    const auto start = std::chrono::steady_clock::now();
+    while (!predicate() && std::chrono::steady_clock::now() - start < timeout) {
+      if (path_a) {path_pub_a_->publish(*path_a);}
+      if (path_b) {path_pub_b_->publish(*path_b);}
+      for (const auto & robot : heartbeats) {
+        easyfleet_interfaces::msg::CapabilityStatus status;
+        status.robot = robot;
+        status.capability = "navigation";
+        status.action_name = "/" + robot + "/navigation";
+        status_pub_->publish(status);
+      }
+      executor_.spin_some();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+    return predicate();
+  }
+
+  /// Lets the manager's watchers and the fake GoalManagers find each other,
+  /// so reports sent right after aren't lost.
+  void wait_for_discovery()
+  {
+    spin_until(
+      [&] {
+        return fake_a_->get_node()->count_subscribers("/robot_a/easynav_control") >= 2 &&
+               fake_b_->get_node()->count_subscribers("/robot_b/easynav_control") >= 2;
+      }, nullptr, nullptr);
+    holds_for([] {return true;}, nullptr, nullptr, std::chrono::milliseconds(200));
+  }
+
+  /// Spins for `duration` regardless; returns whether `predicate` held throughout.
+  bool holds_for(
+    const std::function<bool()> & predicate, const nav_msgs::msg::Path * path_a,
+    const nav_msgs::msg::Path * path_b, std::chrono::milliseconds duration)
+  {
+    bool held = true;
+    spin_until([&] {held = held && predicate(); return false;}, path_a, path_b, duration);
+    return held && predicate();
+  }
+
+  const nav_msgs::msg::Path path_a_ = make_straight_path(0.0, 0.0, 1.0, 0.0);
+  const nav_msgs::msg::Path path_b_converging_ = make_straight_path(0.0, 1.0, 0.0, -4.0);
+  const nav_msgs::msg::Path path_b_diverging_ = make_straight_path(0.0, 1.0, 0.0, 5.0);
+
+  std::unique_ptr<FakeGoalManagerServer> fake_a_;
+  std::unique_ptr<FakeGoalManagerServer> fake_b_;
+  rclcpp::executors::SingleThreadedExecutor fake_executor_;
+  std::thread fake_thread_;
+  rclcpp::Node::SharedPtr path_node_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_a_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_b_;
+  rclcpp::Publisher<easyfleet_interfaces::msg::CapabilityStatus>::SharedPtr status_pub_;
+  std::shared_ptr<easyfleet::NavigationManagerNode> node_;
+  rclcpp::executors::SingleThreadedExecutor executor_;
+};
+
+TEST_F(ConflictMonitorTest, RePausesWhenANewGoalClearsThePause)
+{
+  make_node({});
+  executor_.add_node(path_node_);
+  ASSERT_TRUE(spin_until([&] {return fake_b_->paused();}, &path_a_, &path_b_converging_));
+
+  // robot_b's own client preempts its goal: EasyNav clears the pause flag.
+  fake_b_->new_goal();
+  ASSERT_TRUE(
+    spin_until(
+      [&] {return fake_b_->pause_requests() >= 2 && fake_b_->paused();},
+      &path_a_, &path_b_converging_));
+  EXPECT_FALSE(fake_a_->paused());
+}
+
+TEST_F(ConflictMonitorTest, DoesNotFloodPauseRequestsWhileConfirmed)
+{
+  make_node({});
+  executor_.add_node(path_node_);
+  ASSERT_TRUE(spin_until([&] {return fake_b_->paused();}, &path_a_, &path_b_converging_));
+  holds_for([] {return true;}, &path_a_, &path_b_converging_, std::chrono::milliseconds(1000));
+  EXPECT_EQ(fake_b_->pause_requests(), 1);
+}
+
+TEST_F(ConflictMonitorTest, LeavesAnOperatorPauseAlone)
+{
+  make_node({});
+  executor_.add_node(path_node_);
+  wait_for_discovery();
+  fake_a_->operator_pause();
+  EXPECT_TRUE(
+    holds_for(
+      [&] {return fake_a_->paused();}, &path_a_, &path_b_diverging_,
+      std::chrono::milliseconds(1500)));
+  EXPECT_EQ(fake_a_->resume_requests(), 0);
+}
+
+TEST_F(ConflictMonitorTest, IgnoresARobotThatIsNotNavigating)
+{
+  make_node({});
+  executor_.add_node(path_node_);
+  wait_for_discovery();
+  fake_b_->finish();
+  fake_a_->finish();
+  holds_for([] {return true;}, nullptr, nullptr, std::chrono::milliseconds(300));
+  // Both still publish (stale) paths that converge, but neither navigates.
+  EXPECT_TRUE(
+    holds_for(
+      [&] {return !fake_a_->paused() && !fake_b_->paused();}, &path_a_, &path_b_converging_,
+      std::chrono::milliseconds(1500)));
+}
+
+TEST_F(ConflictMonitorTest, AStalePathStopsCountingAndReleasesThePause)
+{
+  make_node({rclcpp::Parameter("conflict.path_timeout_sec", 0.5)});
+  executor_.add_node(path_node_);
+  ASSERT_TRUE(spin_until([&] {return fake_b_->paused();}, &path_a_, &path_b_converging_));
+
+  // robot_a's planner goes silent (its process died): its last path must
+  // not keep robot_b stopped.
+  ASSERT_TRUE(spin_until([&] {return !fake_b_->paused();}, nullptr, &path_b_converging_));
+}
+
+TEST_F(ConflictMonitorTest, ARobotPausedTooLongGetsPriority)
+{
+  make_node({rclcpp::Parameter("conflict.max_pause_sec", 1.0)});
+  executor_.add_node(path_node_);
+  ASSERT_TRUE(spin_until([&] {return fake_b_->paused();}, &path_a_, &path_b_converging_));
+  EXPECT_FALSE(fake_a_->paused());
+
+  // The conflict never clears: after max_pause_sec the roles swap.
+  ASSERT_TRUE(
+    spin_until(
+      [&] {return fake_a_->paused() && !fake_b_->paused();}, &path_a_, &path_b_converging_,
+      std::chrono::seconds(4)));
+}
+
+TEST_F(ConflictMonitorTest, ResumesARobotItPausedBeforeDroppingIt)
+{
+  make_node(
+    {rclcpp::Parameter("robots.staleness_sec", 0.5),
+      rclcpp::Parameter("robots.rescan_rate_hz", 20.0)}, /*static_list=*/ false);
+  executor_.add_node(path_node_);
+  const std::vector<std::string> both{"robot_a", "robot_b"};
+  ASSERT_TRUE(
+    spin_until(
+      [&] {return fake_b_->paused();}, &path_a_, &path_b_converging_,
+      std::chrono::seconds(5), both));
+
+  // robot_b's heartbeat goes stale: the manager stops watching it, but must
+  // not leave it paused behind.
+  ASSERT_TRUE(
+    spin_until(
+      [&] {return !fake_b_->paused();}, &path_a_, &path_b_converging_,
+      std::chrono::seconds(5), {"robot_a"}));
+  EXPECT_GE(fake_b_->resume_requests(), 1);
 }
 
 int main(int argc, char ** argv)

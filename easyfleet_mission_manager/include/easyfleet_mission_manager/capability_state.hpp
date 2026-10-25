@@ -53,15 +53,16 @@ enum class CapabilityState
   /// even started it (invalid/unsupported goal content, or busy and not
   /// preemptable).
   REJECTED,
-  /// @brief The underlying `ActionClient`'s own send/response mechanics
-  /// timed out -- distinct from a `run_capability()` timeout, which
-  /// produces `CANCELED` instead (that path issues an explicit cancel
-  /// rather than the client giving up on its own).
+  /// @brief The goal was asked to stop (its `run_capability()` timeout
+  /// elapsed, or `stop_capability()` was called) but the capability did not
+  /// report back within a few seconds: it is alive but no longer answering
+  /// for this goal. A stop that is honored ends as `CANCELED` instead.
   TIMEOUT,
-  /// @brief No heartbeat seen recently on `/capabilities_status` for this
-  /// capability -- the process is gone, was never there, or has stalled.
-  /// Distinct from every other terminal value above: those all mean the
-  /// capability itself is alive and responded; UNREACHABLE means it may
+  /// @brief The capability stopped sending heartbeats on
+  /// `/capabilities_status` while its goal was running (the process is
+  /// gone or has stalled), or its action server could not be reached at
+  /// all. Distinct from every other terminal value above: those all mean
+  /// the capability itself is alive and responded; UNREACHABLE means it may
   /// not even know a goal was sent.
   UNREACHABLE,
 };

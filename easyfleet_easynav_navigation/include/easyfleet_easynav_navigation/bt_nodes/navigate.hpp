@@ -16,6 +16,7 @@
 #ifndef EASYFLEET_EASYNAV_NAVIGATION__BT_NODES__NAVIGATE_HPP_
 #define EASYFLEET_EASYNAV_NAVIGATION__BT_NODES__NAVIGATE_HPP_
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <string>
@@ -41,17 +42,23 @@ public:
   ///   blackboard here.
   Navigate(const std::string & name, const BT::NodeConfig & config);
 
-  /// @brief This node's ports: the input port `goal_id`.
-  /// @return This node's ports: the input port `goal_id`.
+  /// @brief This node's ports: `goal_id`, and `response_timeout` (seconds
+  /// EasyNav may take to accept a goal, default 5).
+  /// @return This node's ports.
   static BT::PortsList providedPorts();
 
   /// @brief Resolves the `goal_id` input port against the waypoint registry and
   /// sends the corresponding pose through `gm_client_`.
   /// @return `RUNNING`, or `FAILURE` if `goal_id` is missing/unknown.
   BT::NodeStatus onStart() override;
-  /// @brief Polls `gm_client_` for the in-flight goal's progress.
+  /// @brief Polls `gm_client_` for the in-flight goal's progress, and
+  /// re-sends when `goal_id` changes (once `gm_client_` can take a new goal).
+  /// A preemption that EasyNav rejects (only possible if it is configured
+  /// not to allow preemption) leaves EasyNav on the previous goal, which
+  /// this node cannot tell apart from an accepted one.
   /// @return `RUNNING` while EasyNav is still navigating, `SUCCESS`/
-  ///   `FAILURE` once `gm_client_` reports a terminal state.
+  ///   `FAILURE` once `gm_client_` reports a terminal state, `FAILURE` if
+  ///   EasyNav doesn't accept the goal within `response_timeout`.
   BT::NodeStatus onRunning() override;
   /// @brief No-op: an in-flight EasyNav goal is left alone on halt, deliberately
   /// (see the class-level design note on preemption in the owning
@@ -62,6 +69,7 @@ private:
   std::shared_ptr<const std::map<std::string, geometry_msgs::msg::PoseStamped>> waypoints_;
   easynav::GoalManagerClient::SharedPtr gm_client_;
   std::string last_goal_id_;
+  std::chrono::steady_clock::time_point last_send_time_;
 };
 
 }  // namespace easyfleet_easynav_navigation

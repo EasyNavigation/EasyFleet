@@ -25,6 +25,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "easyfleet_core/detail/namespace_utils.hpp"
@@ -92,16 +93,81 @@ ActionServerBase<ActionT>::ActionServerBase(
 template<typename ActionT>
 ActionServerBase<ActionT>::~ActionServerBase()
 {
-  if (param_cb_handle_) {
-    node_parameters_->remove_post_set_parameters_callback(param_cb_handle_.get());
+  // Last resort: the derived part is already gone here, so a goal still
+  // running would be calling into a destroyed object. Derived classes must
+  // call stop() from their own destructor.
+  stop();
+}
+
+template<typename ActionT>
+void ActionServerBase<ActionT>::enable_goals()
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (!shutting_down_.load()) {
+    goals_enabled_.store(true);
   }
+}
+
+template<typename ActionT>
+void ActionServerBase<ActionT>::disable_goals()
+{
+  GoalHandleSharedPtr queued;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    goals_enabled_.store(false);
+    queued = std::move(pending_handle_);
+    pending_handle_.reset();
+    if (active_handle_) {
+      halt_requested_.store(true);
+    }
+  }
+  if (queued) {
+    settle_unstarted(queued);
+  }
+
+  if (std::this_thread::get_id() == worker_.get_id()) {
+    // Called from on_execute(): waiting here would deadlock.
+    return;
+  }
+  std::unique_lock<std::mutex> lock(mutex_);
+  idle_cv_.wait(lock, [this] {return active_handle_ == nullptr;});
+  halt_requested_.store(false);
+}
+
+template<typename ActionT>
+bool ActionServerBase<ActionT>::goals_enabled() const noexcept
+{
+  return goals_enabled_.load();
+}
+
+template<typename ActionT>
+void ActionServerBase<ActionT>::stop()
+{
+  disable_goals();
   {
     std::lock_guard<std::mutex> lock(mutex_);
     shutting_down_.store(true);
   }
   cv_.notify_all();
-  if (worker_.joinable()) {
+  if (worker_.joinable() && std::this_thread::get_id() != worker_.get_id()) {
     worker_.join();
+  }
+  if (param_cb_handle_) {
+    node_parameters_->remove_post_set_parameters_callback(param_cb_handle_.get());
+    param_cb_handle_.reset();
+  }
+}
+
+template<typename ActionT>
+void ActionServerBase<ActionT>::settle_unstarted(const GoalHandleSharedPtr & goal_handle)
+{
+  if (!goal_handle->is_active()) {
+    return;
+  }
+  if (goal_handle->is_canceling()) {
+    goal_handle->canceled(std::make_shared<Result>());
+  } else {
+    goal_handle->abort(std::make_shared<Result>());
   }
 }
 
@@ -145,7 +211,7 @@ bool ActionServerBase<ActionT>::is_preempt_requested() const noexcept
 template<typename ActionT>
 bool ActionServerBase<ActionT>::is_shutdown_requested() const noexcept
 {
-  return shutting_down_.load();
+  return shutting_down_.load() || halt_requested_.load();
 }
 
 template<typename ActionT>
@@ -159,13 +225,39 @@ rclcpp_action::GoalResponse ActionServerBase<ActionT>::handle_goal(
   const rclcpp_action::GoalUUID & uuid,
   std::shared_ptr<const Goal> goal)
 {
-  const auto response = this->on_goal_received(uuid, goal);
+  if (!goals_enabled_.load()) {
+    RCLCPP_WARN(
+      node_logging_->get_logger(),
+      "Action '%s': goal rejected, goals are disabled (capability not active).",
+      action_name_.c_str());
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  rclcpp_action::GoalResponse response;
+  try {
+    response = this->on_goal_received(uuid, goal);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      node_logging_->get_logger(), "Action '%s': exception thrown from on_goal_received(): %s",
+      action_name_.c_str(), e.what());
+    return rclcpp_action::GoalResponse::REJECT;
+  } catch (...) {
+    RCLCPP_ERROR(
+      node_logging_->get_logger(), "Action '%s': unknown exception from on_goal_received()",
+      action_name_.c_str());
+    return rclcpp_action::GoalResponse::REJECT;
+  }
   if (response != rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE) {
     return response;
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (active_handle_ && !allow_preemption_.load()) {
+  if (!goals_enabled_.load()) {
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+  // A queued goal counts as busy too: two goals arriving back to back must
+  // not both be accepted when preemption is off.
+  if ((active_handle_ || pending_handle_) && !allow_preemption_.load()) {
     return rclcpp_action::GoalResponse::REJECT;
   }
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -175,7 +267,14 @@ template<typename ActionT>
 rclcpp_action::CancelResponse ActionServerBase<ActionT>::handle_cancel(
   const GoalHandleSharedPtr goal_handle)
 {
-  return this->on_cancel_requested(goal_handle);
+  try {
+    return this->on_cancel_requested(goal_handle);
+  } catch (...) {
+    RCLCPP_ERROR(
+      node_logging_->get_logger(), "Action '%s': exception thrown from on_cancel_requested()",
+      action_name_.c_str());
+    return rclcpp_action::CancelResponse::REJECT;
+  }
 }
 
 template<typename ActionT>
@@ -183,6 +282,17 @@ void ActionServerBase<ActionT>::handle_accepted(GoalHandleSharedPtr goal_handle)
 {
   GoalHandleSharedPtr bumped;
   GoalHandleSharedPtr preempted_active;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!goals_enabled_.load()) {
+      // Accepted just before goals were disabled: never run it.
+      bumped = goal_handle;
+    }
+  }
+  if (bumped) {
+    settle_unstarted(bumped);
+    return;
+  }
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (pending_handle_) {
@@ -202,7 +312,7 @@ void ActionServerBase<ActionT>::handle_accepted(GoalHandleSharedPtr goal_handle)
       node_logging_->get_logger(),
       "Action '%s': a queued goal was superseded before it could start executing.",
       action_name_.c_str());
-    bumped->abort(std::make_shared<Result>());
+    settle_unstarted(bumped);
   }
   if (preempted_active) {
     this->on_preempted(preempted_active);
@@ -233,7 +343,13 @@ void ActionServerBase<ActionT>::worker_loop()
         lock, [this] {
           return shutting_down_.load() || pending_handle_ != nullptr;
         });
-      if (shutting_down_.load() && !pending_handle_) {
+      if (shutting_down_.load()) {
+        auto queued = std::move(pending_handle_);
+        pending_handle_.reset();
+        lock.unlock();
+        if (queued) {
+          settle_unstarted(queued);
+        }
         return;
       }
       goal = pending_handle_;
@@ -261,16 +377,18 @@ void ActionServerBase<ActionT>::worker_loop()
           node_logging_->get_logger(),
           "Action '%s': exception thrown from on_execute(): %s",
           action_name_.c_str(), e.what());
-        if (goal->is_active()) {
-          goal->abort(std::make_shared<Result>());
-        }
+      } catch (...) {
+        RCLCPP_ERROR(
+          node_logging_->get_logger(),
+          "Action '%s': unknown exception thrown from on_execute()",
+          action_name_.c_str());
       }
       if (goal->is_active()) {
         RCLCPP_WARN(
           node_logging_->get_logger(),
           "Action '%s': on_execute() returned without settling the goal; aborting it.",
           action_name_.c_str());
-        goal->abort(std::make_shared<Result>());
+        settle_unstarted(goal);
       }
 
       RCLCPP_INFO(
@@ -279,8 +397,11 @@ void ActionServerBase<ActionT>::worker_loop()
         action_name_.c_str(), robot_name_.c_str());
     }
 
-    std::lock_guard<std::mutex> lock(mutex_);
-    active_handle_.reset();
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      active_handle_.reset();
+    }
+    idle_cv_.notify_all();
   }
 }
 

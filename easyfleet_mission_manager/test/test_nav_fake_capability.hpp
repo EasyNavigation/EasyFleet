@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_MISSION_MANAGER__TEST__TEST_NAV_FAKE_CAPABILITY_HPP_
-#define EASYFLEET_MISSION_MANAGER__TEST__TEST_NAV_FAKE_CAPABILITY_HPP_
+#ifndef TEST_NAV_FAKE_CAPABILITY_HPP_
+#define TEST_NAV_FAKE_CAPABILITY_HPP_
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -50,9 +51,26 @@ public:
   : easyfleet_core::NavigationActionServerBase(node, action_name)
   {
     mock_duration_s_ = node.declare_parameter(action_name + ".mock_duration_seconds", 0.0);
+    reject_cancel_ = node.declare_parameter(action_name + ".reject_cancel", false);
+  }
+
+  /// Cancel requests received so far.
+  int cancel_requests() const {return cancel_requests_.load();}
+
+  ~TestNavActionServer() override
+  {
+    // Join the worker while this derived object still exists.
+    stop();
   }
 
 protected:
+  rclcpp_action::CancelResponse on_cancel_requested(const GoalHandleSharedPtr) override
+  {
+    cancel_requests_.fetch_add(1);
+    return reject_cancel_ ? rclcpp_action::CancelResponse::REJECT :
+           rclcpp_action::CancelResponse::ACCEPT;
+  }
+
   rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & /*uuid*/,
     std::shared_ptr<const Goal> goal) override
@@ -87,6 +105,8 @@ protected:
 
 private:
   double mock_duration_s_{0.0};
+  bool reject_cancel_{false};
+  std::atomic<int> cancel_requests_{0};
 };
 
 class TestNavCapability : public easyfleet_core::Capability<TestNavActionServer>
@@ -102,4 +122,4 @@ public:
 
 }  // namespace easyfleet_mission_manager_test
 
-#endif  // EASYFLEET_MISSION_MANAGER__TEST__TEST_NAV_FAKE_CAPABILITY_HPP_
+#endif  // TEST_NAV_FAKE_CAPABILITY_HPP_

@@ -30,18 +30,18 @@
 namespace easyfleet_mission_manager
 {
 
-inline std::string outcome_to_string(uint8_t outcome_value)
+template<typename OutcomeT>
+std::string outcome_to_string(OutcomeT outcome)
 {
-  // Mirrors easyfleet_core::CapabilityClient<ActionT>::Outcome's underlying values.
-  switch (outcome_value) {
-    case 0: return "SUCCEEDED";
-    case 1: return "ABORTED";
-    case 2: return "CANCELED";
-    case 3: return "REJECTED";
-    case 4: return "TIMEOUT";
-    case 5: return "SERVER_UNAVAILABLE";
-    default: return "UNKNOWN";
+  switch (outcome) {
+    case OutcomeT::SUCCEEDED: return "SUCCEEDED";
+    case OutcomeT::ABORTED: return "ABORTED";
+    case OutcomeT::CANCELED: return "CANCELED";
+    case OutcomeT::REJECTED: return "REJECTED";
+    case OutcomeT::TIMEOUT: return "TIMEOUT";
+    case OutcomeT::SERVER_UNAVAILABLE: return "SERVER_UNAVAILABLE";
   }
+  return "UNKNOWN";
 }
 
 /// @brief Sends `goal` to a capability through `client`, printing progress as it
@@ -88,7 +88,12 @@ typename easyfleet_core::CapabilityClient<ActionT>::Response run_capability(
         << timeout.count() << "s elapsed, stopping it...";
     safe_print(out.str());
     client->cancel();
-    response = response_future.get();
+    // A capability that no longer answers must not block the mission forever.
+    if (response_future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
+      response = typename Client::Response{Client::Outcome::TIMEOUT, nullptr};
+    } else {
+      response = response_future.get();
+    }
   } else {
     response = response_future.get();
   }
@@ -96,7 +101,7 @@ typename easyfleet_core::CapabilityClient<ActionT>::Response run_capability(
   std::ostringstream out;
   out << ansi::bold << "[" << label << "] " << ansi::reset
       << "finished with outcome " << ansi::magenta
-      << outcome_to_string(static_cast<uint8_t>(response.outcome)) << ansi::reset;
+      << outcome_to_string(response.outcome) << ansi::reset;
   safe_print(out.str());
 
   return response;

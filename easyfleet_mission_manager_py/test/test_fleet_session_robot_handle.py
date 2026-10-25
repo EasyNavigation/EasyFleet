@@ -306,3 +306,179 @@ def test_simple_controller_forwards_to_a_working_fleet_session():
         # SimpleController wraps a FleetSession the test fixture doesn't
         # own -- tear it down the same test-only way.
         controller._session._teardown()
+
+
+# --- Live capability registry ---
+
+def test_capability_that_appears_after_discovery_is_seen(session):
+    robot_name = _unique_name('robot')
+    robot = RobotHandle(robot_name)
+    session.add_robot(robot)
+    session.discover_capabilities(0.5)
+    assert robot.has_capability('navigation') is False
+
+    fake = FakeNavCapabilityProcess(robot_name)
+    try:
+        assert _wait_until(lambda: robot.has_capability('navigation'), 4.0)
+        assert len(robot.capabilities) == 1
+        assert robot.capabilities[0].description_json_valid is True
+    finally:
+        fake.shutdown()
+
+
+def test_capability_without_heartbeats_stops_being_available(session):
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name)
+    try:
+        robot = RobotHandle(robot_name)
+        session.add_robot(robot)
+        session.discover_capabilities()
+        assert robot.has_capability('navigation')
+
+        fake.stop_heartbeat()
+        assert _wait_until(lambda: not robot.has_capability('navigation'), 5.0)
+        assert robot.is_alive('navigation') is False
+        assert len(robot.capabilities) == 1
+        assert robot.capabilities[0].active is False
+
+        fake.resume_heartbeat()
+        assert _wait_until(lambda: robot.has_capability('navigation'), 4.0)
+    finally:
+        fake.shutdown()
+
+
+def test_description_that_is_not_a_json_object_is_flagged_invalid(session):
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name, description_json='[1, 2, 3]')
+    try:
+        robot = RobotHandle(robot_name)
+        session.add_robot(robot)
+        session.discover_capabilities()
+        assert len(robot.capabilities) == 1
+        assert robot.capabilities[0].description_json_valid is False
+    finally:
+        fake.shutdown()
+
+
+# --- Liveness, cancellation and timeouts of a running goal ---
+
+def _run_until_settled(session, robot, timeout_sec):
+    deadline = time.monotonic() + timeout_sec
+    while robot.is_capability_running('navigation') and time.monotonic() < deadline:
+        session.spin_some()
+
+
+def test_goal_on_a_capability_that_hangs_ends_unreachable(session):
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name, mock_duration_sec=30.0)
+    try:
+        robot = RobotHandle(robot_name)
+        session.add_robot(robot)
+        session.discover_capabilities()
+        robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'), 60.0)
+        session.spin_for(0.3)
+        assert robot.is_capability_running('navigation')
+
+        fake.freeze()
+        _run_until_settled(session, robot, 8.0)
+        assert robot.capability_state('navigation') == CapabilityState.UNREACHABLE
+    finally:
+        fake.shutdown()
+
+
+def test_timeout_cancels_only_once_and_ends_timeout_if_ignored(session):
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name, mock_duration_sec=30.0, reject_cancel=True)
+    try:
+        robot = RobotHandle(robot_name)
+        session.add_robot(robot)
+        session.discover_capabilities()
+        robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'), 1.0)
+        _run_until_settled(session, robot, 10.0)
+        assert robot.capability_state('navigation') == CapabilityState.TIMEOUT
+        assert fake.cancel_requests == 1
+    finally:
+        fake.shutdown()
+
+
+def test_stop_on_a_goal_that_ignores_cancel_ends_timeout(session):
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name, mock_duration_sec=30.0, reject_cancel=True)
+    try:
+        robot = RobotHandle(robot_name)
+        session.add_robot(robot)
+        session.discover_capabilities()
+        robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'), 60.0)
+        session.spin_for(0.3)
+        robot.stop_capability('navigation')
+        robot.stop_capability('navigation')
+        _run_until_settled(session, robot, 10.0)
+        assert robot.capability_state('navigation') == CapabilityState.TIMEOUT
+        assert fake.cancel_requests == 1
+    finally:
+        fake.shutdown()
+
+
+def test_stop_when_idle_sends_no_cancel(session):
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name)
+    try:
+        robot = RobotHandle(robot_name)
+        session.add_robot(robot)
+        session.discover_capabilities()
+        robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'))
+        assert _wait_until(lambda: not robot.is_capability_running('navigation'), 3.0)
+        robot.stop_capability('navigation')
+        session.spin_for(0.3)
+        assert fake.cancel_requests == 0
+        assert robot.capability_state('navigation') == CapabilityState.SUCCEEDED
+    finally:
+        fake.shutdown()
+
+
+# --- Session/handle lifetime ---
+
+def test_adding_the_same_robot_twice_raises(session):
+    robot = RobotHandle(_unique_name('robot'))
+    session.add_robot(robot)
+    with pytest.raises(MissionManagerError):
+        session.add_robot(robot)
+    assert len(session.robots) == 1
+
+
+def test_removed_robot_is_detached(session):
+    robot = RobotHandle(_unique_name('robot'))
+    session.add_robot(robot)
+    session.remove_robot(robot)
+    assert session.robots == []
+    with pytest.raises(MissionManagerError):
+        robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'))
+
+
+def test_session_torn_down_before_the_robot_detaches_it():
+    robot_name = _unique_name('robot')
+    fake = FakeNavCapabilityProcess(robot_name, mock_duration_sec=30.0)
+    robot = RobotHandle(robot_name)
+    first = FleetSession()
+    try:
+        first.add_robot(robot)
+        first.discover_capabilities()
+        robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'), 60.0)
+        first.spin_for(0.2)
+        first._teardown()
+
+        assert robot.capabilities == []
+        assert robot.has_capability('navigation') is False
+        assert robot.capability_state('navigation') == CapabilityState.IDLE
+        with pytest.raises(MissionManagerError):
+            robot.run_capability('navigation', Navigation, make_navigation_goal('kitchen'))
+
+        second = FleetSession()
+        try:
+            second.add_robot(robot)
+            second.discover_capabilities()
+            assert robot.has_capability('navigation')
+        finally:
+            second._teardown()
+    finally:
+        fake.shutdown()

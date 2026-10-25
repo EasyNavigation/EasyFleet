@@ -86,13 +86,46 @@ double min_distance(
 
 }  // namespace
 
+nav_msgs::msg::Path trim_path_to_position(
+  const nav_msgs::msg::Path & path, const geometry_msgs::msg::Point & position)
+{
+  if (path.poses.empty()) {
+    return path;
+  }
+  std::size_t nearest = 0;
+  double best = std::numeric_limits<double>::max();
+  for (std::size_t i = 0; i < path.poses.size(); ++i) {
+    const double d = distance_xy(path.poses[i].pose.position, position);
+    if (d < best) {
+      best = d;
+      nearest = i;
+    }
+  }
+  nav_msgs::msg::Path trimmed;
+  trimmed.header = path.header;
+  geometry_msgs::msg::PoseStamped current = path.poses[nearest];
+  current.pose.position = position;
+  trimmed.poses.push_back(current);
+  trimmed.poses.insert(
+    trimmed.poses.end(), path.poses.begin() + static_cast<std::ptrdiff_t>(nearest) + 1,
+    path.poses.end());
+  return trimmed;
+}
+
 std::set<std::string> compute_robots_to_pause(
   const std::map<std::string, nav_msgs::msg::Path> & robot_paths,
   const ConflictParams & params,
   const std::set<std::string> & already_paused,
-  std::vector<ConflictDecision> * decisions)
+  std::vector<ConflictDecision> * decisions,
+  const std::set<std::string> & priority)
 {
   std::set<std::string> to_pause;
+
+  // Computed once per robot, not once per pair.
+  std::map<std::string, std::vector<geometry_msgs::msg::Point>> lookahead;
+  for (const auto & [robot, path] : robot_paths) {
+    lookahead[robot] = lookahead_points(path, params.lookahead_distance_m);
+  }
 
   for (auto it_a = robot_paths.begin(); it_a != robot_paths.end(); ++it_a) {
     if (it_a->second.poses.empty()) {continue;}
@@ -101,24 +134,31 @@ std::set<std::string> compute_robots_to_pause(
     for (++it_b; it_b != robot_paths.end(); ++it_b) {
       if (it_b->second.poses.empty()) {continue;}
 
+      const bool a_paused = already_paused.count(it_a->first) > 0;
+      const bool b_paused = already_paused.count(it_b->first) > 0;
+      const double hysteresis = (a_paused || b_paused) ? params.resume_hysteresis_factor : 1.0;
+
       const auto & current_a = it_a->second.poses.front().pose.position;
       const auto & current_b = it_b->second.poses.front().pose.position;
       const double current_distance = distance_xy(current_a, current_b);
-      if (current_distance > params.proximity_radius_m) {continue;}
+      if (current_distance > params.proximity_radius_m * hysteresis) {continue;}
 
-      const auto lookahead_a = lookahead_points(it_a->second, params.lookahead_distance_m);
-      const auto lookahead_b = lookahead_points(it_b->second, params.lookahead_distance_m);
-      const double lookahead_distance = min_distance(lookahead_a, lookahead_b);
-      const bool in_conflict = lookahead_distance <= params.path_conflict_distance_m;
+      const double lookahead_distance =
+        min_distance(lookahead.at(it_a->first), lookahead.at(it_b->first));
+      const bool in_conflict = lookahead_distance <= params.path_conflict_distance_m * hysteresis;
 
       std::string yielding_robot;
       std::ostringstream reason;
 
       if (in_conflict) {
-        const bool a_paused = already_paused.count(it_a->first) > 0;
-        const bool b_paused = already_paused.count(it_b->first) > 0;
+        const bool a_priority = priority.count(it_a->first) > 0;
+        const bool b_priority = priority.count(it_b->first) > 0;
 
-        if (a_paused && !b_paused) {
+        if (a_priority != b_priority) {
+          yielding_robot = a_priority ? it_b->first : it_a->first;
+          reason << (a_priority ? it_a->first : it_b->first) <<
+            " has waited too long and gets priority; " << yielding_robot << " yields";
+        } else if (a_paused && !b_paused) {
           // it_a is already stationary (cmd_vel zeroed): it cannot itself
           // be a moving threat, so it simply keeps yielding and it_b is
           // never newly paused because of this pair -- regardless of how
@@ -131,10 +171,12 @@ std::set<std::string> compute_robots_to_pause(
           reason << it_b->first << " is already paused and keeps yielding; " <<
             it_a->first << " is free to continue";
         } else if (a_paused && b_paused) {
-          to_pause.insert(it_a->first);
-          to_pause.insert(it_b->first);
-          reason << it_a->first << " and " << it_b->first <<
-            " are both already paused; no new decision needed";
+          const double length_a = path_length(it_a->second);
+          const double length_b = path_length(it_b->second);
+          yielding_robot = (length_a >= length_b) ? it_a->first : it_b->first;
+          reason << it_a->first << " and " << it_b->first << " are both paused; " <<
+            yielding_robot << " has the longer remaining path and keeps yielding, the other " <<
+            "is released";
         } else {
           const double length_a = path_length(it_a->second);
           const double length_b = path_length(it_b->second);

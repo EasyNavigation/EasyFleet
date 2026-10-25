@@ -16,6 +16,7 @@
 #ifndef EASYFLEET_CORE__ACTION_CLIENT_HPP_
 #define EASYFLEET_CORE__ACTION_CLIENT_HPP_
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -24,6 +25,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -91,7 +93,8 @@ public:
   using GoalResponseCallback =
     std::function<void (bool accepted, const rclcpp_action::GoalUUID & goal_id)>;
 
-  /// @brief Constructs a new client for `action_name`, spinning its own internal node in the background.
+  /// @brief Constructs a new client for `action_name`, spinning its own internal
+  /// node in the background.
   /// @param parent_node Node on whose behalf the action is called; only used
   ///   to inherit its namespace and to derive a name for the internal node
   ///   (never stored), so a reference -- never null, unlike a pointer -- is
@@ -151,9 +154,11 @@ public:
   /// @param goal Goal to send.
   /// @param feedback_callback Invoked as feedback arrives for this goal.
   /// @param timeout Maximum time to wait for a terminal state; `0` (the
-  ///   default) waits indefinitely.
-  /// @return The goal's terminal outcome (`GoalOutcome::TIMEOUT` if
-  ///   `timeout` elapsed first).
+  ///   default) waits as long as the server stays reachable. On timeout the
+  ///   goal is canceled.
+  /// @return The goal's terminal outcome: `GoalOutcome::TIMEOUT` if
+  ///   `timeout` elapsed first, `GoalOutcome::SERVER_UNAVAILABLE` if the
+  ///   server disappeared for longer than `default_server_timeout`.
   GoalResult send_goal_and_wait(
     const Goal & goal,
     FeedbackCallback feedback_callback = nullptr,
@@ -165,7 +170,9 @@ public:
   /// @return Whether a cancellation request was sent.
   bool cancel_goal(const rclcpp_action::GoalUUID & goal_id);
 
-  /// @brief Request cancellation of every goal currently tracked by this client.
+  /// @brief Request cancellation of every goal sent by this client: the ones
+  /// already accepted and the ones still waiting for the server's response.
+  /// Goals sent by other clients of the same server are not affected.
   void cancel_all_goals();
 
   /// @brief Number of goals accepted by the server and not yet in a terminal state.
@@ -181,16 +188,25 @@ private:
 
   static GoalResult to_goal_result(const typename ClientGoalHandle::WrappedResult & wrapped);
 
+  /// Sends a cancel request; false (logged, not thrown) if rcl refuses it,
+  /// e.g. because the context is already shut down.
+  bool request_cancel(const typename ClientGoalHandle::SharedPtr & handle);
+
   std::string action_name_;
   std::chrono::milliseconds default_server_timeout_;
 
   rclcpp::Node::SharedPtr internal_node_;
   rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
   std::thread spin_thread_;
+  std::atomic_bool spin_exited_{false};
   typename rclcpp_action::Client<ActionT>::SharedPtr client_;
 
   mutable std::mutex goals_mutex_;
   std::unordered_map<std::string, typename ClientGoalHandle::SharedPtr> active_goals_;
+  /// Sequence number of the next send_goal(); sends numbered below
+  /// cancel_before_ are canceled as soon as the server accepts them.
+  uint64_t next_send_id_{0};
+  uint64_t cancel_before_{0};
 };
 
 }  // namespace easyfleet_core

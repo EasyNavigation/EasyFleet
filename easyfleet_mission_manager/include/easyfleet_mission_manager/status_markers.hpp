@@ -146,7 +146,11 @@ private:
       array.markers.push_back(marker);
     }
     if (!array.markers.empty()) {
-      pub_->publish(array);
+      try {
+        pub_->publish(array);
+      } catch (const rclcpp::exceptions::RCLError &) {
+        // The context is shutting down: status markers no longer matter.
+      }
     }
   }
 

@@ -16,6 +16,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(interactive_markers REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(easynav_costmap_maps_manager REQUIRED)
 find_package(easynav_routes_maps_manager REQUIRED)
@@ -24,8 +28,10 @@ find_package(easyfleet_interfaces REQUIRED)
 
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/costmap_map_publisher.cpp
+  src/${PROJECT_NAME}/data_path.cpp
   src/${PROJECT_NAME}/routes_publisher.cpp
   src/${PROJECT_NAME}/conflict_detector.cpp
+  src/${PROJECT_NAME}/fleet_obstacles.cpp
   src/${PROJECT_NAME}/robot_navigation_watcher.cpp
   src/${PROJECT_NAME}/navigation_manager_node.cpp
 )
@@ -40,6 +46,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${visualization_msgs_TARGETS}
   interactive_markers::interactive_markers
   tf2_ros::tf2_ros
+  ${tf2_msgs_TARGETS}
+  tf2::tf2
+  tf2_geometry_msgs::tf2_geometry_msgs
+  ${sensor_msgs_TARGETS}
   ament_index_cpp::ament_index_cpp
   easynav_costmap_maps_manager::easynav_costmap_maps_manager
   easynav_routes_maps_manager::easynav_routes_maps_manager_lib
@@ -77,6 +87,10 @@ ament_export_dependencies(
   visualization_msgs
   interactive_markers
   tf2_ros
+  tf2_msgs
+  tf2
+  tf2_geometry_msgs
+  sensor_msgs
   ament_index_cpp
   easynav_costmap_maps_manager
   easynav_routes_maps_manager
@@ -86,13 +100,6 @@ ament_export_dependencies(
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 
   find_package(ament_cmake_gtest REQUIRED)
