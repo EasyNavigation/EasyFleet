@@ -187,6 +187,16 @@ TEST_F(CapabilityDiscoveryTest, MalformedJsonStillRegistersTheCapabilityButFlags
   EXPECT_FALSE(result.front().description_json_valid);
 }
 
+TEST_F(CapabilityDiscoveryTest, WellFormedJsonThatIsNotAnObjectIsFlaggedInvalid)
+{
+  capabilities_pub_->publish(make_description("array_cap", "/array_cap", "[1, 2, 3]"));
+
+  auto result = easyfleet_mission_manager::discover_capabilities(*consumer_node_, 300ms);
+
+  ASSERT_EQ(result.size(), 1u);
+  EXPECT_FALSE(result.front().description_json_valid);
+}
+
 TEST_F(CapabilityDiscoveryTest, DiscoversMultipleDistinctCapabilities)
 {
   capabilities_pub_->publish(make_description("cap_a", "/cap_a", R"({})"));

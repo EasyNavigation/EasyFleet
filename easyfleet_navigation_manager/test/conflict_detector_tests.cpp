@@ -168,7 +168,7 @@ TEST(ConflictDetectorTest, AlreadyPausedRobotKeepsYieldingRegardlessOfPathLength
   EXPECT_EQ(*to_pause.begin(), "robot_a");
 }
 
-TEST(ConflictDetectorTest, BothAlreadyPausedStayPaused)
+TEST(ConflictDetectorTest, BothAlreadyPausedReleasesTheOneWithTheShorterPath)
 {
   std::map<std::string, nav_msgs::msg::Path> paths;
   paths["robot_a"] = make_straight_path(0.0, 0.0, 1.0, 0.0);
@@ -179,7 +179,133 @@ TEST(ConflictDetectorTest, BothAlreadyPausedStayPaused)
   const auto to_pause = easyfleet::compute_robots_to_pause(
     paths, easyfleet::ConflictParams(), already_paused);
 
-  EXPECT_EQ(to_pause, already_paused);
+  // Two robots waiting for each other would never move again.
+  EXPECT_EQ(to_pause, std::set<std::string>({"robot_b"}));
+}
+
+TEST(ConflictDetectorTest, ChainOfYieldsNeverLeavesAPairPausedForever)
+{
+  // a yields to b, b yields to c in the same tick: next tick a and b are
+  // both paused. Run ticks with the previous result as already_paused.
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(0.0, 0.0, 6.0, 0.0);
+  paths["robot_b"] = make_straight_path(1.0, 1.0, 1.0, -3.0);
+  paths["robot_c"] = make_straight_path(2.0, -1.5, 2.0, 0.5);
+
+  std::set<std::string> paused;
+  for (int tick = 0; tick < 5; ++tick) {
+    paused = easyfleet::compute_robots_to_pause(paths, easyfleet::ConflictParams(), paused);
+    EXPECT_LT(paused.size(), paths.size()) << "someone must always be free to move";
+  }
+}
+
+TEST(ConflictDetectorTest, CyclicConflictKeepsAtLeastOneRobotMoving)
+{
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(0.0, 0.0, 8.0, 0.0);
+  paths["robot_b"] = make_straight_path(0.5, 0.5, 0.5, -5.0);
+  paths["robot_c"] = make_straight_path(0.2, -0.4, 3.0, 0.4);
+  const std::set<std::string> all = {"robot_a", "robot_b", "robot_c"};
+
+  const auto to_pause =
+    easyfleet::compute_robots_to_pause(paths, easyfleet::ConflictParams(), all);
+  EXPECT_LT(to_pause.size(), all.size());
+}
+
+TEST(ConflictDetectorTest, PriorityRobotNeverYieldsToANonPriorityOne)
+{
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(0.0, 0.0, 1.0, 0.0);
+  paths["robot_b"] = make_straight_path(0.0, 1.0, 0.0, -4.0);
+
+  // robot_b is paused and would keep yielding; with priority it goes first.
+  const auto to_pause = easyfleet::compute_robots_to_pause(
+    paths, easyfleet::ConflictParams(), {"robot_b"}, nullptr, {"robot_b"});
+  EXPECT_EQ(to_pause, std::set<std::string>({"robot_a"}));
+}
+
+TEST(ConflictDetectorTest, BothWithPriorityFallsBackToTheNormalRules)
+{
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(0.0, 0.0, 1.0, 0.0);
+  paths["robot_b"] = make_straight_path(0.0, 1.0, 0.0, -4.0);
+
+  const auto to_pause = easyfleet::compute_robots_to_pause(
+    paths, easyfleet::ConflictParams(), {}, nullptr, {"robot_a", "robot_b"});
+  EXPECT_EQ(to_pause, std::set<std::string>({"robot_b"}));
+}
+
+TEST(ConflictDetectorTest, HysteresisKeepsAPausedRobotPausedJustAboveTheThreshold)
+{
+  // Parallel paths 0.7 m apart: above path_conflict_distance_m (0.6), below
+  // 0.6 * 1.5 = 0.9.
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(0.0, 0.0, 5.0, 0.0);
+  paths["robot_b"] = make_straight_path(0.0, 0.7, 5.0, 0.7);
+
+  EXPECT_TRUE(easyfleet::compute_robots_to_pause(paths).empty())
+    << "not close enough to start a pause";
+  EXPECT_EQ(
+    easyfleet::compute_robots_to_pause(paths, easyfleet::ConflictParams(), {"robot_a"}),
+    std::set<std::string>({"robot_a"})) << "but close enough to keep one";
+
+  paths["robot_b"] = make_straight_path(0.0, 1.0, 5.0, 1.0);
+  EXPECT_TRUE(
+    easyfleet::compute_robots_to_pause(paths, easyfleet::ConflictParams(), {"robot_a"}).empty())
+    << "beyond the hysteresis band the pause is released";
+}
+
+TEST(ConflictDetectorTest, HysteresisFactorOfOneDisablesIt)
+{
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(0.0, 0.0, 5.0, 0.0);
+  paths["robot_b"] = make_straight_path(0.0, 0.7, 5.0, 0.7);
+  easyfleet::ConflictParams params;
+  params.resume_hysteresis_factor = 1.0;
+  EXPECT_TRUE(easyfleet::compute_robots_to_pause(paths, params, {"robot_a"}).empty());
+}
+
+TEST(ConflictDetectorTest, TrimPathToPositionDropsTheDrivenPart)
+{
+  const auto path = make_straight_path(0.0, 0.0, 4.0, 0.0, 1.0);  // x = 0,1,2,3,4
+  geometry_msgs::msg::Point position;
+  position.x = 2.1;
+  position.y = 0.1;
+
+  const auto trimmed = easyfleet::trim_path_to_position(path, position);
+  ASSERT_EQ(trimmed.poses.size(), 3u);  // (2.1,0.1), 3, 4
+  EXPECT_DOUBLE_EQ(trimmed.poses[0].pose.position.x, 2.1);
+  EXPECT_DOUBLE_EQ(trimmed.poses[0].pose.position.y, 0.1);
+  EXPECT_DOUBLE_EQ(trimmed.poses[1].pose.position.x, 3.0);
+  EXPECT_EQ(trimmed.header.frame_id, path.header.frame_id);
+}
+
+TEST(ConflictDetectorTest, TrimPathToPositionEdgeCases)
+{
+  geometry_msgs::msg::Point position;
+  EXPECT_TRUE(easyfleet::trim_path_to_position(nav_msgs::msg::Path(), position).poses.empty());
+
+  const auto path = make_straight_path(0.0, 0.0, 4.0, 0.0, 1.0);
+  position.x = 10.0;  // past the end
+  const auto past_end = easyfleet::trim_path_to_position(path, position);
+  ASSERT_EQ(past_end.poses.size(), 1u);
+  EXPECT_DOUBLE_EQ(past_end.poses[0].pose.position.x, 10.0);
+
+  position.x = -3.0;  // before the start
+  EXPECT_EQ(easyfleet::trim_path_to_position(path, position).poses.size(), path.poses.size());
+}
+
+TEST(ConflictDetectorTest, StaleFrontOfPathHidesAConflictThatTheRealPositionReveals)
+{
+  // robot_a's path was planned from x = -5, but it has already driven to x = 0.
+  std::map<std::string, nav_msgs::msg::Path> paths;
+  paths["robot_a"] = make_straight_path(-5.0, 0.0, 5.0, 0.0);
+  paths["robot_b"] = make_straight_path(0.5, 1.5, 0.5, -3.0);
+  EXPECT_TRUE(easyfleet::compute_robots_to_pause(paths).empty());
+
+  geometry_msgs::msg::Point real;
+  paths["robot_a"] = easyfleet::trim_path_to_position(paths["robot_a"], real);
+  EXPECT_FALSE(easyfleet::compute_robots_to_pause(paths).empty());
 }
 
 TEST(ConflictDetectorTest, DecisionsAreReportedOnlyForNearbyPairs)

@@ -18,8 +18,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <mutex>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -46,19 +49,23 @@ namespace easyfleet_mission_manager::detail
 /// easyfleet::CapabilityState one to one -- the real, specific outcome is
 /// what a RobotHandle reports, never collapsed into a generic
 /// success/failure bit.
-inline easyfleet::CapabilityState outcome_to_state(uint8_t outcome_value)
+template<typename OutcomeT>
+easyfleet::CapabilityState outcome_to_state(OutcomeT outcome)
 {
-  // Mirrors easyfleet_core::ActionClient<ActionT>::GoalOutcome's values
-  // (CapabilityClient::Outcome is a direct alias of it) member for member.
-  switch (outcome_value) {
-    case 0: return easyfleet::CapabilityState::SUCCEEDED;
-    case 1: return easyfleet::CapabilityState::ABORTED;
-    case 2: return easyfleet::CapabilityState::CANCELED;
-    case 3: return easyfleet::CapabilityState::REJECTED;
-    case 4: return easyfleet::CapabilityState::TIMEOUT;
-    default: return easyfleet::CapabilityState::UNREACHABLE;  // SERVER_UNAVAILABLE
+  switch (outcome) {
+    case OutcomeT::SUCCEEDED: return easyfleet::CapabilityState::SUCCEEDED;
+    case OutcomeT::ABORTED: return easyfleet::CapabilityState::ABORTED;
+    case OutcomeT::CANCELED: return easyfleet::CapabilityState::CANCELED;
+    case OutcomeT::REJECTED: return easyfleet::CapabilityState::REJECTED;
+    case OutcomeT::TIMEOUT: return easyfleet::CapabilityState::TIMEOUT;
+    case OutcomeT::SERVER_UNAVAILABLE: return easyfleet::CapabilityState::UNREACHABLE;
   }
+  return easyfleet::CapabilityState::UNREACHABLE;
 }
+
+/// How long a canceled goal may take to report back before it is given up
+/// on and settled locally as TIMEOUT.
+constexpr std::chrono::seconds kCancelGrace(5);
 
 /// Non-template interface RobotHandle holds one of per capability type it
 /// has ever run, so it doesn't need to know ActionT itself for anything
@@ -76,7 +83,9 @@ public:
 
   /// Called periodically (from FleetSession::spin_some()) so a `timeout`
   /// passed to run() actually gets enforced without blocking the caller.
-  virtual void check_timeout() = 0;
+  /// @param alive Whether the capability's heartbeat is still being seen;
+  ///   a running goal on a dead capability is settled as UNREACHABLE.
+  virtual void check_timeout(bool alive) = 0;
 };
 
 /// The one concrete RunningCapabilityBase implementation, parameterized by
@@ -99,10 +108,10 @@ public:
     std::string robot_name,
     std::string capability_type,
     easyfleet_mission_manager::StatusMarkerPublisher & status)
-  : client_(Client::create(node, action_name)),
-    robot_name_(std::move(robot_name)),
+  : robot_name_(std::move(robot_name)),
     capability_type_(std::move(capability_type)),
-    status_(status)
+    status_(status),
+    client_(Client::create(node, action_name))
   {
   }
 
@@ -125,34 +134,29 @@ public:
     // produced spurious FAILED results for a robot whose goal was
     // preempted mid-mission. Only the request() call that is still the
     // *current* one when its callback fires is allowed to update state_.
-    const auto generation = generation_.fetch_add(1) + 1;
-    state_.store(easyfleet::CapabilityState::RUNNING);
+    uint64_t generation;
+    {
+      std::lock_guard<std::mutex> lock(settle_mutex_);
+      generation = ++generation_;
+      state_.store(easyfleet::CapabilityState::RUNNING);
+    }
     deadline_ = std::chrono::steady_clock::now() + timeout;
+    cancel_deadline_.reset();
     status_.set_status(robot_name_, "Running " + capability_type_);
 
     client_->request(
       goal,
       [this, generation](const typename Client::Response & response) {
-        if (generation_.load() != generation) {
-          return;
-        }
-        const auto new_state = outcome_to_state(static_cast<uint8_t>(response.outcome));
-        state_.store(new_state);
-        status_.set_status(
-          robot_name_,
-          capability_type_ + " -> " + easyfleet::to_string(new_state));
-        std::ostringstream out;
-        out << "  " << easyfleet_mission_manager::ansi::dim << "[" << robot_name_ << "/" <<
-          capability_type_ << "] " << easyfleet_mission_manager::ansi::reset <<
-          "finished with outcome " << easyfleet_mission_manager::ansi::magenta <<
-          easyfleet::to_string(new_state) << easyfleet_mission_manager::ansi::reset;
-        easyfleet_mission_manager::safe_print(out.str());
+        settle(generation, outcome_to_state(response.outcome));
       });
   }
 
   void stop() override
   {
-    client_->cancel();
+    if (state_.load() != easyfleet::CapabilityState::RUNNING) {
+      return;
+    }
+    request_cancel();
   }
 
   easyfleet::CapabilityState state() const override
@@ -160,24 +164,75 @@ public:
     return state_.load();
   }
 
-  void check_timeout() override
+  void check_timeout(bool alive) override
   {
-    if (state_.load() == easyfleet::CapabilityState::RUNNING &&
-      std::chrono::steady_clock::now() >= deadline_)
-    {
-      client_->cancel();
+    if (state_.load() != easyfleet::CapabilityState::RUNNING) {
+      return;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (!alive) {
+      // No heartbeat: the result may never come. Give up on this goal.
+      settle(std::nullopt, easyfleet::CapabilityState::UNREACHABLE);
+    } else if (cancel_deadline_ && now >= *cancel_deadline_) {
+      // Canceled, but the capability never reported back.
+      settle(std::nullopt, easyfleet::CapabilityState::TIMEOUT);
+    } else if (!cancel_deadline_ && now >= deadline_) {
+      request_cancel();
     }
   }
 
 private:
-  typename Client::SharedPtr client_;
+  /// Cancels the in-flight goal once; check_timeout() settles it as TIMEOUT
+  /// if no result arrives within kCancelGrace.
+  void request_cancel()
+  {
+    if (cancel_deadline_) {
+      return;
+    }
+    cancel_deadline_ = std::chrono::steady_clock::now() + kCancelGrace;
+    client_->cancel();
+  }
+
+  /// Records the final state of the current goal. With a `generation`, only
+  /// if that goal is still the current one (a result from the network);
+  /// without one, unconditionally, and later results are ignored (a local
+  /// decision to give up on the goal).
+  void settle(std::optional<uint64_t> generation, easyfleet::CapabilityState new_state)
+  {
+    {
+      std::lock_guard<std::mutex> lock(settle_mutex_);
+      if (generation) {
+        if (*generation != generation_) {
+          return;
+        }
+      } else {
+        ++generation_;
+      }
+      state_.store(new_state);
+    }
+    status_.set_status(robot_name_, capability_type_ + " -> " + easyfleet::to_string(new_state));
+    std::ostringstream out;
+    out << "  " << easyfleet_mission_manager::ansi::dim << "[" << robot_name_ << "/" <<
+      capability_type_ << "] " << easyfleet_mission_manager::ansi::reset <<
+      "finished with outcome " << easyfleet_mission_manager::ansi::magenta <<
+      easyfleet::to_string(new_state) << easyfleet_mission_manager::ansi::reset;
+    easyfleet_mission_manager::safe_print(out.str());
+  }
+
   std::string robot_name_;
   std::string capability_type_;
   easyfleet_mission_manager::StatusMarkerPublisher & status_;
   std::atomic<easyfleet::CapabilityState> state_{easyfleet::CapabilityState::IDLE};
   std::chrono::steady_clock::time_point deadline_;
-  /// Incremented on every run() call; see run()'s own comment for why.
-  std::atomic<uint64_t> generation_{0};
+  /// Set once the in-flight goal has been asked to cancel.
+  std::optional<std::chrono::steady_clock::time_point> cancel_deadline_;
+  /// Incremented on every run() call and on every local settle; see run()'s
+  /// own comment for why. Guarded, with state_ updates, by settle_mutex_.
+  std::mutex settle_mutex_;
+  uint64_t generation_{0};
+  /// Declared last so it is destroyed first: its destructor joins the thread
+  /// that runs the result callback above, which uses every other member.
+  typename Client::SharedPtr client_;
 };
 
 }  // namespace easyfleet_mission_manager::detail

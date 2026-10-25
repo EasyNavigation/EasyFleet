@@ -80,7 +80,9 @@ namespace easyfleet
 class RoutesPublisher
 {
 public:
-  /// @brief Read "routes.package"/"routes.map_path_file" from `node`,
+  /// @brief Read "routes.package"/"routes.map_path_file" (see
+  /// resolve_data_path()) and the optional "routes.save_path_file" (where
+  /// RViz edits are saved; defaults to the loaded file) from `node`,
   /// load the routes they name, publish them once on /global_routes
   /// (QoS: depth 1, transient_local, reliable, per the user's own spec
   /// for this topic), and set up the visualization + interactive-marker
@@ -108,9 +110,9 @@ private:
 
   /// @brief Handle interactive marker feedback: toggling edit mode,
   /// dragging an endpoint, or the add/remove-segment button controls.
-  /// A geometry-changing edit (drag/add/remove, as opposed to just
-  /// toggling edit mode) also republishes on /global_routes and
-  /// re-saves to map_path_.
+  /// A geometry-changing edit (add/remove, or releasing a dragged
+  /// endpoint -- not every intermediate drag update) also republishes on
+  /// /global_routes and re-saves to save_path_.
   void handle_interactive_feedback(
     const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr & feedback);
 
@@ -120,13 +122,14 @@ private:
   /// existing ones.
   void recompute_next_route_id();
 
-  /// @brief Persist routes_ to map_path_ (easynav::save_routes_to_yaml());
+  /// @brief Persist routes_ to save_path_ (easynav::save_routes_to_yaml());
   /// logs a warning on failure rather than throwing, since this runs
   /// from an interactive-marker feedback callback.
   void save_routes();
 
   rclcpp::Node * node_ {nullptr};
   std::string map_path_;
+  std::string save_path_;
   easynav::RoutesMap routes_;
   int next_route_id_ {0};
 

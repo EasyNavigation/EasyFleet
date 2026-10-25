@@ -15,6 +15,7 @@
 
 #include "easyfleet_easynav_navigation/bt_nodes/navigate.hpp"
 
+#include <chrono>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -63,7 +64,11 @@ Navigate::Navigate(const std::string & name, const BT::NodeConfig & config)
 
 BT::PortsList Navigate::providedPorts()
 {
-  return {BT::InputPort<std::string>("goal_id", "id of the waypoint to navigate to")};
+  return {
+    BT::InputPort<std::string>("goal_id", "id of the waypoint to navigate to"),
+    BT::InputPort<double>(
+      "response_timeout", 5.0, "seconds to wait for EasyNav to accept a goal before failing"),
+  };
 }
 
 BT::NodeStatus Navigate::onStart()
@@ -81,6 +86,15 @@ BT::NodeStatus Navigate::onStart()
     return BT::NodeStatus::FAILURE;
   }
 
+  last_send_time_ = std::chrono::steady_clock::now();
+  using State = easynav::GoalManagerClient::State;
+  const auto state = gm_client_->get_state();
+  if (state == State::SENT_GOAL || state == State::SENT_PREEMPT) {
+    // Still waiting for the answer to a previous send, which would make this
+    // one be ignored: onRunning() sends it as soon as the client can take it.
+    last_goal_id_.clear();
+    return BT::NodeStatus::RUNNING;
+  }
   last_goal_id_ = goal_id.value();
   reset_if_terminal(gm_client_);
   gm_client_->send_goal(it->second);
@@ -92,21 +106,39 @@ BT::NodeStatus Navigate::onRunning()
   // If the blackboard's goal_id changed while this node is still RUNNING,
   // re-send: EasyNav treats a new send_goal() from an already-navigating
   // client as a preemption of its current target.
+  using State = easynav::GoalManagerClient::State;
   const BT::Expected<std::string> goal_id = getInput<std::string>("goal_id");
-  if (goal_id && goal_id.value() != last_goal_id_) {
+  const auto state_before = gm_client_->get_state();
+  // GoalManagerClient ignores a send while it still waits for the answer to
+  // the previous one: keep the change pending and retry on the next tick.
+  if (goal_id && goal_id.value() != last_goal_id_ &&
+    state_before != State::SENT_GOAL && state_before != State::SENT_PREEMPT)
+  {
     const auto it = waypoints_->find(goal_id.value());
     if (it != waypoints_->end()) {
       last_goal_id_ = goal_id.value();
       reset_if_terminal(gm_client_);
       gm_client_->send_goal(it->second);
+      last_send_time_ = std::chrono::steady_clock::now();
     }
   }
 
-  using State = easynav::GoalManagerClient::State;
-  switch (gm_client_->get_state()) {
+  const auto state = gm_client_->get_state();
+  switch (state) {
     case State::IDLE:
     case State::SENT_GOAL:
     case State::SENT_PREEMPT:
+      {
+        // EasyNav never answered (not running, or the goal was lost).
+        const double timeout = getInput<double>("response_timeout").value_or(5.0);
+        if (std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - last_send_time_).count() > timeout)
+        {
+          std::cerr << "[Navigate] no answer from EasyNav after " << timeout << " s" << std::endl;
+          return BT::NodeStatus::FAILURE;
+        }
+        return BT::NodeStatus::RUNNING;
+      }
     case State::ACCEPTED_AND_NAVIGATING:
       return BT::NodeStatus::RUNNING;
     case State::NAVIGATION_FINISHED:

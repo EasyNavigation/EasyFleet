@@ -34,6 +34,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "easyfleet_mission_manager/fleet_session.hpp"
 #include "easyfleet_mission_manager/robot_handle.hpp"
@@ -48,25 +49,22 @@ void RobotHandle::run_capability(
   std::chrono::seconds timeout)
 {
   if (!session_) {
-    // Never add_robot()-ed to a FleetSession -- capabilities_ is
-    // unconditionally empty in that case too (only FleetSession::add_robot()
-    // can populate it, and it always attach()es first), so this would
-    // otherwise be silently swallowed by the "not active" branch below,
-    // indistinguishable from a real, already-attached robot that simply
-    // hasn't announced this capability yet. A caller bug, not a runtime
-    // condition to tolerate quietly.
+    // Never add_robot()-ed to a FleetSession (or the session is gone): there
+    // is no registry to look the capability up in. A caller bug, not a
+    // runtime condition to tolerate quietly.
     throw std::logic_error(
             "RobotHandle::run_capability(\"" + capability_type + "\", ...): this handle was "
             "never added to a FleetSession (call FleetSession::add_robot()/"
             "SimpleController::add_robot() first).");
   }
 
+  const auto capabilities = session_->capabilities_of(name_);
   const auto it = std::find_if(
-    capabilities_.begin(), capabilities_.end(),
+    capabilities.begin(), capabilities.end(),
     [&](const easyfleet_mission_manager::CapabilityInfo & info) {
       return info.capability == capability_type && info.active;
     });
-  if (it == capabilities_.end()) {
+  if (it == capabilities.end()) {
     easyfleet_mission_manager::safe_print(
       std::string(easyfleet_mission_manager::ansi::yellow) + "[" + name_ + "/" +
       capability_type + "] not active, skipping." + easyfleet_mission_manager::ansi::reset);

@@ -16,6 +16,7 @@
 #ifndef EASYFLEET_NAVIGATION_MANAGER__NAVIGATION_MANAGER_NODE_HPP_
 #define EASYFLEET_NAVIGATION_MANAGER__NAVIGATION_MANAGER_NODE_HPP_
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <set>
@@ -24,10 +25,12 @@
 
 #include "easyfleet_interfaces/msg/capability_status.hpp"
 #include "easyfleet_navigation_manager/conflict_detector.hpp"
+#include "easyfleet_navigation_manager/fleet_obstacles.hpp"
 #include "easyfleet_navigation_manager/map_publisher_base.hpp"
 #include "easyfleet_navigation_manager/robot_navigation_watcher.hpp"
 #include "easyfleet_navigation_manager/routes_publisher.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
 #include "tf2_ros/static_transform_broadcaster.hpp"
 
 namespace easyfleet
@@ -85,9 +88,9 @@ namespace easyfleet
  *   implementation to use. Only `"costmap"` exists today; any other
  *   value is a fatal configuration error.
  * - `map.package` / `map.map_path_file`: passed through to the chosen
- *   MapPublisherBase.
- * - `routes.package` / `routes.map_path_file`: passed through to
- *   RoutesPublisher.
+ *   MapPublisherBase (see resolve_data_path()).
+ * - `routes.package` / `routes.map_path_file` / `routes.save_path_file`:
+ *   passed through to RoutesPublisher.
  * - `robots.static_list` (string array, default empty): explicit, fixed
  *   list of robot namespaces to monitor (e.g. ["robot_1", "robot_2"]).
  *   When empty, the robot set is instead tracked dynamically via
@@ -105,7 +108,45 @@ namespace easyfleet
  * - `conflict.check_rate_hz` (double, default 2.0): how often the
  *   conflict-detection timer runs.
  * - `conflict.lookahead_distance_m`, `conflict.path_conflict_distance_m`,
- *   `conflict.proximity_radius_m`: see ConflictParams (conflict_detector.hpp).
+ *   `conflict.proximity_radius_m`, `conflict.resume_hysteresis_factor`:
+ *   see ConflictParams (conflict_detector.hpp).
+ * - `conflict.path_timeout_sec` (double, default 6.0): a robot whose last
+ *   path is older than this is ignored (its process may be dead).
+ * - `conflict.pose_timeout_sec` (double, default 2.0): the robot's
+ *   position from its navigation FEEDBACK is used instead of the front of
+ *   its path while it is at most this old.
+ * - `robots.relay_tf` (bool, default false): for robots that keep their TF
+ *   under their namespace (/<robot>/tf, /<robot>/tf_static, with
+ *   robot-prefixed frames), republish it on /tf and /tf_static so a
+ *   fleet-wide view (e.g. RViz) sees every robot at once.
+ * - `robots.relay_tf_frames` (string array, default empty = all): child
+ *   frames to relay, without the robot prefix (e.g. ["odom",
+ *   "base_footprint", "base_link"] is enough to place each base_link in
+ *   "map"); everything else stays inside the robot.
+ * - `robots.relay_tf_rate_hz` (double, default 0 = no limit): maximum rate
+ *   at which each relayed dynamic frame is republished.
+ * - `conflict.max_pause_sec` (double, default 30.0): a robot paused this
+ *   long gets priority over the robot it is yielding to (likely a
+ *   deadlock: the paused robot may be the one in the way).
+ * - `robots.share_obstacles` (bool, default false): publish, for each robot,
+ *   the other robots as an obstacle cloud on /<robot>/<obstacles_topic>
+ *   (sensor_msgs/PointCloud2 in "<robot>/map"), so its navigation avoids
+ *   robots its own sensors barely see. Each robot's pose comes from its
+ *   /<robot>/tf ("<robot>/map" -> ... -> "<robot>/<obstacles_base_frame>").
+ * - `robots.obstacles_topic` (string, default "fleet_obstacles"),
+ *   `robots.obstacles_rate_hz` (double, default 10.0),
+ *   `robots.obstacles_base_frame` (string, default "base_footprint"),
+ *   `robots.obstacle_radius_m` (double, default 0.25),
+ *   `robots.obstacle_height_m` (double, default 0.25): the cloud's topic,
+ *   rate, the frame placed in the map, and the disc drawn for each robot.
+ * - `robots.obstacles_pose_timeout_sec` (double, default 2.0): a robot whose
+ *   pose is older than this is left out of the clouds. A robot with no other
+ *   robot to see gets no cloud (it forgets the last one after its sensors'
+ *   forget_time).
+ *
+ * Only robots with an active navigation goal are considered. The manager
+ * re-sends PAUSE when a new goal clears it, and only resumes robots it
+ * paused itself: a pause from an operator is left alone.
  */
 class NavigationManagerNode : public rclcpp::Node
 {
@@ -133,6 +174,12 @@ private:
   /// that set.
   void check_conflicts();
 
+  /// @brief A watcher for `robot_id`, relaying its TF when `robots.relay_tf`.
+  std::unique_ptr<RobotNavigationWatcher> make_watcher(const std::string & robot_id);
+
+  /// @brief Whether `child_frame_id` of `robot_id` is in robots.relay_tf_frames.
+  bool relays_frame(const std::string & robot_id, const std::string & child_frame_id) const;
+
   /// @brief Broadcast a static, identity transform from the fleet-wide
   /// "map" frame to `robot_id`'s own "<robot_id>/map" frame, on
   /// /tf_static. Safe to call more than once for the same robot_id
@@ -140,15 +187,39 @@ private:
   /// child_frame_id, so a repeat call just re-sends the same transform).
   void publish_robot_map_tf(const std::string & robot_id);
 
+  /// @brief Publishes each watched robot's cloud of the other robots
+  /// (robots.share_obstacles).
+  void publish_fleet_obstacles();
+
   std::unique_ptr<MapPublisherBase> map_publisher_;
   RoutesPublisher routes_publisher_;
 
   std::string planner_plugin_key_;
   ConflictParams conflict_params_;
   std::vector<std::unique_ptr<RobotNavigationWatcher>> watchers_;
-  std::set<std::string> currently_paused_;
+  /// @brief Robots this manager has paused, and since when.
+  std::map<std::string, std::chrono::steady_clock::time_point> currently_paused_;
+  double path_timeout_sec_ {6.0};
+  double pose_timeout_sec_ {2.0};
+  double max_pause_sec_ {30.0};
 
   std::shared_ptr<tf2_ros::StaticTransformBroadcaster> map_tf_broadcaster_;
+  bool relay_tf_ {false};
+  std::set<std::string> relay_tf_frames_;
+  std::chrono::steady_clock::duration relay_tf_period_ {};
+  std::map<std::string, std::chrono::steady_clock::time_point> last_relayed_;
+  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
+
+  bool share_obstacles_ {false};
+  std::string obstacles_topic_ {"fleet_obstacles"};
+  std::string obstacles_base_frame_ {"base_footprint"};
+  double obstacles_pose_timeout_sec_ {2.0};
+  FleetObstacleParams obstacle_params_;
+  /// @brief robot -> its pose, from its own TF.
+  std::map<std::string, RobotPoseTracker> pose_trackers_;
+  std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr>
+  obstacle_pubs_;
+  rclcpp::TimerBase::SharedPtr obstacles_timer_;
 
   /// @brief Only used when `robots.static_list` is empty.
   rclcpp::Subscription<easyfleet_interfaces::msg::CapabilityStatus>::SharedPtr

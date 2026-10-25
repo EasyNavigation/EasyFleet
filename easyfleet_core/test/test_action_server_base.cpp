@@ -31,6 +31,8 @@ using namespace std::chrono_literals;
 using easyfleet_core_test::Fibonacci;
 using easyfleet_core_test::kOrderForgetToSettle;
 using easyfleet_core_test::kOrderThrow;
+using easyfleet_core_test::kOrderThrowNonStd;
+using easyfleet_core_test::kOrderThrowOnReceive;
 using easyfleet_core_test::TestFibonacciServer;
 using easyfleet_core_test::spin_in_background;
 using easyfleet_core_test::unique_test_name;
@@ -385,6 +387,225 @@ TEST_F(ActionServerBaseTest, SequentialGoalsRunOneAfterAnother)
   EXPECT_EQ(outcome2.code, rclcpp_action::ResultCode::SUCCEEDED);
 
   EXPECT_EQ(server_node_->goals_started(), goals_started_before + 2);
+}
+
+TEST_F(ActionServerBaseTest, NonStdExceptionDuringExecute_ResultsInAborted)
+{
+  auto outcome = send_and_wait(kOrderThrowNonStd);
+  ASSERT_TRUE(outcome.accepted);
+  EXPECT_EQ(outcome.code, rclcpp_action::ResultCode::ABORTED);
+
+  // The worker survived: the next goal still runs.
+  auto next = send_and_wait(2);
+  ASSERT_TRUE(next.accepted);
+  EXPECT_EQ(next.code, rclcpp_action::ResultCode::SUCCEEDED);
+}
+
+TEST_F(ActionServerBaseTest, ExceptionInOnGoalReceived_RejectsGoalAndServerKeepsWorking)
+{
+  auto outcome = send_and_wait(kOrderThrowOnReceive);
+  EXPECT_FALSE(outcome.accepted);
+
+  auto next = send_and_wait(2);
+  ASSERT_TRUE(next.accepted);
+  EXPECT_EQ(next.code, rclcpp_action::ResultCode::SUCCEEDED);
+}
+
+TEST_F(ActionServerBaseTest, CancelRejectedByOnCancelRequested_GoalRunsToCompletion)
+{
+  server_node_->set_step_delay(30ms);
+  server_node_->set_reject_cancel(true);
+
+  auto handle = send_async(5);
+  ASSERT_TRUE(handle);
+  auto cancel_future = client_->async_cancel_goal(handle);
+  ASSERT_EQ(cancel_future.wait_for(5s), std::future_status::ready);
+  EXPECT_TRUE(cancel_future.get()->goals_canceling.empty());
+
+  auto result_future = client_->async_get_result(handle);
+  ASSERT_EQ(result_future.wait_for(5s), std::future_status::ready);
+  EXPECT_EQ(result_future.get().code, rclcpp_action::ResultCode::SUCCEEDED);
+  server_node_->set_reject_cancel(false);
+}
+
+/// Fixture for tests that need a server of their own (stopped, disabled or
+/// destroyed during the test), so the shared one keeps working for the rest.
+class OwnServerTest : public ::testing::Test
+{
+protected:
+  void SetUp() override
+  {
+    make_server(true);
+  }
+
+  void make_server(bool allow_preemption)
+  {
+    action_name_ = unique_test_name("fibonacci_own");
+    server_ = std::make_shared<TestFibonacciServer>(
+      unique_test_name("own_server"), allow_preemption, action_name_);
+    client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("own_client"));
+    client_ = rclcpp_action::create_client<Fibonacci>(client_node_, action_name_);
+    executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    executor_->add_node(server_);
+    executor_->add_node(client_node_);
+    spin_thread_ = spin_in_background(*executor_);
+    ASSERT_TRUE(client_->wait_for_action_server(5s));
+  }
+
+  void TearDown() override
+  {
+    executor_->cancel();
+    if (spin_thread_.joinable()) {
+      spin_thread_.join();
+    }
+    executor_.reset();
+    client_.reset();
+    client_node_.reset();
+    server_.reset();
+  }
+
+  rclcpp_action::ClientGoalHandle<Fibonacci>::SharedPtr send(int32_t order)
+  {
+    Fibonacci::Goal goal;
+    goal.order = order;
+    auto future = client_->async_send_goal(goal);
+    if (future.wait_for(5s) != std::future_status::ready) {
+      ADD_FAILURE() << "Timed out waiting for goal response";
+      return nullptr;
+    }
+    return future.get();
+  }
+
+  rclcpp_action::ResultCode result_of(
+    const rclcpp_action::ClientGoalHandle<Fibonacci>::SharedPtr & handle)
+  {
+    auto future = client_->async_get_result(handle);
+    if (future.wait_for(5s) != std::future_status::ready) {
+      ADD_FAILURE() << "Timed out waiting for goal result";
+      return rclcpp_action::ResultCode::UNKNOWN;
+    }
+    return future.get().code;
+  }
+
+  std::string action_name_;
+  std::shared_ptr<TestFibonacciServer> server_;
+  rclcpp::Node::SharedPtr client_node_;
+  rclcpp_action::Client<Fibonacci>::SharedPtr client_;
+  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
+  std::thread spin_thread_;
+};
+
+TEST_F(OwnServerTest, GoalsAreEnabledByDefault)
+{
+  EXPECT_TRUE(server_->goals_enabled());
+}
+
+TEST_F(OwnServerTest, DisableGoals_StopsTheRunningGoalAndRejectsNewOnes)
+{
+  server_->set_step_delay(100ms);
+  auto running = send(50);
+  ASSERT_TRUE(running);
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+
+  const auto start = std::chrono::steady_clock::now();
+  server_->disable_goals();
+  // Returns only once the running goal has stopped, well before it would
+  // have finished on its own (50 steps x 100 ms).
+  EXPECT_LT(std::chrono::steady_clock::now() - start, 2s);
+  EXPECT_FALSE(server_->is_active());
+  EXPECT_FALSE(server_->goals_enabled());
+  EXPECT_EQ(result_of(running), rclcpp_action::ResultCode::ABORTED);
+
+  EXPECT_FALSE(send(2)) << "goals must be rejected while disabled";
+}
+
+TEST_F(OwnServerTest, EnableGoalsAfterDisable_AcceptsGoalsAgain)
+{
+  server_->disable_goals();
+  EXPECT_FALSE(send(2));
+  server_->enable_goals();
+  EXPECT_TRUE(server_->goals_enabled());
+  auto handle = send(2);
+  ASSERT_TRUE(handle);
+  EXPECT_EQ(result_of(handle), rclcpp_action::ResultCode::SUCCEEDED);
+}
+
+TEST_F(OwnServerTest, DisableGoalsWhileIdle_ReturnsImmediately)
+{
+  const auto start = std::chrono::steady_clock::now();
+  server_->disable_goals();
+  server_->disable_goals();
+  EXPECT_LT(std::chrono::steady_clock::now() - start, 200ms);
+}
+
+TEST_F(OwnServerTest, Stop_AbortsTheRunningGoalIsIdempotentAndCannotBeReEnabled)
+{
+  server_->set_step_delay(100ms);
+  auto running = send(50);
+  ASSERT_TRUE(running);
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+
+  server_->stop();
+  EXPECT_EQ(result_of(running), rclcpp_action::ResultCode::ABORTED);
+  server_->stop();
+
+  server_->enable_goals();
+  EXPECT_FALSE(server_->goals_enabled()) << "a stopped server stays stopped";
+  EXPECT_FALSE(send(2));
+}
+
+TEST_F(OwnServerTest, DestroyingTheServerWhileAGoalRuns_IsSafe)
+{
+  server_->set_step_delay(100ms);
+  auto running = send(50);
+  ASSERT_TRUE(running);
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+
+  auto result_future = client_->async_get_result(running);
+  executor_->remove_node(server_);
+  server_.reset();  // ~TestFibonacciServer() -> stop(): no call into a destroyed object.
+  SUCCEED();
+}
+
+TEST_F(OwnServerTest, PreemptionDisallowed_BurstOfGoalsAcceptsOnlyOne)
+{
+  TearDown();
+  make_server(false);
+  server_->set_step_delay(100ms);
+
+  // Fire several goals without waiting for any response: at most one may be
+  // accepted, whether the first is still queued or already running.
+  std::vector<std::shared_future<rclcpp_action::ClientGoalHandle<Fibonacci>::SharedPtr>> futures;
+  for (int i = 0; i < 5; ++i) {
+    Fibonacci::Goal goal;
+    goal.order = 10;
+    futures.push_back(client_->async_send_goal(goal));
+  }
+  int accepted = 0;
+  for (auto & future : futures) {
+    ASSERT_EQ(future.wait_for(5s), std::future_status::ready);
+    if (future.get()) {
+      ++accepted;
+    }
+  }
+  EXPECT_EQ(accepted, 1);
+  server_->disable_goals();
+}
+
+TEST_F(OwnServerTest, IsShutdownRequestedIsFalseOnceGoalsAreEnabledAgain)
+{
+  server_->set_step_delay(100ms);
+  auto running = send(50);
+  ASSERT_TRUE(running);
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+  server_->disable_goals();
+  server_->enable_goals();
+
+  // A new goal must not see a stale stop request and abort at once.
+  server_->set_step_delay(10ms);
+  auto next = send(3);
+  ASSERT_TRUE(next);
+  EXPECT_EQ(result_of(next), rclcpp_action::ResultCode::SUCCEEDED);
 }
 
 int main(int argc, char ** argv)

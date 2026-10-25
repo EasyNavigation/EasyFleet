@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "ament_index_cpp/get_package_share_path.hpp"
+#include "easyfleet_navigation_manager/data_path.hpp"
 #include "easynav_routes_maps_manager/route_io.hpp"
 
 namespace easyfleet
@@ -40,14 +40,13 @@ void RoutesPublisher::publish(rclcpp::Node & node)
 
   const std::string package_name = node.declare_parameter("routes.package", std::string());
   const std::string map_path_file = node.declare_parameter("routes.map_path_file", std::string());
+  const std::string save_path_file =
+    node.declare_parameter("routes.save_path_file", std::string());
 
-  if (package_name.empty() || map_path_file.empty()) {
-    throw std::runtime_error(
-            "Parameters 'routes.package' and 'routes.map_path_file' must both be set.");
-  }
-
-  const auto pkgpath = ament_index_cpp::get_package_share_path(package_name);
-  map_path_ = (pkgpath / map_path_file).string();
+  map_path_ = resolve_data_path(package_name, map_path_file, "routes");
+  // An installed package share is read-only (and with --symlink-install it
+  // is the source tree): edits go to save_path_file when it is set.
+  save_path_ = save_path_file.empty() ? map_path_ : save_path_file;
 
   routes_ = easynav::load_routes_from_yaml(map_path_);
   recompute_next_route_id();
@@ -137,10 +136,10 @@ void RoutesPublisher::recompute_next_route_id()
 void RoutesPublisher::save_routes()
 {
   std::string error_message;
-  if (!easynav::save_routes_to_yaml(map_path_, routes_, error_message)) {
+  if (!easynav::save_routes_to_yaml(save_path_, routes_, error_message)) {
     RCLCPP_WARN(
       node_->get_logger(), "Failed to save routes to '%s': %s",
-      map_path_.c_str(), error_message.c_str());
+      save_path_.c_str(), error_message.c_str());
   }
 }
 
@@ -460,11 +459,10 @@ void RoutesPublisher::handle_interactive_feedback(
   // a UI-editor-state change (RouteSegment::edit_mode is never carried
   // over the wire or saved to YAML), so this does not republish on
   // /global_routes or save to file.
+  // BUTTON_CLICK only: RViz also sends MOUSE_UP for the same click, and
+  // reacting to both would apply it twice.
   if (feedback->control_name == "toggle_edit" &&
-    (feedback->event_type ==
-    visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK ||
-    feedback->event_type ==
-    visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP))
+    feedback->event_type == visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK)
   {
     // name is <id>_mode
     const auto underscore_pos = name.rfind("_");
@@ -482,11 +480,10 @@ void RoutesPublisher::handle_interactive_feedback(
   }
 
   // Creation of a new segment from this endpoint
+  // BUTTON_CLICK only: RViz also sends MOUSE_UP for the same click, and
+  // reacting to both would apply it twice.
   if (feedback->control_name == "add_segment" &&
-    (feedback->event_type ==
-    visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK ||
-    feedback->event_type ==
-    visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP))
+    feedback->event_type == visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK)
   {
     // Compute forward direction from marker orientation (assume x-forward).
     const auto & p = feedback->pose.position;
@@ -524,11 +521,10 @@ void RoutesPublisher::handle_interactive_feedback(
   }
 
   // Removal of the segment this endpoint belongs to
+  // BUTTON_CLICK only: RViz also sends MOUSE_UP for the same click, and
+  // reacting to both would apply it twice.
   if (feedback->control_name == "remove_segment" &&
-    (feedback->event_type ==
-    visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK ||
-    feedback->event_type ==
-    visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP))
+    feedback->event_type == visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK)
   {
     // marker_name is either <id>_start or <id>_end
     const auto underscore_pos = name.rfind("_");
@@ -548,23 +544,37 @@ void RoutesPublisher::handle_interactive_feedback(
     return;
   }
 
-  // Endpoint dragged/rotated: update that segment's start or end pose.
+  // Any other event of a button control (e.g. the MOUSE_UP RViz sends
+  // with every click) is not a drag.
+  if (feedback->control_name == "toggle_edit" || feedback->control_name == "add_segment" ||
+    feedback->control_name == "remove_segment")
+  {
+    return;
+  }
+
+  // Endpoint dragged/rotated: while dragging (POSE_UPDATE) only the drawn
+  // routes follow; robots get the new routes, and the file is written,
+  // once the endpoint is released (MOUSE_UP).
+  using Feedback = visualization_msgs::msg::InteractiveMarkerFeedback;
+  if (feedback->event_type != Feedback::POSE_UPDATE &&
+    feedback->event_type != Feedback::MOUSE_UP)
+  {
+    return;
+  }
   for (auto & seg : routes_) {
-    if (name == seg.id + "_start") {
-      seg.start = feedback->pose;
-      publish_routes_msg();
-      publish_routes_markers();
-      publish_interactive_markers();
-      save_routes();
-      return;
-    } else if (name == seg.id + "_end") {
-      seg.end = feedback->pose;
-      publish_routes_msg();
-      publish_routes_markers();
-      publish_interactive_markers();
-      save_routes();
-      return;
+    const bool is_start = name == seg.id + "_start";
+    const bool is_end = name == seg.id + "_end";
+    if (!is_start && !is_end) {
+      continue;
     }
+    (is_start ? seg.start : seg.end) = feedback->pose;
+    publish_routes_markers();
+    if (feedback->event_type == Feedback::MOUSE_UP) {
+      publish_routes_msg();
+      publish_interactive_markers();
+      save_routes();
+    }
+    return;
   }
 }
 

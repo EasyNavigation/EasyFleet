@@ -27,19 +27,16 @@
 namespace easyfleet
 {
 
-namespace
-{
-
-/// How long without a heartbeat before is_alive() gives up on a
-/// capability -- a few times the 1 Hz heartbeat period Capability<T>
-/// itself publishes at, so one or two dropped messages don't flip it.
-constexpr std::chrono::seconds kAliveTimeout(3);
-
-}  // namespace
-
 RobotHandle::RobotHandle(std::string name)
 : name_(std::move(name))
 {
+}
+
+RobotHandle::~RobotHandle()
+{
+  if (session_) {
+    session_->remove_robot(*this);
+  }
 }
 
 const std::string & RobotHandle::name() const noexcept
@@ -49,8 +46,9 @@ const std::string & RobotHandle::name() const noexcept
 
 bool RobotHandle::has_capability(const std::string & capability_type) const
 {
+  const auto all = capabilities();
   return std::any_of(
-    capabilities_.begin(), capabilities_.end(),
+    all.begin(), all.end(),
     [&](const easyfleet_mission_manager::CapabilityInfo & info) {
       return info.capability == capability_type && info.active;
     });
@@ -80,28 +78,27 @@ CapabilityState RobotHandle::capability_state(const std::string & capability_typ
 
 bool RobotHandle::is_alive(const std::string & capability_type) const
 {
-  const auto it = last_heartbeat_.find(capability_type);
-  if (it == last_heartbeat_.end()) {
-    return false;
-  }
-  return std::chrono::steady_clock::now() - it->second < kAliveTimeout;
+  return session_ && session_->is_alive(name_, capability_type);
 }
 
 void RobotHandle::print_capabilities() const
 {
-  for (const auto & info : capabilities_) {
+  const auto all = capabilities();
+  for (const auto & info : all) {
     easyfleet_mission_manager::print_capability_summary_line(info);
   }
-  for (const auto & info : capabilities_) {
+  for (const auto & info : all) {
     easyfleet_mission_manager::safe_print("");
     easyfleet_mission_manager::print_capability_info(info);
   }
 }
 
-const std::vector<easyfleet_mission_manager::CapabilityInfo> & RobotHandle::capabilities()
-const noexcept
+std::vector<easyfleet_mission_manager::CapabilityInfo> RobotHandle::capabilities() const
 {
-  return capabilities_;
+  if (!session_) {
+    return {};
+  }
+  return session_->capabilities_of(name_);
 }
 
 void RobotHandle::attach(FleetSession & session)
@@ -109,23 +106,16 @@ void RobotHandle::attach(FleetSession & session)
   session_ = &session;
 }
 
-void RobotHandle::set_capabilities(
-  std::vector<easyfleet_mission_manager::CapabilityInfo> capabilities)
+void RobotHandle::detach() noexcept
 {
-  capabilities_ = std::move(capabilities);
-}
-
-void RobotHandle::note_heartbeat(
-  const std::string & capability_type, std::chrono::steady_clock::time_point when)
-{
-  last_heartbeat_[capability_type] = when;
+  running_.clear();
+  session_ = nullptr;
 }
 
 void RobotHandle::check_timeouts()
 {
   for (auto & [capability_type, running] : running_) {
-    (void)capability_type;
-    running->check_timeout();
+    running->check_timeout(is_alive(capability_type));
   }
 }
 

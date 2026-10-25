@@ -14,15 +14,22 @@
 # limitations under the License.
 
 """
-Python mirror of easyfleet_mission_manager.
+Python mirror of easyfleet_mission_manager, plus a Python capability base.
 
 FleetSession/RobotHandle/SimpleController for writing mission
 controllers in Python instead of C++, talking the same wire protocol
 (/capabilities, /capabilities_status, the easyfleet_interfaces
 actions) -- a Python mission script and a C++ one are interchangeable
 against the same fleet.
+
+Capability/ActionServerBase are the other side of that same wire
+protocol: a Python mirror of easyfleet_core's Capability<ActionServerT>/
+ActionServerBase<ActionT>, for *implementing* a capability in Python
+instead of C++.
 """
 
+from .action_server_base import ActionServerBase
+from .capability import Capability, spin_capability
 from .capability_client import CapabilityClient
 from .capability_client import Outcome as CapabilityOutcome
 from .capability_client import Response as CapabilityResponse
@@ -54,6 +61,8 @@ from .throttle import Throttle
 
 __all__ = [
     'RUN_TIMEOUT_SEC',
+    'ActionServerBase',
+    'Capability',
     'CapabilityClient',
     'CapabilityInfo',
     'CapabilityOutcome',
@@ -81,5 +90,6 @@ __all__ = [
     'print_capability_summary_line',
     'print_section',
     'print_step',
+    'spin_capability',
     'spin_in_background',
 ]

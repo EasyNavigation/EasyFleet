@@ -140,6 +140,36 @@ TEST(DeploymentTest, StartConfiguresAndActivatesEveryCapability)
   }
 }
 
+TEST(DeploymentTest, TryStartReturnsTrueWhenEveryCapabilityActivates)
+{
+  easyfleet::Deployment deployment("robot_1");
+  deployment.add_capability(
+    "test_capability/fibonacci", options_with_capabilities_file(R"({"name":"test"})"));
+  EXPECT_TRUE(deployment.try_start());
+}
+
+TEST(DeploymentTest, TryStartFailureRollsEveryCapabilityBackToUnconfigured)
+{
+  easyfleet::Deployment deployment("robot_1");
+  deployment.add_capability(
+    "test_capability/fibonacci", options_with_capabilities_file(R"({"name":"ok"})"));
+  // No capabilities_file: configures fine, fails to activate.
+  deployment.add_capability("test_capability_two/fibonacci");
+
+  EXPECT_FALSE(deployment.try_start());
+  for (const auto & capability : deployment.capabilities()) {
+    EXPECT_EQ(
+      capability->get_current_state_id(), lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED)
+      << capability->get_capability_name() << " must not be left half-started";
+  }
+}
+
+TEST(DeploymentTest, TryStartWithNoCapabilitiesSucceedsTrivially)
+{
+  easyfleet::Deployment deployment("robot_1");
+  EXPECT_TRUE(deployment.try_start());
+}
+
 TEST(DeploymentTest, AddCapabilitiesFromParametersLoadsEveryConfiguredCapability)
 {
   // Deployment::add_capabilities_from_parameters() reads its "capabilities"/

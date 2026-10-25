@@ -49,10 +49,17 @@ class FakeNavCapabilityProcess:
     actually talk to one over ROS, not a shortcut into the same process.
     """
 
-    def __init__(self, robot_name: str, mock_duration_sec: float = 0.0):
+    def __init__(
+            self, robot_name: str, mock_duration_sec: float = 0.0, reject_cancel: bool = False,
+            description_json: str = '{"display_name": "Fake Navigation"}'):
         self._robot_name = robot_name
         self._mock_duration_sec = mock_duration_sec
+        self._reject_cancel = reject_cancel
         self._busy = False
+        self._heartbeat_on = True
+        self._frozen = False
+        self._shut_down = threading.Event()
+        self.cancel_requests = 0
 
         self._node = rclpy.create_node(
             'fake_nav_capability', namespace=f'/{robot_name}',
@@ -65,7 +72,7 @@ class FakeNavCapabilityProcess:
             self._node, Navigation, action_name,
             execute_callback=self._execute,
             goal_callback=self._on_goal,
-            cancel_callback=lambda goal_handle: CancelResponse.ACCEPT,
+            cancel_callback=self._on_cancel,
             callback_group=action_group)
 
         capabilities_pub = self._node.create_publisher(
@@ -77,7 +84,7 @@ class FakeNavCapabilityProcess:
         description.robot = robot_name
         description.capability = 'navigation'
         description.action_name = action_name
-        description.description_json = '{"display_name": "Fake Navigation"}'
+        description.description_json = description_json
         capabilities_pub.publish(description)
 
         self._status_pub = self._node.create_publisher(
@@ -96,7 +103,29 @@ class FakeNavCapabilityProcess:
         while not self._executor.is_spinning:
             time.sleep(0)
 
+    def _on_cancel(self, goal_handle):
+        del goal_handle
+        self.cancel_requests += 1
+        return CancelResponse.REJECT if self._reject_cancel else CancelResponse.ACCEPT
+
+    def stop_heartbeat(self) -> None:
+        """Stop heartbeats, as a deactivated capability does."""
+        self._heartbeat_on = False
+
+    def resume_heartbeat(self) -> None:
+        self._heartbeat_on = True
+
+    def freeze(self) -> None:
+        """Simulate a hung process: no more heartbeats, no more answers."""
+        self._frozen = True
+        # Don't wait for the pool: the held goal only returns at teardown.
+        self._executor.shutdown(timeout_sec=0.0, wait_for_threads=False)
+        if self._spin_thread.is_alive():
+            self._spin_thread.join(timeout=5.0)
+
     def _publish_heartbeat(self) -> None:
+        if not self._heartbeat_on:
+            return
         msg = CapabilityStatus()
         msg.robot = self._robot_name
         msg.capability = 'navigation'
@@ -115,6 +144,10 @@ class FakeNavCapabilityProcess:
             step = 0.02
             remaining = self._mock_duration_sec
             while remaining > 0.0:
+                if self._frozen:
+                    # A dead process answers nothing: hold the goal until teardown.
+                    self._shut_down.wait()
+                    return Navigation.Result()
                 if goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     return Navigation.Result()
@@ -126,6 +159,8 @@ class FakeNavCapabilityProcess:
             self._busy = False
 
     def shutdown(self) -> None:
+        self._frozen = True
+        self._shut_down.set()
         self._executor.shutdown()
         if self._spin_thread.is_alive():
             self._spin_thread.join()

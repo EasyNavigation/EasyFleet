@@ -17,8 +17,10 @@
 #define EASYFLEET_MISSION_MANAGER__MISSION_HELPERS_HPP_
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -57,8 +59,17 @@ constexpr std::chrono::seconds kRunTimeout(10);
 /// reliably interrupts a `spin()` that has already started.
 inline std::thread spin_in_background(rclcpp::Executor & executor)
 {
-  std::thread thread([&executor] {executor.spin();});
-  while (!executor.is_spinning()) {
+  // `exited` covers a spin() that returns or throws at once (e.g. the
+  // context is already shut down), which would otherwise hang the wait.
+  auto exited = std::make_shared<std::atomic_bool>(false);
+  std::thread thread([&executor, exited] {
+      try {
+        executor.spin();
+      } catch (const std::exception &) {
+      }
+      exited->store(true);
+    });
+  while (!executor.is_spinning() && !exited->load()) {
     std::this_thread::yield();
   }
   return thread;

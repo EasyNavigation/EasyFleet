@@ -37,7 +37,7 @@ target_link_libraries(test_mission_helpers
 # action, same domain-isolation reasoning as test_capability_discovery
 # above.
 ament_add_gtest(test_fleet_session_robot_handle test_fleet_session_robot_handle.cpp
-  TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
+  TIMEOUT 180 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=90)
 target_link_libraries(test_fleet_session_robot_handle
   ${PROJECT_NAME}

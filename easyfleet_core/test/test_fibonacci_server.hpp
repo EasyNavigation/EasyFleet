@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_CORE__TEST__TEST_FIBONACCI_SERVER_HPP_
-#define EASYFLEET_CORE__TEST__TEST_FIBONACCI_SERVER_HPP_
+#ifndef TEST_FIBONACCI_SERVER_HPP_
+#define TEST_FIBONACCI_SERVER_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -38,6 +38,10 @@ using Fibonacci = example_interfaces::action::Fibonacci;
 // needing extra fields on the goal message.
 constexpr int32_t kOrderThrow = -100;
 constexpr int32_t kOrderForgetToSettle = -101;
+/// on_execute() throws something that is not a std::exception.
+constexpr int32_t kOrderThrowNonStd = -102;
+/// on_goal_received() throws.
+constexpr int32_t kOrderThrowOnReceive = -103;
 
 /// Minimal, fully test-controllable action server built on top of
 /// easyfleet_core::ActionServerBase<Fibonacci>. `order` drives how many
@@ -57,9 +61,20 @@ public:
   {
   }
 
+  ~TestFibonacciServer() override
+  {
+    // Join the worker while this derived object still exists.
+    stop();
+  }
+
   void set_step_delay(std::chrono::milliseconds delay)
   {
     step_delay_ms_.store(delay.count());
+  }
+
+  void set_reject_cancel(bool reject)
+  {
+    reject_cancel_.store(reject);
   }
 
   int goals_started() const {return goals_started_.load();}
@@ -71,7 +86,12 @@ protected:
     const rclcpp_action::GoalUUID & /*uuid*/,
     std::shared_ptr<const Fibonacci::Goal> goal) override
   {
-    if (goal->order < 0 && goal->order != kOrderThrow && goal->order != kOrderForgetToSettle) {
+    if (goal->order == kOrderThrowOnReceive) {
+      throw std::runtime_error("bad goal");
+    }
+    if (goal->order < 0 && goal->order != kOrderThrow && goal->order != kOrderForgetToSettle &&
+      goal->order != kOrderThrowNonStd)
+    {
       return rclcpp_action::GoalResponse::REJECT;
     }
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -80,7 +100,8 @@ protected:
   rclcpp_action::CancelResponse on_cancel_requested(
     const GoalHandleSharedPtr /*goal_handle*/) override
   {
-    return rclcpp_action::CancelResponse::ACCEPT;
+    return reject_cancel_.load() ? rclcpp_action::CancelResponse::REJECT :
+           rclcpp_action::CancelResponse::ACCEPT;
   }
 
   void on_preempted(const GoalHandleSharedPtr & preempted_goal_handle) override
@@ -96,6 +117,9 @@ protected:
 
     if (order == kOrderThrow) {
       throw std::runtime_error("boom");
+    }
+    if (order == kOrderThrowNonStd) {
+      throw 42;
     }
     if (order == kOrderForgetToSettle) {
       return;
@@ -145,6 +169,7 @@ protected:
 
 private:
   std::atomic<int64_t> step_delay_ms_{20};
+  std::atomic_bool reject_cancel_{false};
   std::atomic<int> goals_started_{0};
   std::atomic<int> goals_preempted_{0};
   std::atomic<int> on_preempted_calls_{0};
@@ -152,4 +177,4 @@ private:
 
 }  // namespace easyfleet_core_test
 
-#endif  // EASYFLEET_CORE__TEST__TEST_FIBONACCI_SERVER_HPP_
+#endif  // TEST_FIBONACCI_SERVER_HPP_

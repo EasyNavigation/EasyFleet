@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EASYFLEET_CORE__TEST__TEST_CAPABILITY_SERVER_HPP_
-#define EASYFLEET_CORE__TEST__TEST_CAPABILITY_SERVER_HPP_
+#ifndef TEST_CAPABILITY_SERVER_HPP_
+#define TEST_CAPABILITY_SERVER_HPP_
 
 #include <chrono>
 #include <memory>
@@ -52,6 +52,12 @@ public:
     mock_delay_s_ = node.declare_parameter(action_name + ".mock_delay_seconds", 0.0);
   }
 
+  ~TestCapabilityActionServer() override
+  {
+    // Join the worker while this derived object still exists.
+    stop();
+  }
+
 protected:
   rclcpp_action::GoalResponse on_goal_received(
     const rclcpp_action::GoalUUID & /*uuid*/,
@@ -65,8 +71,17 @@ protected:
 
   void on_execute(const GoalHandleSharedPtr goal_handle) override
   {
-    if (mock_delay_s_ > 0.0) {
-      std::this_thread::sleep_for(std::chrono::duration<double>(mock_delay_s_));
+    // Holds the goal open for mock_delay_s_, stopping early (aborted) if the
+    // capability is deactivated or destroyed meanwhile.
+    const auto deadline = std::chrono::steady_clock::now() +
+      std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+      std::chrono::duration<double>(mock_delay_s_));
+    while (std::chrono::steady_clock::now() < deadline) {
+      if (is_shutdown_requested()) {
+        goal_handle->abort(std::make_shared<Fibonacci::Result>());
+        return;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     auto result = std::make_shared<Fibonacci::Result>();
     result->sequence = {0, 1};
@@ -79,4 +94,4 @@ private:
 
 }  // namespace easyfleet_core_test
 
-#endif  // EASYFLEET_CORE__TEST__TEST_CAPABILITY_SERVER_HPP_
+#endif  // TEST_CAPABILITY_SERVER_HPP_

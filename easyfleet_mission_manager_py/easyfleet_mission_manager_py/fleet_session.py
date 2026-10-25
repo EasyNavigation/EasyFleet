@@ -15,16 +15,24 @@
 
 """FleetSession, mirroring easyfleet_mission_manager's fleet_session.hpp/.cpp."""
 
+import copy
+import threading
 import time
 
-from easyfleet_interfaces.msg import CapabilityStatus
+from easyfleet_interfaces.msg import CapabilityDescription, CapabilityStatus
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.qos import QoSProfile, ReliabilityPolicy
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 
-from .capability_discovery import discover_capabilities as _discover_capabilities
+from .capability_discovery import apply_description
+from .capability_info import CapabilityInfo
 from .mission_helpers import spin_in_background
 from .status_markers import StatusMarkerPublisher
+
+
+# How long without a heartbeat before a capability counts as dead -- a few
+# times the 1 Hz heartbeat period, so one or two dropped messages don't flip it.
+ALIVE_TIMEOUT_SEC = 3.0
 
 
 class FleetSession:
@@ -33,9 +41,9 @@ class FleetSession:
 
     Regardless of what decides *when* to command which robot: the ROS
     node and background-spinning executor every RobotHandle rides on,
-    one shared capability discovery pass, the registry of added robots,
-    and the automatic status markers RobotHandle.run_capability()
-    publishes.
+    a live registry of every capability announced on /capabilities and
+    /capabilities_status, the registry of added robots, and the
+    automatic status markers RobotHandle.run_capability() publishes.
 
     `SimpleController` -- a plain mission script driving robots by hand
     -- is the simplest possible thing built on top of a FleetSession,
@@ -58,31 +66,82 @@ class FleetSession:
 
     def __init__(self):
         self._node = rclpy.create_node('mission_control')
-        self._executor = SingleThreadedExecutor()
-        self._executor.add_node(self._node)
-        self._spin_thread = spin_in_background(self._executor)
         self._status = StatusMarkerPublisher(self._node)
         self._robots: list = []
 
-        # Persistent (unlike discover_capabilities()'s own temporary
-        # subscription) so is_alive() reflects the *current* liveness of
-        # every robot's capabilities for the whole mission, not just a
-        # discovery-time snapshot -- dispatched to whichever attached
-        # RobotHandle matches the message's robot field.
+        # Live capability registry, keyed by resolved action name: both
+        # subscriptions live as long as the session, so a capability that
+        # appears, restarts or dies at any point of the mission is seen.
+        self._registry_lock = threading.Lock()
+        self._registry: dict[str, CapabilityInfo] = {}
+        self._last_heartbeat: dict[str, float] = {}
+        self._capability_description_sub = self._node.create_subscription(
+            CapabilityDescription, '/capabilities', self._on_capability_description,
+            QoSProfile(
+                depth=10, reliability=ReliabilityPolicy.RELIABLE,
+                durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self._capability_status_sub = self._node.create_subscription(
             CapabilityStatus, '/capabilities_status', self._on_capability_status,
             QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
 
+        self._executor = SingleThreadedExecutor()
+        self._executor.add_node(self._node)
+        self._spin_thread = spin_in_background(self._executor)
+
+    def _on_capability_description(self, msg: CapabilityDescription) -> None:
+        with self._registry_lock:
+            info = self._registry.setdefault(msg.action_name, CapabilityInfo())
+            apply_description(info, msg)
+
     def _on_capability_status(self, msg: CapabilityStatus) -> None:
+        with self._registry_lock:
+            info = self._registry.setdefault(msg.action_name, CapabilityInfo())
+            info.robot = msg.robot
+            info.capability = msg.capability
+            info.action_name = msg.action_name
+            info.busy = msg.busy
+            self._last_heartbeat[msg.action_name] = time.monotonic()
+
+    def _alive(self, action_name: str, now: float) -> bool:
+        last = self._last_heartbeat.get(action_name)
+        return last is not None and now - last < ALIVE_TIMEOUT_SEC
+
+    def capabilities_of(self, robot_name: str) -> list:
+        """Every capability currently known for `robot_name`; `active` = recent heartbeat."""
         now = time.monotonic()
-        robot = self.find_robot(msg.robot)
-        if robot is not None:
-            robot._note_heartbeat(msg.capability, now)
+        result = []
+        with self._registry_lock:
+            for action_name, info in self._registry.items():
+                if info.robot == robot_name:
+                    snapshot = copy.copy(info)
+                    snapshot.active = self._alive(action_name, now)
+                    result.append(snapshot)
+        return result
+
+    def is_alive(self, robot_name: str, capability_type: str) -> bool:
+        """Return whether a heartbeat was seen recently for this capability."""
+        now = time.monotonic()
+        with self._registry_lock:
+            return any(
+                info.robot == robot_name and info.capability == capability_type and
+                self._alive(action_name, now)
+                for action_name, info in self._registry.items())
 
     def add_robot(self, robot) -> None:
         """Add `robot` to this session, attaching it so it can be discovered and commanded."""
+        if robot._session is not None:
+            from .robot_handle import MissionManagerError
+            raise MissionManagerError(
+                f'FleetSession.add_robot("{robot.name}"): this robot is already attached '
+                'to a session.')
         self._robots.append(robot)
         robot._attach(self)
+
+    def remove_robot(self, robot) -> None:
+        """Detach `robot` from this session, dropping its running goals."""
+        if robot in self._robots:
+            self._robots.remove(robot)
+            robot._detach()
 
     @property
     def robots(self) -> list:
@@ -98,14 +157,13 @@ class FleetSession:
 
     def discover_capabilities(self, window_sec: float = 2.5) -> None:
         """
-        Run exactly one discovery scan and fan the results out to every added RobotHandle.
+        Wait `window_sec` so the live capability registry can fill up.
 
-        Never a redundant per-robot re-scan.
+        Retained descriptions plus at least one 1 Hz heartbeat each. The
+        registry keeps updating afterwards: this is a startup wait, not a
+        snapshot.
         """
-        all_capabilities = _discover_capabilities(self._node, window_sec)
-        for robot in self._robots:
-            this_robot = [info for info in all_capabilities if info.robot == robot.name]
-            robot._set_capabilities(this_robot)
+        self.spin_for(window_sec)
 
     def spin_some(self) -> None:
         """
@@ -155,5 +213,9 @@ class FleetSession:
         if self._spin_thread.is_alive():
             self._executor.shutdown()
             self._spin_thread.join()
+        # Robots that outlive the session must not reach back into it.
+        for robot in list(self._robots):
+            robot._detach()
+        self._robots.clear()
         self._executor.remove_node(self._node)
         self._node.destroy_node()

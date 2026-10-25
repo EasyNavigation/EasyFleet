@@ -24,8 +24,11 @@
 
 #include <atomic>
 #include <future>
+#include <memory>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "easyfleet_core/detail/param_utils.hpp"
 
@@ -68,11 +71,23 @@ ActionClient<ActionT>::ActionClient(
 
   executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
   executor_->add_node(internal_node_);
-  spin_thread_ = std::thread([this] {executor_->spin();});
+  spin_thread_ = std::thread(
+    [this] {
+      try {
+        executor_->spin();
+      } catch (const std::exception & e) {
+        RCLCPP_ERROR(
+          internal_node_->get_logger(), "Action client '%s': spin failed: %s",
+          action_name_.c_str(), e.what());
+      }
+      spin_exited_.store(true);
+    });
   // executor_->cancel() only reliably interrupts a spin() that has already
   // started; calling it any earlier (e.g. if this object is destroyed right
   // after construction) can race with the thread above and block forever.
-  while (!executor_->is_spinning()) {
+  // spin_exited_ covers a spin() that returns or throws at once (e.g. the
+  // context is already shut down).
+  while (!executor_->is_spinning() && !spin_exited_.load()) {
     std::this_thread::yield();
   }
 }
@@ -141,8 +156,15 @@ bool ActionClient<ActionT>::send_goal(
       };
   }
 
+  uint64_t send_id;
+  {
+    std::lock_guard<std::mutex> lock(goals_mutex_);
+    send_id = next_send_id_++;
+  }
+
   send_options.goal_response_callback =
-    [this, result_callback, goal_response_callback](typename ClientGoalHandle::SharedPtr handle)
+    [this, send_id, result_callback, goal_response_callback](
+    typename ClientGoalHandle::SharedPtr handle)
     {
       if (!handle) {
         if (goal_response_callback) {
@@ -153,9 +175,15 @@ bool ActionClient<ActionT>::send_goal(
         }
         return;
       }
+      bool cancel_now;
       {
         std::lock_guard<std::mutex> lock(goals_mutex_);
         active_goals_[rclcpp_action::to_string(handle->get_goal_id())] = handle;
+        cancel_now = send_id < cancel_before_;
+      }
+      if (cancel_now) {
+        // cancel_all_goals() was called before the server answered.
+        request_cancel(handle);
       }
       if (goal_response_callback) {
         goal_response_callback(true, handle->get_goal_id());
@@ -184,21 +212,69 @@ typename ActionClient<ActionT>::GoalResult ActionClient<ActionT>::send_goal_and_
   FeedbackCallback feedback_callback,
   std::chrono::milliseconds timeout)
 {
+  struct WaitState
+  {
+    std::mutex mutex;
+    std::optional<rclcpp_action::GoalUUID> goal_id;
+    bool cancel_on_accept{false};
+  };
+  auto state = std::make_shared<WaitState>();
   auto promise = std::make_shared<std::promise<GoalResult>>();
   auto future = promise->get_future();
 
-  send_goal(
+  const bool sent = send_goal(
     goal,
     [promise](const GoalResult & result) {
       promise->set_value(result);
     },
-    feedback_callback);
-
-  if (timeout.count() <= 0) {
+    feedback_callback,
+    [this, state](bool accepted, const rclcpp_action::GoalUUID & goal_id) {
+      if (!accepted) {
+        return;
+      }
+      bool cancel_now;
+      {
+        std::lock_guard<std::mutex> lock(state->mutex);
+        state->goal_id = goal_id;
+        cancel_now = state->cancel_on_accept;
+      }
+      if (cancel_now) {
+        cancel_goal(goal_id);
+      }
+    });
+  if (!sent) {
     return future.get();
   }
-  if (future.wait_for(timeout) == std::future_status::timeout) {
-    return GoalResult{GoalOutcome::TIMEOUT, {}, nullptr};
+
+  auto current_goal_id = [state]() {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      return state->goal_id.value_or(rclcpp_action::GoalUUID{});
+    };
+
+  const auto start = std::chrono::steady_clock::now();
+  std::optional<std::chrono::steady_clock::time_point> unreachable_since;
+  while (future.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready) {
+    const auto now = std::chrono::steady_clock::now();
+    if (timeout.count() > 0 && now - start >= timeout) {
+      // Don't leave the goal running on the server behind our back.
+      std::optional<rclcpp_action::GoalUUID> goal_id;
+      {
+        std::lock_guard<std::mutex> lock(state->mutex);
+        goal_id = state->goal_id;
+        state->cancel_on_accept = true;
+      }
+      if (goal_id) {
+        cancel_goal(*goal_id);
+      }
+      return GoalResult{GoalOutcome::TIMEOUT, current_goal_id(), nullptr};
+    }
+    if (client_->action_server_is_ready()) {
+      unreachable_since.reset();
+    } else if (!unreachable_since) {
+      unreachable_since = now;
+    } else if (now - *unreachable_since >= default_server_timeout_) {
+      return GoalResult{GoalOutcome::SERVER_UNAVAILABLE, current_goal_id(), nullptr};
+    }
   }
   return future.get();
 }
@@ -215,14 +291,41 @@ bool ActionClient<ActionT>::cancel_goal(const rclcpp_action::GoalUUID & goal_id)
     }
     handle = it->second;
   }
-  client_->async_cancel_goal(handle);
-  return true;
+  return request_cancel(handle);
+}
+
+template<typename ActionT>
+bool ActionClient<ActionT>::request_cancel(const typename ClientGoalHandle::SharedPtr & handle)
+{
+  try {
+    client_->async_cancel_goal(handle);
+    return true;
+  } catch (const rclcpp::exceptions::RCLError & e) {
+    // Typically the context is already shut down (Ctrl-C mid-goal): there
+    // is nothing left to cancel through, and it must not end the process.
+    RCLCPP_WARN(
+      internal_node_->get_logger(), "Action client '%s': could not request a cancel: %s",
+      action_name_.c_str(), e.what());
+    return false;
+  }
 }
 
 template<typename ActionT>
 void ActionClient<ActionT>::cancel_all_goals()
 {
-  client_->async_cancel_all_goals();
+  std::vector<typename ClientGoalHandle::SharedPtr> handles;
+  {
+    std::lock_guard<std::mutex> lock(goals_mutex_);
+    cancel_before_ = next_send_id_;
+    handles.reserve(active_goals_.size());
+    for (const auto & [goal_id, handle] : active_goals_) {
+      (void)goal_id;
+      handles.push_back(handle);
+    }
+  }
+  for (const auto & handle : handles) {
+    request_cancel(handle);
+  }
 }
 
 template<typename ActionT>

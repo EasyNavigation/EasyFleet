@@ -94,6 +94,14 @@ rclcpp::Node::SharedPtr Deployment::config_node()
 
 void Deployment::add_capabilities_from_parameters(const std::string & package_name)
 {
+  if (!try_add_capabilities_from_parameters(package_name)) {
+    rclcpp::shutdown();
+    std::exit(1);
+  }
+}
+
+bool Deployment::try_add_capabilities_from_parameters(const std::string & package_name)
+{
   const auto node = config_node();
   const auto capability_names = node->declare_parameter(
     "capabilities", std::vector<std::string>());
@@ -103,9 +111,8 @@ void Deployment::add_capabilities_from_parameters(const std::string & package_na
   if (capability_names.empty()) {
     RCLCPP_FATAL(
       node->get_logger(),
-      "No 'capabilities' configured for this robot -- nothing to host, exiting.");
-    rclcpp::shutdown();
-    std::exit(1);
+      "No 'capabilities' configured for this robot -- nothing to host.");
+    return false;
   }
 
   const std::filesystem::path share_dir = ament_index_cpp::get_package_share_path(package_name);
@@ -120,28 +127,49 @@ void Deployment::add_capabilities_from_parameters(const std::string & package_na
     options.parameter_overrides({rclcpp::Parameter("capabilities_file", capabilities_file)});
     add_capability(plugin_lookup_name, options);
   }
+  return true;
 }
 
 void Deployment::start()
 {
+  if (!try_start()) {
+    rclcpp::shutdown();
+    std::exit(1);
+  }
+}
+
+bool Deployment::try_start()
+{
+  auto roll_back = [this]() {
+      for (auto it = capabilities_.rbegin(); it != capabilities_.rend(); ++it) {
+        if ((*it)->get_current_state_id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
+          (*it)->deactivate_node();
+        }
+        if ((*it)->get_current_state_id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE) {
+          (*it)->cleanup_node();
+        }
+      }
+    };
+
   for (const auto & capability : capabilities_) {
     if (capability->configure_node() != CallbackReturn::SUCCESS) {
       RCLCPP_FATAL(
-        rclcpp::get_logger(name_), "Capability '%s' failed to configure, exiting.",
+        rclcpp::get_logger(name_), "Capability '%s' failed to configure.",
         capability->get_capability_name().c_str());
-      rclcpp::shutdown();
-      std::exit(1);
+      roll_back();
+      return false;
     }
   }
   for (const auto & capability : capabilities_) {
     if (capability->activate_node() != CallbackReturn::SUCCESS) {
       RCLCPP_FATAL(
-        rclcpp::get_logger(name_), "Capability '%s' failed to activate, exiting.",
+        rclcpp::get_logger(name_), "Capability '%s' failed to activate.",
         capability->get_capability_name().c_str());
-      rclcpp::shutdown();
-      std::exit(1);
+      roll_back();
+      return false;
     }
   }
+  return true;
 }
 
 void Deployment::run()

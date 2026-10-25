@@ -298,6 +298,12 @@ TEST_F(CapabilityTest, GetActionServerExposesAWorkingActionServer)
   ASSERT_TRUE(action_server);
   EXPECT_EQ(action_server->get_action_name(), capability_name_);
 
+  // Goals are only served while the capability is ACTIVE.
+  capability_->set_parameter(
+    rclcpp::Parameter("capabilities_file", make_capabilities_file("{}")));
+  capability_->configure();
+  capability_->activate();
+
   auto client_node = std::make_shared<rclcpp::Node>(unique_test_name("test_capability_client"));
   auto client = rclcpp_action::create_client<Fibonacci>(client_node, capability_name_);
   executor_.add_node(client_node);
@@ -402,6 +408,161 @@ TEST(CapabilityStandaloneTest, RobotAndActionNameReflectTheNamespaceAtRuntime)
 
   EXPECT_EQ(capability->get_robot_name(), "robot1");
   EXPECT_EQ(capability->get_resolved_action_name(), "/robot1/" + name);
+}
+
+/// A capability with its own executor and a raw action client, for tests
+/// about which lifecycle states accept goals.
+class GatedCapabilityTest : public ::testing::Test
+{
+protected:
+  void SetUp() override
+  {
+    name_ = unique_test_name("test_capability_gated");
+    rclcpp::NodeOptions options;
+    options.parameter_overrides({rclcpp::Parameter(name_ + ".mock_delay_seconds", 5.0)});
+    capability_ = std::make_shared<TestCapability>(name_, options);
+    path_ = make_temp_file("{}");
+    client_node_ = std::make_shared<rclcpp::Node>(unique_test_name("gated_client"));
+    client_ = rclcpp_action::create_client<Fibonacci>(client_node_, name_);
+    executor_.add_node(capability_->get_node_base_interface());
+    executor_.add_node(client_node_);
+    spin_thread_ = spin_in_background(executor_);
+    ASSERT_TRUE(client_->wait_for_action_server(5s));
+  }
+
+  void TearDown() override
+  {
+    executor_.cancel();
+    if (spin_thread_.joinable()) {
+      spin_thread_.join();
+    }
+    client_.reset();
+    client_node_.reset();
+    capability_.reset();
+    std::remove(path_.c_str());
+  }
+
+  void activate(const std::string & file)
+  {
+    capability_->set_parameter(rclcpp::Parameter("capabilities_file", file));
+    capability_->configure();
+    capability_->activate();
+  }
+
+  rclcpp_action::ClientGoalHandle<Fibonacci>::SharedPtr send()
+  {
+    Fibonacci::Goal goal;
+    goal.order = 3;
+    auto future = client_->async_send_goal(goal);
+    if (future.wait_for(5s) != std::future_status::ready) {
+      ADD_FAILURE() << "Timed out waiting for goal response";
+      return nullptr;
+    }
+    return future.get();
+  }
+
+  std::string name_;
+  std::string path_;
+  std::shared_ptr<TestCapability> capability_;
+  rclcpp::Node::SharedPtr client_node_;
+  rclcpp_action::Client<Fibonacci>::SharedPtr client_;
+  rclcpp::executors::SingleThreadedExecutor executor_;
+  std::thread spin_thread_;
+};
+
+TEST_F(GatedCapabilityTest, GoalsAreRejectedWhileUnconfigured)
+{
+  EXPECT_FALSE(send());
+}
+
+TEST_F(GatedCapabilityTest, GoalsAreRejectedWhileInactive)
+{
+  capability_->set_parameter(rclcpp::Parameter("capabilities_file", path_));
+  capability_->configure();
+  EXPECT_FALSE(send());
+}
+
+TEST_F(GatedCapabilityTest, GoalsAreAcceptedOnceActive)
+{
+  activate(path_);
+  EXPECT_TRUE(send());
+}
+
+TEST_F(GatedCapabilityTest, FailedActivationKeepsGoalsRejectedAndPublishesNothing)
+{
+  auto sub_node = std::make_shared<rclcpp::Node>(unique_test_name("gated_sub"));
+  auto collector = std::make_shared<Collector<CapabilityDescription>>();
+  auto sub = sub_node->create_subscription<CapabilityDescription>(
+    "/capabilities", rclcpp::QoS(10).reliable().transient_local(),
+    [this, collector](const CapabilityDescription::SharedPtr msg) {
+      if (msg->capability == name_) {
+        collector->callback(msg);
+      }
+    });
+  executor_.add_node(sub_node);
+
+  activate("/no/such/file/exists.json");
+  EXPECT_EQ(
+    capability_->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+  EXPECT_FALSE(send());
+  std::this_thread::sleep_for(500ms);
+  EXPECT_EQ(collector->count(), 0u);
+  executor_.remove_node(sub_node);
+}
+
+TEST_F(GatedCapabilityTest, DeactivateStopsTheRunningGoalAndRejectsNewOnes)
+{
+  activate(path_);
+  auto running = send();
+  ASSERT_TRUE(running);
+  auto action_server = capability_->get_action_server();
+  ASSERT_TRUE(wait_until([&] {return action_server->is_active();}, 2s));
+
+  const auto start = std::chrono::steady_clock::now();
+  capability_->deactivate();
+  // The 5 s goal was stopped, not waited for.
+  EXPECT_LT(std::chrono::steady_clock::now() - start, 2s);
+  EXPECT_FALSE(action_server->is_active());
+
+  auto result_future = client_->async_get_result(running);
+  ASSERT_EQ(result_future.wait_for(5s), std::future_status::ready);
+  EXPECT_EQ(result_future.get().code, rclcpp_action::ResultCode::ABORTED);
+  EXPECT_FALSE(send());
+}
+
+TEST_F(GatedCapabilityTest, ReactivateAcceptsGoalsAgain)
+{
+  activate(path_);
+  capability_->deactivate();
+  EXPECT_FALSE(send());
+  capability_->activate();
+  EXPECT_TRUE(send());
+}
+
+TEST_F(GatedCapabilityTest, CleanupAndShutdownWithAGoalRunningStopIt)
+{
+  activate(path_);
+  auto running = send();
+  ASSERT_TRUE(running);
+  auto action_server = capability_->get_action_server();
+  ASSERT_TRUE(wait_until([&] {return action_server->is_active();}, 2s));
+
+  capability_->shutdown();
+  EXPECT_FALSE(action_server->is_active());
+  EXPECT_FALSE(send());
+}
+
+TEST_F(GatedCapabilityTest, DestroyingTheCapabilityWithAGoalRunningIsSafe)
+{
+  activate(path_);
+  ASSERT_TRUE(send());
+  auto action_server = capability_->get_action_server();
+  ASSERT_TRUE(wait_until([&] {return action_server->is_active();}, 2s));
+  action_server.reset();
+
+  executor_.remove_node(capability_->get_node_base_interface());
+  capability_.reset();  // ~Capability() stops the worker before the server dies.
+  SUCCEED();
 }
 
 int main(int argc, char ** argv)

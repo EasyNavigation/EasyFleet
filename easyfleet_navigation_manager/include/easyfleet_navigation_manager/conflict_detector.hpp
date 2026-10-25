@@ -41,6 +41,12 @@ struct ConflictParams
   /// "están cerca y es evidente que se van a estorbar" two-part
   /// requirement: proximity now, and about to cross paths.
   double proximity_radius_m {3.0};
+  /// @brief A pair with a robot already paused stays in conflict until its
+  /// paths are this many times farther apart than `path_conflict_distance_m`
+  /// (and the robots this many times farther than `proximity_radius_m`), so
+  /// a robot whose replanned path wobbles around the threshold is not
+  /// paused and resumed over and over.
+  double resume_hysteresis_factor {1.5};
 };
 
 /// @brief Explains one pair's evaluation -- only produced for pairs that
@@ -68,6 +74,16 @@ struct ConflictDecision
   std::string reason;
 };
 
+/// @brief `path` as seen from the robot's actual `position`: the part
+/// already driven (up to the path point nearest to `position`) is dropped
+/// and `position` becomes the first pose. Planned paths are only as fresh
+/// as the last replanning, so their first pose can lag behind the robot.
+/// @param path Planned path.
+/// @param position Robot's current position, in the path's frame.
+/// @return The trimmed path; `path` unchanged if it is empty.
+nav_msgs::msg::Path trim_path_to_position(
+  const nav_msgs::msg::Path & path, const geometry_msgs::msg::Point & position);
+
 /// @brief Decide which robots should currently be paused to avoid an
 /// imminent navigation conflict.
 ///
@@ -90,8 +106,16 @@ struct ConflictDecision
 ///   robot yields mid-conflict as the paused one's replanned remaining
 ///   path changes length while it sits still, needlessly pausing the
 ///   robot that was already making way.
-/// - If both are already in `already_paused`, both remain in the result
-///   (no new decision needed).
+/// - If both are already in `already_paused` (e.g. each yielded to a
+///   third robot in the same tick), the one with the longer remaining path
+///   keeps yielding and the other is released: two robots that wait for
+///   each other would otherwise stay paused forever.
+/// - A robot in `priority` never yields to one that isn't: the caller
+///   gives priority to a robot that has waited too long, so a robot that
+///   is paused but physically in the other's way doesn't block it forever.
+///
+/// Pairs with an already paused robot use the hysteresis thresholds (see
+/// `ConflictParams::resume_hysteresis_factor`).
 ///
 /// Robots with an empty path are skipped entirely (nothing to conflict
 /// with; also nothing to pause). The lookahead-segment proximity check
@@ -106,6 +130,7 @@ struct ConflictDecision
 ///   because of a still-active conflict with a third robot, or a
 ///   previous tick's decision on this same pair) -- see the yielding
 ///   rules above.
+/// @param priority Robots that must not yield (see above).
 /// @param decisions Optional: if non-null, appended with one
 ///   ConflictDecision per pair that was at least within
 ///   `params.proximity_radius_m` (whether or not it ended up in
@@ -118,7 +143,8 @@ std::set<std::string> compute_robots_to_pause(
   const std::map<std::string, nav_msgs::msg::Path> & robot_paths,
   const ConflictParams & params = ConflictParams(),
   const std::set<std::string> & already_paused = {},
-  std::vector<ConflictDecision> * decisions = nullptr);
+  std::vector<ConflictDecision> * decisions = nullptr,
+  const std::set<std::string> & priority = {});
 
 }  // namespace easyfleet
 

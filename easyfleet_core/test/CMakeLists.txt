@@ -50,6 +50,17 @@ target_link_libraries(test_action_client
   GTest::gtest
 )
 
+# Own process: forks a child action server and SIGKILLs it. The timeout
+# allows for DDS noticing the dead participant.
+ament_add_gtest(test_action_client_server_loss test_action_client_server_loss.cpp
+  TIMEOUT 90 SKIP_LINKING_MAIN_LIBRARIES
+  ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=69)
+target_link_libraries(test_action_client_server_loss
+  ${PROJECT_NAME}
+  example_interfaces::example_interfaces
+  GTest::gtest
+)
+
 ament_add_gtest(test_integration test_integration.cpp
   TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
   ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=63)
@@ -85,6 +96,14 @@ target_link_libraries(test_deployment
   GTest::gtest
 )
 add_dependencies(test_deployment test_capability_factory_plugin)
+
+ament_add_gtest(test_deployment_no_capabilities test_deployment_no_capabilities.cpp
+  TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
+  ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=68)
+target_link_libraries(test_deployment_no_capabilities
+  ${PROJECT_NAME}
+  GTest::gtest
+)
 
 # Isolated from test_deployment.cpp/every other test binary: Deployment::
 # shutdown() calls rclcpp::shutdown(), which invalidates the ROS context

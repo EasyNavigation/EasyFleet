@@ -18,7 +18,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "ament_index_cpp/get_package_share_path.hpp"
+#include "easyfleet_navigation_manager/data_path.hpp"
 #include "easynav_costmap_maps_manager/map_io.hpp"
 
 namespace easyfleet
@@ -29,14 +29,7 @@ void CostmapMapPublisher::publish(rclcpp::Node & node)
   const std::string package_name = node.declare_parameter("map.package", std::string());
   const std::string map_path_file = node.declare_parameter("map.map_path_file", std::string());
 
-  if (package_name.empty() || map_path_file.empty()) {
-    throw std::runtime_error(
-            "Parameters 'map.package' and 'map.map_path_file' must both be set for "
-            "map_type 'costmap'.");
-  }
-
-  const auto pkgpath = ament_index_cpp::get_package_share_path(package_name);
-  const std::string map_path = (pkgpath / map_path_file).string();
+  const std::string map_path = resolve_data_path(package_name, map_path_file, "map");
 
   nav_msgs::msg::OccupancyGrid grid;
   if (easynav::loadMapFromYaml(map_path, grid) != easynav::LOAD_MAP_SUCCESS) {
