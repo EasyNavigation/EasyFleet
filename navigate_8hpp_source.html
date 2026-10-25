@@ -130,44 +130,46 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('navigate_8hpp_
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="preprocessor">#ifndef EASYFLEET_EASYNAV_NAVIGATION__BT_NODES__NAVIGATE_HPP_</span></div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="preprocessor">#define EASYFLEET_EASYNAV_NAVIGATION__BT_NODES__NAVIGATE_HPP_</span></div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span> </div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &lt;map&gt;</span></div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;memory&gt;</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;string&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;behaviortree_cpp/action_node.h&quot;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;easynav_system/GoalManagerClient.hpp&quot;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &quot;geometry_msgs/msg/pose_stamped.hpp&quot;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span>easyfleet_easynav_navigation</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>{</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span></div>
-<div class="foldopen" id="foldopen00034" data-start="{" data-end="};">
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="classeasyfleet__easynav__navigation_1_1Navigate.html">   34</a></span><span class="keyword">class </span><a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92">Navigate</a> : <span class="keyword">public</span> BT::StatefulActionNode</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>{</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92">Navigate</a>(<span class="keyword">const</span> std::string &amp; name, <span class="keyword">const</span> BT::NodeConfig &amp; config);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keyword">static</span> BT::PortsList <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#af917f167381981f8cfc7b479e9a76f49">providedPorts</a>();</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  BT::NodeStatus <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90ffb5ea14302d5578fd67e700614288">onStart</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  BT::NodeStatus <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90a1421f6191f4c28b9a4f969a08e16f">onRunning</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a48ecf4a322c233a781dc752b41f7f070">onHalted</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>  std::shared_ptr&lt;const std::map&lt;std::string, geometry_msgs::msg::PoseStamped&gt;&gt; waypoints_;</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>  easynav::GoalManagerClient::SharedPtr gm_client_;</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>  std::string last_goal_id_;</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>};</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &lt;chrono&gt;</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;map&gt;</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;memory&gt;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;string&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;behaviortree_cpp/action_node.h&quot;</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &quot;easynav_system/GoalManagerClient.hpp&quot;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &quot;geometry_msgs/msg/pose_stamped.hpp&quot;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span>easyfleet_easynav_navigation</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>{</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span></div>
+<div class="foldopen" id="foldopen00035" data-start="{" data-end="};">
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="classeasyfleet__easynav__navigation_1_1Navigate.html">   35</a></span><span class="keyword">class </span><a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92">Navigate</a> : <span class="keyword">public</span> BT::StatefulActionNode</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>{</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92">Navigate</a>(<span class="keyword">const</span> std::string &amp; name, <span class="keyword">const</span> BT::NodeConfig &amp; config);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <span class="keyword">static</span> BT::PortsList <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#af917f167381981f8cfc7b479e9a76f49">providedPorts</a>();</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  BT::NodeStatus <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90ffb5ea14302d5578fd67e700614288">onStart</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>  BT::NodeStatus <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90a1421f6191f4c28b9a4f969a08e16f">onRunning</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet__easynav__navigation_1_1Navigate.html#a48ecf4a322c233a781dc752b41f7f070">onHalted</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>  std::shared_ptr&lt;const std::map&lt;std::string, geometry_msgs::msg::PoseStamped&gt;&gt; waypoints_;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>  easynav::GoalManagerClient::SharedPtr gm_client_;</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>  std::string last_goal_id_;</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>  std::chrono::steady_clock::time_point last_send_time_;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>};</div>
 </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>}  <span class="comment">// namespace easyfleet_easynav_navigation</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="preprocessor">#endif  </span><span class="comment">// EASYFLEET_EASYNAV_NAVIGATION__BT_NODES__NAVIGATE_HPP_</span></div>
-<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a48ecf4a322c233a781dc752b41f7f070"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a48ecf4a322c233a781dc752b41f7f070">easyfleet_easynav_navigation::Navigate::onHalted</a></div><div class="ttdeci">void onHalted() override</div><div class="ttdoc">No-op: an in-flight EasyNav goal is left alone on halt, deliberately (see the class-level design note...</div><div class="ttdef"><b>Definition</b> navigate.cpp:123</div></div>
-<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a51bb985bcf8653737d02f07c7c399d92"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92">easyfleet_easynav_navigation::Navigate::Navigate</a></div><div class="ttdeci">Navigate(const std::string &amp;name, const BT::NodeConfig &amp;config)</div><div class="ttdoc">Constructs the BT node.</div><div class="ttdef"><b>Definition</b> navigate.cpp:53</div></div>
-<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a90a1421f6191f4c28b9a4f969a08e16f"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90a1421f6191f4c28b9a4f969a08e16f">easyfleet_easynav_navigation::Navigate::onRunning</a></div><div class="ttdeci">BT::NodeStatus onRunning() override</div><div class="ttdoc">Polls gm_client_ for the in-flight goal&#39;s progress.</div><div class="ttdef"><b>Definition</b> navigate.cpp:90</div></div>
-<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a90ffb5ea14302d5578fd67e700614288"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90ffb5ea14302d5578fd67e700614288">easyfleet_easynav_navigation::Navigate::onStart</a></div><div class="ttdeci">BT::NodeStatus onStart() override</div><div class="ttdoc">Resolves the goal_id input port against the waypoint registry and sends the corresponding pose throug...</div><div class="ttdef"><b>Definition</b> navigate.cpp:69</div></div>
-<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_af917f167381981f8cfc7b479e9a76f49"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#af917f167381981f8cfc7b479e9a76f49">easyfleet_easynav_navigation::Navigate::providedPorts</a></div><div class="ttdeci">static BT::PortsList providedPorts()</div><div class="ttdoc">This node&#39;s ports: the input port goal_id.</div><div class="ttdef"><b>Definition</b> navigate.cpp:64</div></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>}  <span class="comment">// namespace easyfleet_easynav_navigation</span></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="preprocessor">#endif  </span><span class="comment">// EASYFLEET_EASYNAV_NAVIGATION__BT_NODES__NAVIGATE_HPP_</span></div>
+<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a48ecf4a322c233a781dc752b41f7f070"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a48ecf4a322c233a781dc752b41f7f070">easyfleet_easynav_navigation::Navigate::onHalted</a></div><div class="ttdeci">void onHalted() override</div><div class="ttdoc">No-op: an in-flight EasyNav goal is left alone on halt, deliberately (see the class-level design note...</div><div class="ttdef"><b>Definition</b> navigate.cpp:155</div></div>
+<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a51bb985bcf8653737d02f07c7c399d92"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a51bb985bcf8653737d02f07c7c399d92">easyfleet_easynav_navigation::Navigate::Navigate</a></div><div class="ttdeci">Navigate(const std::string &amp;name, const BT::NodeConfig &amp;config)</div><div class="ttdoc">Constructs the BT node.</div><div class="ttdef"><b>Definition</b> navigate.cpp:54</div></div>
+<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a90a1421f6191f4c28b9a4f969a08e16f"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90a1421f6191f4c28b9a4f969a08e16f">easyfleet_easynav_navigation::Navigate::onRunning</a></div><div class="ttdeci">BT::NodeStatus onRunning() override</div><div class="ttdoc">Polls gm_client_ for the in-flight goal&#39;s progress, and re-sends when goal_id changes (once gm_client...</div><div class="ttdef"><b>Definition</b> navigate.cpp:104</div></div>
+<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_a90ffb5ea14302d5578fd67e700614288"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#a90ffb5ea14302d5578fd67e700614288">easyfleet_easynav_navigation::Navigate::onStart</a></div><div class="ttdeci">BT::NodeStatus onStart() override</div><div class="ttdoc">Resolves the goal_id input port against the waypoint registry and sends the corresponding pose throug...</div><div class="ttdef"><b>Definition</b> navigate.cpp:74</div></div>
+<div class="ttc" id="aclasseasyfleet__easynav__navigation_1_1Navigate_html_af917f167381981f8cfc7b479e9a76f49"><div class="ttname"><a href="classeasyfleet__easynav__navigation_1_1Navigate.html#af917f167381981f8cfc7b479e9a76f49">easyfleet_easynav_navigation::Navigate::providedPorts</a></div><div class="ttdeci">static BT::PortsList providedPorts()</div><div class="ttdoc">This node&#39;s ports: goal_id, and response_timeout (seconds EasyNav may take to accept a goal,...</div><div class="ttdef"><b>Definition</b> navigate.cpp:65</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

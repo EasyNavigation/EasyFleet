@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['👥_20project_20maintainers_0',['👥 Project Maintainers',['../index.html#autotoc_md3',1,'']]]
+  ['yielding_5frobot_0',['yielding_robot',['../structeasyfleet_1_1ConflictDecision.html#a1bc6a052ef01904658378110e22367c6',1,'easyfleet::ConflictDecision']]]
 ];

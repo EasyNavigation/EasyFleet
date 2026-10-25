@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['in_5fconflict_0',['in_conflict',['../structeasyfleet_1_1ConflictDecision.html#a8ce16bfb8c066a8736bed9e8c7b461e0',1,'easyfleet::ConflictDecision']]]
+  ['height_5fm_0',['height_m',['../structeasyfleet_1_1FleetObstacleParams.html#a167dde9413d1b000d19811d2aeea4723',1,'easyfleet::FleetObstacleParams']]]
 ];

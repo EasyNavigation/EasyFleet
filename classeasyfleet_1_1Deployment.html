@@ -132,8 +132,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a569be16ccf327f97766277e93701d333"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every capability added so far, in <span class="tt"><a class="el" href="#a4e800e42b34f508a19840793180a59ec" title="Loads, constructs and starts hosting one capability.">add_capability()</a></span> order.  <br /></td></tr>
 <tr class="memitem:a95f73a2678e18b49dc81ba5405569e29" id="r_a95f73a2678e18b49dc81ba5405569e29"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a95f73a2678e18b49dc81ba5405569e29">add_capabilities_from_parameters</a> (const std::string &amp;package_name)</td></tr>
 <tr class="memdesc:a95f73a2678e18b49dc81ba5405569e29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads which capabilities to host from this process's own <span class="tt">"<a class="el" href="#a569be16ccf327f97766277e93701d333" title="Every capability added so far, in add_capability() order.">capabilities</a>"</span> (string list) and <span class="tt">"config_subdir"</span> parameters &ndash; the same convention <span class="tt">robot_node.cpp</span>'s own hardcoded factory function already reads by hand &ndash; resolves each one's <span class="tt">capabilities_file</span> JSON path (<span class="tt">share/&lt;package_name&gt;/config/&lt;config_subdir&gt;/&lt;<a class="el" href="#a24efda839dcb5101dbb0befdac4a5b2e" title="This robot&#39;s identity, as passed to the constructor.">name</a>&gt;.json</span>, via <span class="tt">ament_index_cpp</span>), and calls <span class="tt"><a class="el" href="#a4e800e42b34f508a19840793180a59ec" title="Loads, constructs and starts hosting one capability.">add_capability()</a></span> for each.  <br /></td></tr>
+<tr class="memitem:aef2cc656dcbbbdc7e0becbc6f6eab1b5" id="r_aef2cc656dcbbbdc7e0becbc6f6eab1b5"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aef2cc656dcbbbdc7e0becbc6f6eab1b5">try_add_capabilities_from_parameters</a> (const std::string &amp;package_name)</td></tr>
+<tr class="memdesc:aef2cc656dcbbbdc7e0becbc6f6eab1b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <span class="tt"><a class="el" href="#a95f73a2678e18b49dc81ba5405569e29" title="Reads which capabilities to host from this process&#39;s own &quot;capabilities&quot; (string list) and &quot;config_sub...">add_capabilities_from_parameters()</a></span>, but returns <span class="tt">false</span> instead of exiting when <span class="tt">"<a class="el" href="#a569be16ccf327f97766277e93701d333" title="Every capability added so far, in add_capability() order.">capabilities</a>"</span> is empty.  <br /></td></tr>
 <tr class="memitem:a60de64d75454385b23995437f1d72669" id="r_a60de64d75454385b23995437f1d72669"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a60de64d75454385b23995437f1d72669">start</a> ()</td></tr>
 <tr class="memdesc:a60de64d75454385b23995437f1d72669"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures, then activates, every added capability, in the order they were added.  <br /></td></tr>
+<tr class="memitem:a9665bab2beca3e21df201bc705491147" id="r_a9665bab2beca3e21df201bc705491147"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a9665bab2beca3e21df201bc705491147">try_start</a> ()</td></tr>
+<tr class="memdesc:a9665bab2beca3e21df201bc705491147"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <span class="tt"><a class="el" href="#a60de64d75454385b23995437f1d72669" title="Configures, then activates, every added capability, in the order they were added.">start()</a></span>, but returns <span class="tt">false</span> instead of exiting.  <br /></td></tr>
 <tr class="memitem:a13a43e6d814de94978c515cb084873b1" id="r_a13a43e6d814de94978c515cb084873b1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a13a43e6d814de94978c515cb084873b1">run</a> ()</td></tr>
 <tr class="memdesc:a13a43e6d814de94978c515cb084873b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds every capability's node to one shared executor and blocks until SIGINT/SIGTERM (see <span class="tt">spin_until_shutdown()</span>), then deactivates and cleans up every capability &ndash; in reverse order &ndash; before returning.  <br /></td></tr>
 <tr class="memitem:a7861ee1569802186a619778efc85af13" id="r_a7861ee1569802186a619778efc85af13"><td class="memItemLeft"><a id="a7861ee1569802186a619778efc85af13" name="a7861ee1569802186a619778efc85af13"></a>
@@ -162,9 +166,9 @@ void&#160;</td><td class="memItemRight"><b>shutdown</b> ()</td></tr>
 <div class="line">deployment.<a class="code hl_function" href="#a60de64d75454385b23995437f1d72669">start</a>();</div>
 <div class="line">deployment.<a class="code hl_function" href="#a13a43e6d814de94978c515cb084873b1">run</a>();</div>
 <div class="line">deployment.<a class="code hl_function" href="#a7861ee1569802186a619778efc85af13">shutdown</a>();</div>
-<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a13a43e6d814de94978c515cb084873b1"><div class="ttname"><a href="#a13a43e6d814de94978c515cb084873b1">easyfleet::Deployment::run</a></div><div class="ttdeci">void run()</div><div class="ttdoc">Adds every capability&#39;s node to one shared executor and blocks until SIGINT/SIGTERM (see spin_until_s...</div><div class="ttdef"><b>Definition</b> deployment.cpp:147</div></div>
-<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a60de64d75454385b23995437f1d72669"><div class="ttname"><a href="#a60de64d75454385b23995437f1d72669">easyfleet::Deployment::start</a></div><div class="ttdeci">void start()</div><div class="ttdoc">Configures, then activates, every added capability, in the order they were added.</div><div class="ttdef"><b>Definition</b> deployment.cpp:125</div></div>
-<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a7861ee1569802186a619778efc85af13"><div class="ttname"><a href="#a7861ee1569802186a619778efc85af13">easyfleet::Deployment::shutdown</a></div><div class="ttdeci">void shutdown()</div><div class="ttdoc">Shuts down every capability&#39;s lifecycle node, then calls rclcpp::shutdown() – the ROS context teardow...</div><div class="ttdef"><b>Definition</b> deployment.cpp:175</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a13a43e6d814de94978c515cb084873b1"><div class="ttname"><a href="#a13a43e6d814de94978c515cb084873b1">easyfleet::Deployment::run</a></div><div class="ttdeci">void run()</div><div class="ttdoc">Adds every capability&#39;s node to one shared executor and blocks until SIGINT/SIGTERM (see spin_until_s...</div><div class="ttdef"><b>Definition</b> deployment.cpp:175</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a60de64d75454385b23995437f1d72669"><div class="ttname"><a href="#a60de64d75454385b23995437f1d72669">easyfleet::Deployment::start</a></div><div class="ttdeci">void start()</div><div class="ttdoc">Configures, then activates, every added capability, in the order they were added.</div><div class="ttdef"><b>Definition</b> deployment.cpp:133</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a7861ee1569802186a619778efc85af13"><div class="ttname"><a href="#a7861ee1569802186a619778efc85af13">easyfleet::Deployment::shutdown</a></div><div class="ttdeci">void shutdown()</div><div class="ttdoc">Shuts down every capability&#39;s lifecycle node, then calls rclcpp::shutdown() – the ROS context teardow...</div><div class="ttdef"><b>Definition</b> deployment.cpp:203</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a95f73a2678e18b49dc81ba5405569e29"><div class="ttname"><a href="#a95f73a2678e18b49dc81ba5405569e29">easyfleet::Deployment::add_capabilities_from_parameters</a></div><div class="ttdeci">void add_capabilities_from_parameters(const std::string &amp;package_name)</div><div class="ttdoc">Reads which capabilities to host from this process&#39;s own &quot;capabilities&quot; (string list) and &quot;config_sub...</div><div class="ttdef"><b>Definition</b> deployment.cpp:95</div></div>
 </div><!-- fragment --> </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adf0dcd27ba570928796cc5d41d06f68c" name="adf0dcd27ba570928796cc5d41d06f68c"></a>
@@ -376,6 +380,52 @@ void&#160;</td><td class="memItemRight"><b>shutdown</b> ()</td></tr>
 
 <p>Configures, then activates, every added capability, in the order they were added. </p>
 <p>Fails loud, on purpose: the first capability that doesn't reach the expected state logs exactly which capability failed (and at which transition), then the process exits &ndash; a half-started robot silently running with one dead capability is worse than one that refuses to start at all, especially for a beginner who won't think to go looking for it. </p>
+
+</div>
+</div>
+<a id="aef2cc656dcbbbdc7e0becbc6f6eab1b5" name="aef2cc656dcbbbdc7e0becbc6f6eab1b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef2cc656dcbbbdc7e0becbc6f6eab1b5">&#9670;&#160;</a></span>try_add_capabilities_from_parameters()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool try_add_capabilities_from_parameters </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>package_name</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Same as <span class="tt"><a class="el" href="#a95f73a2678e18b49dc81ba5405569e29" title="Reads which capabilities to host from this process&#39;s own &quot;capabilities&quot; (string list) and &quot;config_sub...">add_capabilities_from_parameters()</a></span>, but returns <span class="tt">false</span> instead of exiting when <span class="tt">"<a class="el" href="#a569be16ccf327f97766277e93701d333" title="Every capability added so far, in add_capability() order.">capabilities</a>"</span> is empty. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">package_name</td><td>See <span class="tt"><a class="el" href="#a95f73a2678e18b49dc81ba5405569e29" title="Reads which capabilities to host from this process&#39;s own &quot;capabilities&quot; (string list) and &quot;config_sub...">add_capabilities_from_parameters()</a></span>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Whether at least one capability was configured. </dd></dl>
+
+</div>
+</div>
+<a id="a9665bab2beca3e21df201bc705491147" name="a9665bab2beca3e21df201bc705491147"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9665bab2beca3e21df201bc705491147">&#9670;&#160;</a></span>try_start()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool try_start </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Same as <span class="tt"><a class="el" href="#a60de64d75454385b23995437f1d72669" title="Configures, then activates, every added capability, in the order they were added.">start()</a></span>, but returns <span class="tt">false</span> instead of exiting. </p>
+<p>On failure, every capability already configured or activated is brought back to UNCONFIGURED, so no half-started robot is left running. </p><dl class="section return"><dt>Returns</dt><dd>Whether every capability reached ACTIVE. </dd></dl>
 
 </div>
 </div>

@@ -8,5 +8,7 @@ var classeasyfleet_1_1Deployment =
     [ "name", "classeasyfleet_1_1Deployment.html#a24efda839dcb5101dbb0befdac4a5b2e", null ],
     [ "run", "classeasyfleet_1_1Deployment.html#a13a43e6d814de94978c515cb084873b1", null ],
     [ "shutdown", "classeasyfleet_1_1Deployment.html#a7861ee1569802186a619778efc85af13", null ],
-    [ "start", "classeasyfleet_1_1Deployment.html#a60de64d75454385b23995437f1d72669", null ]
+    [ "start", "classeasyfleet_1_1Deployment.html#a60de64d75454385b23995437f1d72669", null ],
+    [ "try_add_capabilities_from_parameters", "classeasyfleet_1_1Deployment.html#aef2cc656dcbbbdc7e0becbc6f6eab1b5", null ],
+    [ "try_start", "classeasyfleet_1_1Deployment.html#a9665bab2beca3e21df201bc705491147", null ]
 ];

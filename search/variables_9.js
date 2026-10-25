@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['path_5fconflict_5fdistance_5fm_0',['path_conflict_distance_m',['../structeasyfleet_1_1ConflictParams.html#a4d67bae4c5a0e59915829e8010b461aa',1,'easyfleet::ConflictParams']]],
-  ['proximity_5fradius_5fm_1',['proximity_radius_m',['../structeasyfleet_1_1ConflictParams.html#af3b253cd4a75793794ef5a6ed6a66952',1,'easyfleet::ConflictParams']]]
+  ['outcome_0',['outcome',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html#ad89d31755ca91a0a1091150f0edec711',1,'easyfleet_core::ActionClient::GoalResult::outcome'],['../structeasyfleet__core_1_1CapabilityClient_1_1Response.html#ac8379e2fc7afc943f38890977d381c0e',1,'easyfleet_core::CapabilityClient::Response::outcome']]]
 ];

@@ -51,7 +51,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "action__client_8hpp_source.html",
-"structeasyfleet__core_1_1ActionClient_1_1GoalResult.html#ae8e9865945c82f006c60fc5e3dc27964"
+"robot__navigation__watcher_8hpp_source.html"
 ];
 
 const SYNCONMSG = 'click to disable panel synchronization';

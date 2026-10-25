@@ -180,9 +180,8 @@ ActionClient &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (const Ac
 <tr class="memdesc:a52d463900f09d43a5b7ba897d6dcc422"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a goal and block the calling thread until it reaches a terminal state (or <span class="tt">timeout</span> elapses, if positive).  <br /></td></tr>
 <tr class="memitem:a6fee662f1f12ef8ccf80974207983f3a" id="r_a6fee662f1f12ef8ccf80974207983f3a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a6fee662f1f12ef8ccf80974207983f3a">cancel_goal</a> (const rclcpp_action::GoalUUID &amp;goal_id)</td></tr>
 <tr class="memdesc:a6fee662f1f12ef8ccf80974207983f3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request cancellation of a specific in-flight goal.  <br /></td></tr>
-<tr class="memitem:a9ea0162801acdd2a7fd538e3e5118e85" id="r_a9ea0162801acdd2a7fd538e3e5118e85"><td class="memItemLeft"><a id="a9ea0162801acdd2a7fd538e3e5118e85" name="a9ea0162801acdd2a7fd538e3e5118e85"></a>
-void&#160;</td><td class="memItemRight"><b>cancel_all_goals</b> ()</td></tr>
-<tr class="memdesc:a9ea0162801acdd2a7fd538e3e5118e85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request cancellation of every goal currently tracked by this client. <br /></td></tr>
+<tr class="memitem:a9ea0162801acdd2a7fd538e3e5118e85" id="r_a9ea0162801acdd2a7fd538e3e5118e85"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9ea0162801acdd2a7fd538e3e5118e85">cancel_all_goals</a> ()</td></tr>
+<tr class="memdesc:a9ea0162801acdd2a7fd538e3e5118e85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request cancellation of every goal sent by this client: the ones already accepted and the ones still waiting for the server's response.  <br /></td></tr>
 <tr class="memitem:a4834f72b66bb03b0815d3aea631ae3ad" id="r_a4834f72b66bb03b0815d3aea631ae3ad"><td class="memItemLeft">std::size_t&#160;</td><td class="memItemRight"><a class="el" href="#a4834f72b66bb03b0815d3aea631ae3ad">active_goal_count</a> () const</td></tr>
 <tr class="memdesc:a4834f72b66bb03b0815d3aea631ae3ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of goals accepted by the server and not yet in a terminal state.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -237,6 +236,28 @@ template&lt;typename ActionT&gt; </div>
 
 <p>Number of goals accepted by the server and not yet in a terminal state. </p>
 <dl class="section return"><dt>Returns</dt><dd>Number of goals accepted by the server and not yet in a terminal state. </dd></dl>
+
+</div>
+</div>
+<a id="a9ea0162801acdd2a7fd538e3e5118e85" name="a9ea0162801acdd2a7fd538e3e5118e85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ea0162801acdd2a7fd538e3e5118e85">&#9670;&#160;</a></span>cancel_all_goals()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ActionT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void cancel_all_goals </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Request cancellation of every goal sent by this client: the ones already accepted and the ones still waiting for the server's response. </p>
+<p>Goals sent by other clients of the same server are not affected. </p>
 
 </div>
 </div>
@@ -443,11 +464,11 @@ template&lt;typename ActionT&gt; </div>
   <table class="params">
     <tr><td class="paramname">goal</td><td><a class="el" href="#a7a93e2c4e83c0bc1d9067fe9b979b77e" title="Goal type of the wrapped action.">Goal</a> to send. </td></tr>
     <tr><td class="paramname">feedback_callback</td><td>Invoked as feedback arrives for this goal. </td></tr>
-    <tr><td class="paramname">timeout</td><td>Maximum time to wait for a terminal state; <span class="tt">0</span> (the default) waits indefinitely. </td></tr>
+    <tr><td class="paramname">timeout</td><td>Maximum time to wait for a terminal state; <span class="tt">0</span> (the default) waits as long as the server stays reachable. On timeout the goal is canceled. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The goal's terminal outcome (<span class="tt">GoalOutcome::TIMEOUT</span> if <span class="tt">timeout</span> elapsed first). </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The goal's terminal outcome: <span class="tt">GoalOutcome::TIMEOUT</span> if <span class="tt">timeout</span> elapsed first, <span class="tt">GoalOutcome::SERVER_UNAVAILABLE</span> if the server disappeared for longer than <span class="tt">default_server_timeout</span>. </dd></dl>
 
 </div>
 </div>

@@ -5,5 +5,6 @@ var searchData=
   ['description_5fjson_2',['description_json',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a1d9e0718b9fbe0ea359aaac41d44b010',1,'easyfleet_mission_manager::CapabilityInfo']]],
   ['description_5fjson_5fraw_3',['description_json_raw',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a4740a204570c36793597790a6d38fc4f',1,'easyfleet_mission_manager::CapabilityInfo']]],
   ['description_5fjson_5fvalid_4',['description_json_valid',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a9b6c24d8e400161453e55e0c6ccf4223',1,'easyfleet_mission_manager::CapabilityInfo']]],
-  ['discover_5fcapabilities_5',['discover_capabilities',['../classeasyfleet_1_1FleetSession.html#a118a664c72fb7ea67db012fa72129d1e',1,'easyfleet::FleetSession::discover_capabilities()'],['../classeasyfleet_1_1SimpleController.html#a118a664c72fb7ea67db012fa72129d1e',1,'easyfleet::SimpleController::discover_capabilities()']]]
+  ['disable_5fgoals_5',['disable_goals',['../classeasyfleet__core_1_1ActionServerBase.html#ad484ea0f2e83ff59539cdf19e49435b8',1,'easyfleet_core::ActionServerBase']]],
+  ['discover_5fcapabilities_6',['discover_capabilities',['../classeasyfleet_1_1FleetSession.html#a118a664c72fb7ea67db012fa72129d1e',1,'easyfleet::FleetSession::discover_capabilities()'],['../classeasyfleet_1_1SimpleController.html#a118a664c72fb7ea67db012fa72129d1e',1,'easyfleet::SimpleController::discover_capabilities()']]]
 ];

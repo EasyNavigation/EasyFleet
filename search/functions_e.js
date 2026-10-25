@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['wait_5ffor_5fcapability_0',['wait_for_capability',['../classeasyfleet__core_1_1CapabilityClient.html#aa7f216599e65e4664ab4f8188da1aada',1,'easyfleet_core::CapabilityClient::wait_for_capability()'],['../classeasyfleet__core_1_1CapabilityClient.html#ad79f263f3e61b5be83834a9e0b6f3787',1,'easyfleet_core::CapabilityClient::wait_for_capability(std::chrono::milliseconds timeout)']]],
-  ['wait_5ffor_5fserver_1',['wait_for_server',['../classeasyfleet__core_1_1ActionClient.html#a02c7233795dbbf8ebc1c6455ceca4b2b',1,'easyfleet_core::ActionClient::wait_for_server()'],['../classeasyfleet__core_1_1ActionClient.html#a0c92ed00eb7c4ee42c568c50e71379bd',1,'easyfleet_core::ActionClient::wait_for_server(std::chrono::milliseconds timeout)']]]
+  ['throttle_0',['Throttle',['../classeasyfleet__mission__manager_1_1Throttle.html#a25a85274e04499727f4f975493bfb158',1,'easyfleet_mission_manager::Throttle']]],
+  ['try_5fadd_5fcapabilities_5ffrom_5fparameters_1',['try_add_capabilities_from_parameters',['../classeasyfleet_1_1Deployment.html#aef2cc656dcbbbdc7e0becbc6f6eab1b5',1,'easyfleet::Deployment']]],
+  ['try_5fstart_2',['try_start',['../classeasyfleet_1_1Deployment.html#a9665bab2beca3e21df201bc705491147',1,'easyfleet::Deployment']]]
 ];

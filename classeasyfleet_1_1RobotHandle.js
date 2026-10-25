@@ -1,7 +1,8 @@
 var classeasyfleet_1_1RobotHandle =
 [
     [ "RobotHandle", "classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0", null ],
-    [ "capabilities", "classeasyfleet_1_1RobotHandle.html#ade08c373e45e9087611b628ecab93ef3", null ],
+    [ "~RobotHandle", "classeasyfleet_1_1RobotHandle.html#a1e09abf25c01dae42ff1b71cfa46b10c", null ],
+    [ "capabilities", "classeasyfleet_1_1RobotHandle.html#a5eafd2127c05d3ac08fc9466da846b48", null ],
     [ "capability_state", "classeasyfleet_1_1RobotHandle.html#a9508be35c4e6a940b6b094ee0631c37c", null ],
     [ "has_capability", "classeasyfleet_1_1RobotHandle.html#a98aef97b1058a29c1678f394b19ad4a8", null ],
     [ "is_alive", "classeasyfleet_1_1RobotHandle.html#a46b75bfed6190898834078d861e538d4", null ],

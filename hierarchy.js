@@ -22,6 +22,7 @@ var hierarchy =
     [ "ConflictDecision", "structeasyfleet_1_1ConflictDecision.html", null ],
     [ "ConflictParams", "structeasyfleet_1_1ConflictParams.html", null ],
     [ "Deployment", "classeasyfleet_1_1Deployment.html", null ],
+    [ "FleetObstacleParams", "structeasyfleet_1_1FleetObstacleParams.html", null ],
     [ "FleetSession", "classeasyfleet_1_1FleetSession.html", null ],
     [ "ActionClient&lt; ActionT &gt;::GoalResult", "structeasyfleet__core_1_1ActionClient_1_1GoalResult.html", null ],
     [ "LifecycleNode", null, [
@@ -36,6 +37,8 @@ var hierarchy =
     [ "CapabilityClient&lt; ActionT &gt;::Response", "structeasyfleet__core_1_1CapabilityClient_1_1Response.html", null ],
     [ "RobotHandle", "classeasyfleet_1_1RobotHandle.html", null ],
     [ "RobotNavigationWatcher", "classeasyfleet_1_1RobotNavigationWatcher.html", null ],
+    [ "RobotPose", "structeasyfleet_1_1RobotPose.html", null ],
+    [ "RobotPoseTracker", "classeasyfleet_1_1RobotPoseTracker.html", null ],
     [ "RoutesPublisher", "classeasyfleet_1_1RoutesPublisher.html", null ],
     [ "RunningCapabilityBase", "classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html", [
       [ "RunningCapability< ActionT >", "classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html", null ]

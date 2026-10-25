@@ -144,18 +144,18 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('run__capabilit
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span>easyfleet_mission_manager</div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>{</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">inline</span> std::string outcome_to_string(uint8_t outcome_value)</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>{</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="comment">// Mirrors easyfleet_core::CapabilityClient&lt;ActionT&gt;::Outcome&#39;s underlying values.</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordflow">switch</span> (outcome_value) {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keywordflow">case</span> 0: <span class="keywordflow">return</span> <span class="stringliteral">&quot;SUCCEEDED&quot;</span>;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordflow">case</span> 1: <span class="keywordflow">return</span> <span class="stringliteral">&quot;ABORTED&quot;</span>;</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">case</span> 2: <span class="keywordflow">return</span> <span class="stringliteral">&quot;CANCELED&quot;</span>;</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordflow">case</span> 3: <span class="keywordflow">return</span> <span class="stringliteral">&quot;REJECTED&quot;</span>;</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keywordflow">case</span> 4: <span class="keywordflow">return</span> <span class="stringliteral">&quot;TIMEOUT&quot;</span>;</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">case</span> 5: <span class="keywordflow">return</span> <span class="stringliteral">&quot;SERVER_UNAVAILABLE&quot;</span>;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="keywordflow">default</span>: <span class="keywordflow">return</span> <span class="stringliteral">&quot;UNKNOWN&quot;</span>;</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  }</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> OutcomeT&gt;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>std::string outcome_to_string(OutcomeT outcome)</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>{</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordflow">switch</span> (outcome) {</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keywordflow">case</span> OutcomeT::SUCCEEDED: <span class="keywordflow">return</span> <span class="stringliteral">&quot;SUCCEEDED&quot;</span>;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordflow">case</span> OutcomeT::ABORTED: <span class="keywordflow">return</span> <span class="stringliteral">&quot;ABORTED&quot;</span>;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">case</span> OutcomeT::CANCELED: <span class="keywordflow">return</span> <span class="stringliteral">&quot;CANCELED&quot;</span>;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordflow">case</span> OutcomeT::REJECTED: <span class="keywordflow">return</span> <span class="stringliteral">&quot;REJECTED&quot;</span>;</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keywordflow">case</span> OutcomeT::TIMEOUT: <span class="keywordflow">return</span> <span class="stringliteral">&quot;TIMEOUT&quot;</span>;</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">case</span> OutcomeT::SERVER_UNAVAILABLE: <span class="keywordflow">return</span> <span class="stringliteral">&quot;SERVER_UNAVAILABLE&quot;</span>;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  }</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keywordflow">return</span> <span class="stringliteral">&quot;UNKNOWN&quot;</span>;</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>}</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span></div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> ActionT&gt;</div>
@@ -197,23 +197,28 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('run__capabilit
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        &lt;&lt; timeout.count() &lt;&lt; <span class="stringliteral">&quot;s elapsed, stopping it...&quot;</span>;</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    safe_print(out.str());</div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    client-&gt;<a class="code hl_function" href="classeasyfleet__core_1_1CapabilityClient.html#a02d5fa6b14e221f3012a794b905be166">cancel</a>();</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    response = response_future.get();</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>  } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    response = response_future.get();</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>  }</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>  std::ostringstream out;</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  out &lt;&lt; ansi::bold &lt;&lt; <span class="stringliteral">&quot;[&quot;</span> &lt;&lt; label &lt;&lt; <span class="stringliteral">&quot;] &quot;</span> &lt;&lt; ansi::reset</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>      &lt;&lt; <span class="stringliteral">&quot;finished with outcome &quot;</span> &lt;&lt; ansi::magenta</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>      &lt;&lt; outcome_to_string(<span class="keyword">static_cast&lt;</span>uint8_t<span class="keyword">&gt;</span>(response.outcome)) &lt;&lt; ansi::reset;</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>  safe_print(out.str());</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  <span class="keywordflow">return</span> response;</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>}</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>}  <span class="comment">// namespace easyfleet_mission_manager</span></div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="comment">// A capability that no longer answers must not block the mission forever.</span></div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keywordflow">if</span> (response_future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>      response = <span class="keyword">typename</span> Client::Response{Client::Outcome::TIMEOUT, <span class="keyword">nullptr</span>};</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>      response = response_future.get();</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    }</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    response = response_future.get();</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>  }</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>  std::ostringstream out;</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  out &lt;&lt; ansi::bold &lt;&lt; <span class="stringliteral">&quot;[&quot;</span> &lt;&lt; label &lt;&lt; <span class="stringliteral">&quot;] &quot;</span> &lt;&lt; ansi::reset</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>      &lt;&lt; <span class="stringliteral">&quot;finished with outcome &quot;</span> &lt;&lt; ansi::magenta</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>      &lt;&lt; outcome_to_string(response.outcome) &lt;&lt; ansi::reset;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>  safe_print(out.str());</div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><span class="preprocessor">#endif  </span><span class="comment">// EASYFLEET_MISSION_MANAGER__RUN_CAPABILITY_HPP_</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>  <span class="keywordflow">return</span> response;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>}</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>}  <span class="comment">// namespace easyfleet_mission_manager</span></div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span><span class="preprocessor">#endif  </span><span class="comment">// EASYFLEET_MISSION_MANAGER__RUN_CAPABILITY_HPP_</span></div>
 <div class="ttc" id="aclasseasyfleet__core_1_1CapabilityClient_html_a02d5fa6b14e221f3012a794b905be166"><div class="ttname"><a href="classeasyfleet__core_1_1CapabilityClient.html#a02d5fa6b14e221f3012a794b905be166">easyfleet_core::CapabilityClient::cancel</a></div><div class="ttdeci">void cancel()</div><div class="ttdoc">Asks the capability to stop whatever it is currently doing (e.g.</div><div class="ttdef"><b>Definition</b> capability_client_impl.hpp:88</div></div>
 <div class="ttc" id="aclasseasyfleet__core_1_1CapabilityClient_html_a279941eb1c640d9b71ef2032c59e4e2b"><div class="ttname"><a href="classeasyfleet__core_1_1CapabilityClient.html#a279941eb1c640d9b71ef2032c59e4e2b">easyfleet_core::CapabilityClient::SharedPtr</a></div><div class="ttdeci">std::shared_ptr&lt; CapabilityClient&lt; ActionT &gt; &gt; SharedPtr</div><div class="ttdoc">Shared pointer to a CapabilityClient&lt;ActionT&gt;.</div><div class="ttdef"><b>Definition</b> capability_client.hpp:59</div></div>
 <div class="ttc" id="aclasseasyfleet__core_1_1CapabilityClient_html_ada548859b20f06e7ac0cda47b316c139"><div class="ttname"><a href="classeasyfleet__core_1_1CapabilityClient.html#ada548859b20f06e7ac0cda47b316c139">easyfleet_core::CapabilityClient::request</a></div><div class="ttdeci">void request(const Goal &amp;goal, ResponseCallback on_response, FeedbackCallback on_feedback=nullptr)</div><div class="ttdoc">Asks the capability to do something.</div><div class="ttdef"><b>Definition</b> capability_client_impl.hpp:62</div></div>

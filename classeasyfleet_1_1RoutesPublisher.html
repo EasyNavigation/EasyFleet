@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('classeasyfleet
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a5ef994293bb7e8d140c2732ff12f9be5" id="r_a5ef994293bb7e8d140c2732ff12f9be5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5ef994293bb7e8d140c2732ff12f9be5">publish</a> (rclcpp::Node &amp;node)</td></tr>
-<tr class="memdesc:a5ef994293bb7e8d140c2732ff12f9be5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read "routes.package"/"routes.map_path_file" from <span class="tt">node</span>, load the routes they name, publish them once on /global_routes (QoS: depth 1, transient_local, reliable, per the user's own spec for this topic), and set up the visualization + interactive-marker publishers so the routes can be edited live from RViz.  <br /></td></tr>
+<tr class="memdesc:a5ef994293bb7e8d140c2732ff12f9be5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read "routes.package"/"routes.map_path_file" (see resolve_data_path()) and the optional "routes.save_path_file" (where RViz edits are saved; defaults to the loaded file) from <span class="tt">node</span>, load the routes they name, publish them once on /global_routes (QoS: depth 1, transient_local, reliable, per the user's own spec for this topic), and set up the visualization + interactive-marker publishers so the routes can be edited live from RViz.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Publishes a RoutesMap on /global_routes, and keeps it live-editable. </p>
@@ -144,7 +144,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Read "routes.package"/"routes.map_path_file" from <span class="tt">node</span>, load the routes they name, publish them once on /global_routes (QoS: depth 1, transient_local, reliable, per the user's own spec for this topic), and set up the visualization + interactive-marker publishers so the routes can be edited live from RViz. </p>
+<p>Read "routes.package"/"routes.map_path_file" (see resolve_data_path()) and the optional "routes.save_path_file" (where RViz edits are saved; defaults to the loaded file) from <span class="tt">node</span>, load the routes they name, publish them once on /global_routes (QoS: depth 1, transient_local, reliable, per the user's own spec for this topic), and set up the visualization + interactive-marker publishers so the routes can be edited live from RViz. </p>
 <p>Also starts a low-rate timer that keeps re-publishing the visualization MarkerArray (see the class doc comment for why). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">node</td><td>Node to declare parameters on and to create the publishers/interactive marker server from. Must outlive this <a class="el" href="classeasyfleet_1_1RoutesPublisher.html" title="Publishes a RoutesMap on /global_routes, and keeps it live-editable.">RoutesPublisher</a>. </td></tr>

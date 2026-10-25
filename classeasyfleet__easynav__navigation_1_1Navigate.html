@@ -131,7 +131,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a90ffb5ea14302d5578fd67e700614288" id="r_a90ffb5ea14302d5578fd67e700614288"><td class="memItemLeft">BT::NodeStatus&#160;</td><td class="memItemRight"><a class="el" href="#a90ffb5ea14302d5578fd67e700614288">onStart</a> () override</td></tr>
 <tr class="memdesc:a90ffb5ea14302d5578fd67e700614288"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolves the <span class="tt">goal_id</span> input port against the waypoint registry and sends the corresponding pose through <span class="tt">gm_client_</span>.  <br /></td></tr>
 <tr class="memitem:a90a1421f6191f4c28b9a4f969a08e16f" id="r_a90a1421f6191f4c28b9a4f969a08e16f"><td class="memItemLeft">BT::NodeStatus&#160;</td><td class="memItemRight"><a class="el" href="#a90a1421f6191f4c28b9a4f969a08e16f">onRunning</a> () override</td></tr>
-<tr class="memdesc:a90a1421f6191f4c28b9a4f969a08e16f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Polls <span class="tt">gm_client_</span> for the in-flight goal's progress.  <br /></td></tr>
+<tr class="memdesc:a90a1421f6191f4c28b9a4f969a08e16f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Polls <span class="tt">gm_client_</span> for the in-flight goal's progress, and re-sends when <span class="tt">goal_id</span> changes (once <span class="tt">gm_client_</span> can take a new goal).  <br /></td></tr>
 <tr class="memitem:a48ecf4a322c233a781dc752b41f7f070" id="r_a48ecf4a322c233a781dc752b41f7f070"><td class="memItemLeft"><a id="a48ecf4a322c233a781dc752b41f7f070" name="a48ecf4a322c233a781dc752b41f7f070"></a>
 void&#160;</td><td class="memItemRight"><b>onHalted</b> () override</td></tr>
 <tr class="memdesc:a48ecf4a322c233a781dc752b41f7f070"><td class="mdescLeft">&#160;</td><td class="mdescRight">No-op: an in-flight EasyNav goal is left alone on halt, deliberately (see the class-level design note on preemption in the owning capability), not canceled here. <br /></td></tr>
@@ -139,7 +139,7 @@ void&#160;</td><td class="memItemRight"><b>onHalted</b> () override</td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:af917f167381981f8cfc7b479e9a76f49" id="r_af917f167381981f8cfc7b479e9a76f49"><td class="memItemLeft">static BT::PortsList&#160;</td><td class="memItemRight"><a class="el" href="#af917f167381981f8cfc7b479e9a76f49">providedPorts</a> ()</td></tr>
-<tr class="memdesc:af917f167381981f8cfc7b479e9a76f49"><td class="mdescLeft">&#160;</td><td class="mdescRight">This node's ports: the input port <span class="tt">goal_id</span>.  <br /></td></tr>
+<tr class="memdesc:af917f167381981f8cfc7b479e9a76f49"><td class="mdescLeft">&#160;</td><td class="mdescRight">This node's ports: <span class="tt">goal_id</span>, and <span class="tt">response_timeout</span> (seconds EasyNav may take to accept a goal, default 5).  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Drives EasyNav (via easynav::GoalManagerClient) to the waypoint named by the "goal_id" input port, resolved against a fixed id-&gt;pose registry (EasyNav itself has no named-waypoint concept &ndash; this node is where that resolution happens). </p>
@@ -198,8 +198,8 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Polls <span class="tt">gm_client_</span> for the in-flight goal's progress. </p>
-<dl class="section return"><dt>Returns</dt><dd><span class="tt">RUNNING</span> while EasyNav is still navigating, <span class="tt">SUCCESS</span>/ <span class="tt">FAILURE</span> once <span class="tt">gm_client_</span> reports a terminal state. </dd></dl>
+<p>Polls <span class="tt">gm_client_</span> for the in-flight goal's progress, and re-sends when <span class="tt">goal_id</span> changes (once <span class="tt">gm_client_</span> can take a new goal). </p>
+<p>A preemption that EasyNav rejects (only possible if it is configured not to allow preemption) leaves EasyNav on the previous goal, which this node cannot tell apart from an accepted one. </p><dl class="section return"><dt>Returns</dt><dd><span class="tt">RUNNING</span> while EasyNav is still navigating, <span class="tt">SUCCESS</span>/ <span class="tt">FAILURE</span> once <span class="tt">gm_client_</span> reports a terminal state, <span class="tt">FAILURE</span> if EasyNav doesn't accept the goal within <span class="tt">response_timeout</span>. </dd></dl>
 
 </div>
 </div>
@@ -254,8 +254,8 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This node's ports: the input port <span class="tt">goal_id</span>. </p>
-<dl class="section return"><dt>Returns</dt><dd>This node's ports: the input port <span class="tt">goal_id</span>. </dd></dl>
+<p>This node's ports: <span class="tt">goal_id</span>, and <span class="tt">response_timeout</span> (seconds EasyNav may take to accept a goal, default 5). </p>
+<dl class="section return"><dt>Returns</dt><dd>This node's ports. </dd></dl>
 
 </div>
 </div>

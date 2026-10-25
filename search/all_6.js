@@ -15,5 +15,6 @@ var searchData=
   ['goalhandlesharedptr_12',['GoalHandleSharedPtr',['../classeasyfleet__core_1_1ActionServerBase.html#aed4c1fa33f272e748e39e4c60ce34e83',1,'easyfleet_core::ActionServerBase']]],
   ['goaloutcome_13',['GoalOutcome',['../classeasyfleet__core_1_1ActionClient.html#af325cfe7882cb829a009fce79c9a8b0d',1,'easyfleet_core::ActionClient']]],
   ['goalresponsecallback_14',['GoalResponseCallback',['../classeasyfleet__core_1_1ActionClient.html#a291f2ebc3936945ba7cfefa9d5866e0e',1,'easyfleet_core::ActionClient']]],
-  ['goalresult_15',['GoalResult',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html',1,'easyfleet_core::ActionClient']]]
+  ['goalresult_15',['GoalResult',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html',1,'easyfleet_core::ActionClient']]],
+  ['goals_5fenabled_16',['goals_enabled',['../classeasyfleet__core_1_1ActionServerBase.html#afa77914e0a34f691732b38321c4f4151',1,'easyfleet_core::ActionServerBase']]]
 ];

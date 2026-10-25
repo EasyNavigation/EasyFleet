@@ -1,14 +1,9 @@
 var searchData=
 [
-  ['ready_0',['ready',['../classeasyfleet__mission__manager_1_1Throttle.html#ae0659ce466366fc566dc1425c658a019',1,'easyfleet_mission_manager::Throttle']]],
-  ['request_1',['request',['../classeasyfleet__core_1_1CapabilityClient.html#ada548859b20f06e7ac0cda47b316c139',1,'easyfleet_core::CapabilityClient']]],
-  ['request_5fand_5fwait_2',['request_and_wait',['../classeasyfleet__core_1_1CapabilityClient.html#a20160b8a3461ec1e7ec8332549ab3e5a',1,'easyfleet_core::CapabilityClient']]],
-  ['resume_3',['resume',['../classeasyfleet_1_1RobotNavigationWatcher.html#a41de8150eff044a237990c271d57ea27',1,'easyfleet::RobotNavigationWatcher']]],
-  ['robot_5fid_4',['robot_id',['../classeasyfleet_1_1RobotNavigationWatcher.html#a9e12a08989bab97669c3b736ea5a0bed',1,'easyfleet::RobotNavigationWatcher']]],
-  ['robothandle_5',['RobotHandle',['../classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0',1,'easyfleet::RobotHandle']]],
-  ['robotnavigationwatcher_6',['RobotNavigationWatcher',['../classeasyfleet_1_1RobotNavigationWatcher.html#a8209dee62f85cbbc2f0b0aa86059dfd0',1,'easyfleet::RobotNavigationWatcher']]],
-  ['robots_7',['robots',['../classeasyfleet_1_1FleetSession.html#ae7954b2b9890a5017938c0f47e8e3113',1,'easyfleet::FleetSession::robots()'],['../classeasyfleet_1_1SimpleController.html#ae7954b2b9890a5017938c0f47e8e3113',1,'easyfleet::SimpleController::robots()']]],
-  ['run_8',['run',['../classeasyfleet_1_1Deployment.html#a13a43e6d814de94978c515cb084873b1',1,'easyfleet::Deployment::run()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4f62e84a2a92e3f989a0a552a0b45219',1,'easyfleet_mission_manager::detail::RunningCapability::run()']]],
-  ['run_5fcapability_9',['run_capability',['../classeasyfleet_1_1RobotHandle.html#ac46846c63e2660cd7b284fb1183fb23c',1,'easyfleet::RobotHandle']]],
-  ['runningcapability_10',['RunningCapability',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a1d03b6a8b97f7a43c12f4308c3784af9',1,'easyfleet_mission_manager::detail::RunningCapability']]]
+  ['path_5fage_0',['path_age',['../classeasyfleet_1_1RobotNavigationWatcher.html#a2ba9b7b668030478d4505f1829c38b16',1,'easyfleet::RobotNavigationWatcher']]],
+  ['pause_1',['pause',['../classeasyfleet_1_1RobotNavigationWatcher.html#a7167f5c196fc5e167bfabde1a730e81d',1,'easyfleet::RobotNavigationWatcher']]],
+  ['pose_2',['pose',['../classeasyfleet_1_1RobotPoseTracker.html#aaa29994ed4abaeddbe46cd1a520f0eb3',1,'easyfleet::RobotPoseTracker']]],
+  ['print_5fcapabilities_3',['print_capabilities',['../classeasyfleet_1_1RobotHandle.html#a82bf88ee3a36bda4679e444cd40869dd',1,'easyfleet::RobotHandle']]],
+  ['providedports_4',['providedPorts',['../classeasyfleet__easynav__navigation_1_1Navigate.html#af917f167381981f8cfc7b479e9a76f49',1,'easyfleet_easynav_navigation::Navigate']]],
+  ['publish_5',['publish',['../classeasyfleet_1_1CostmapMapPublisher.html#aae8616f5ddb14a8e9775b2f3d63aea93',1,'easyfleet::CostmapMapPublisher::publish()'],['../classeasyfleet_1_1MapPublisherBase.html#a46cd4f6a9e240a9e04ce44c122ff1047',1,'easyfleet::MapPublisherBase::publish()'],['../classeasyfleet_1_1RoutesPublisher.html#a5ef994293bb7e8d140c2732ff12f9be5',1,'easyfleet::RoutesPublisher::publish()']]]
 ];

@@ -8,7 +8,10 @@ var classeasyfleet__core_1_1ActionServerBase =
     [ "Result", "classeasyfleet__core_1_1ActionServerBase.html#a95902dc118e91ac889171494a4ddd411", null ],
     [ "SharedPtr", "classeasyfleet__core_1_1ActionServerBase.html#a0b2ab737b3716b8e50c81e85025fa91b", null ],
     [ "ActionServerBase", "classeasyfleet__core_1_1ActionServerBase.html#a0ee35d599fa3c88c4672f7e878969be5", null ],
+    [ "disable_goals", "classeasyfleet__core_1_1ActionServerBase.html#ad484ea0f2e83ff59539cdf19e49435b8", null ],
+    [ "enable_goals", "classeasyfleet__core_1_1ActionServerBase.html#ae908e117e756a4e2b9e27003d90083a9", null ],
     [ "get_action_name", "classeasyfleet__core_1_1ActionServerBase.html#a26fe2cea18d7ec3a6a5c28d1fa16fecc", null ],
+    [ "goals_enabled", "classeasyfleet__core_1_1ActionServerBase.html#afa77914e0a34f691732b38321c4f4151", null ],
     [ "is_active", "classeasyfleet__core_1_1ActionServerBase.html#aee71b01d2e4d055b188db7ce81f1a8b8", null ],
     [ "is_preempt_requested", "classeasyfleet__core_1_1ActionServerBase.html#aae6860e60136835a33c7a1447ce42c38", null ],
     [ "is_preemptable", "classeasyfleet__core_1_1ActionServerBase.html#aaebf59fd5976ea70219bc7f8fb24d0cf", null ],
@@ -17,5 +20,6 @@ var classeasyfleet__core_1_1ActionServerBase =
     [ "on_cancel_requested", "classeasyfleet__core_1_1ActionServerBase.html#aae0ba116799882891b07668bec2099c8", null ],
     [ "on_execute", "classeasyfleet__core_1_1ActionServerBase.html#a535fbae5d82873be29ff31fbece2ccd8", null ],
     [ "on_goal_received", "classeasyfleet__core_1_1ActionServerBase.html#aedc4e8ecdb0b7f109d1c2c6bfa9b1d6a", null ],
-    [ "on_preempted", "classeasyfleet__core_1_1ActionServerBase.html#aeba542e0db4025eb060c57e96f6a510f", null ]
+    [ "on_preempted", "classeasyfleet__core_1_1ActionServerBase.html#aeba542e0db4025eb060c57e96f6a510f", null ],
+    [ "stop", "classeasyfleet__core_1_1ActionServerBase.html#a8c528baf37154d347366083f0f816846", null ]
 ];

@@ -141,8 +141,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ab3536e22848ce87b16a9b96d6d824d45" id="r_ab3536e22848ce87b16a9b96d6d824d45"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab3536e22848ce87b16a9b96d6d824d45">stop</a> () override</td></tr>
 <tr class="memdesc:ab3536e22848ce87b16a9b96d6d824d45"><td class="mdescLeft">&#160;</td><td class="mdescRight">Asks the in-flight goal, if any, to stop.  <br /></td></tr>
 <tr class="memitem:a4a91dede9f9a945f2d83b4357b34354e" id="r_a4a91dede9f9a945f2d83b4357b34354e"><td class="memItemLeft">easyfleet::CapabilityState&#160;</td><td class="memItemRight"><a class="el" href="#a4a91dede9f9a945f2d83b4357b34354e">state</a> () const override</td></tr>
-<tr class="memitem:aba5f52c8c108f1eaf5d2f8647245e361" id="r_aba5f52c8c108f1eaf5d2f8647245e361"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aba5f52c8c108f1eaf5d2f8647245e361">check_timeout</a> () override</td></tr>
-<tr class="memdesc:aba5f52c8c108f1eaf5d2f8647245e361"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called periodically (from FleetSession::spin_some()) so a <span class="tt">timeout</span> passed to <a class="el" href="#a4f62e84a2a92e3f989a0a552a0b45219" title="Sends goal and starts tracking it.">run()</a> actually gets enforced without blocking the caller.  <br /></td></tr>
+<tr class="memitem:afc782c8379797680cfeee045f3f9c371" id="r_afc782c8379797680cfeee045f3f9c371"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afc782c8379797680cfeee045f3f9c371">check_timeout</a> (bool alive) override</td></tr>
+<tr class="memdesc:afc782c8379797680cfeee045f3f9c371"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called periodically (from FleetSession::spin_some()) so a <span class="tt">timeout</span> passed to <a class="el" href="#a4f62e84a2a92e3f989a0a552a0b45219" title="Sends goal and starts tracking it.">run()</a> actually gets enforced without blocking the caller.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename ActionT&gt;<br />
@@ -205,8 +205,8 @@ template&lt;typename ActionT&gt; </div>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="aba5f52c8c108f1eaf5d2f8647245e361" name="aba5f52c8c108f1eaf5d2f8647245e361"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba5f52c8c108f1eaf5d2f8647245e361">&#9670;&#160;</a></span>check_timeout()</h2>
+<a id="afc782c8379797680cfeee045f3f9c371" name="afc782c8379797680cfeee045f3f9c371"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc782c8379797680cfeee045f3f9c371">&#9670;&#160;</a></span>check_timeout()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -219,7 +219,7 @@ template&lt;typename ActionT&gt; </div>
         <tr>
           <td class="memname">void check_timeout </td>
           <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>alive</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -231,8 +231,14 @@ template&lt;typename ActionT&gt; </div>
 </div><div class="memdoc">
 
 <p>Called periodically (from FleetSession::spin_some()) so a <span class="tt">timeout</span> passed to <a class="el" href="#a4f62e84a2a92e3f989a0a552a0b45219" title="Sends goal and starts tracking it.">run()</a> actually gets enforced without blocking the caller. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">alive</td><td>Whether the capability's heartbeat is still being seen; a running goal on a dead capability is settled as UNREACHABLE. </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p>Implements <a class="el" href="classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html#a7d678ee8283620c8f0c3ff89046b9f6a">RunningCapabilityBase</a>.</p>
+<p>Implements <a class="el" href="classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html#a7d93e1df0752771682b545c0563a2f04">RunningCapabilityBase</a>.</p>
 
 </div>
 </div>
@@ -269,7 +275,7 @@ template&lt;typename ActionT&gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">goal</td><td>Goal to send, fully typed &ndash; built by hand or via one of <a class="el" href="mission__helpers_8hpp_source.html">mission_helpers.hpp</a>'s make_*_goal() convenience overloads. </td></tr>
-    <tr><td class="paramname">timeout</td><td>Stop the goal if it hasn't finished on its own within this long, enforced by <a class="el" href="#aba5f52c8c108f1eaf5d2f8647245e361" title="Called periodically (from FleetSession::spin_some()) so a timeout passed to run() actually gets enfor...">check_timeout()</a>. </td></tr>
+    <tr><td class="paramname">timeout</td><td>Stop the goal if it hasn't finished on its own within this long, enforced by <a class="el" href="#afc782c8379797680cfeee045f3f9c371" title="Called periodically (from FleetSession::spin_some()) so a timeout passed to run() actually gets enfor...">check_timeout()</a>. </td></tr>
   </table>
   </dd>
 </dl>
