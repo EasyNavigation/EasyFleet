@@ -17,6 +17,7 @@ setup(
         ('share/' + package_name, ['package.xml', 'README.md']),
     ],
     install_requires=['setuptools', 'rich>=13.3.0'],
+    extras_require={'test': ['pytest']},
     zip_safe=False,
     maintainer='Francisco Martín Rico',
     maintainer_email='fmrico@gmail.com',
