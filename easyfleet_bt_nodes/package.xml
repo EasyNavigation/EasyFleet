@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>easyfleet_bt_nodes</name>
+  <version>0.1.0</version>
+  <description>
+    BehaviorTree.CPP nodes that call a robot's EasyFleet capabilities:
+    CallNavigation, CallPerception and CallManipulation run one goal of
+    /&lt;robot&gt;/navigation, /perception or /manipulation. A BT.CPP plugin
+    (BT_REGISTER_NODES) for any tree, e.g. the actions of a PlanSys2 plan.
+  </description>
+  <maintainer email="fmrico@gmail.com">Francisco Martín Rico</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>behaviortree_cpp</depend>
+  <depend>easyfleet_core</depend>
+  <depend>easyfleet_interfaces</depend>
+  <depend>nlohmann-json-dev</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
