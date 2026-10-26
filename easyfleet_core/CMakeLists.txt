@@ -17,13 +17,18 @@ find_package(action_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(easyfleet_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 
 add_library(${PROJECT_NAME}
   src/deployment.cpp
   src/init.cpp
+  src/link_watchdog.cpp
+  src/order_history.cpp
   src/param_utils.cpp
+  src/robot_status_publisher.cpp
   src/spin_utils.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -38,6 +43,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rcl_interfaces::rcl_interfaces
   lifecycle_msgs::lifecycle_msgs
   easyfleet_interfaces::easyfleet_interfaces
+  ${geometry_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
   pluginlib::pluginlib
   ament_index_cpp::ament_index_cpp
 )
@@ -63,6 +70,8 @@ ament_export_dependencies(
   rcl_interfaces
   lifecycle_msgs
   easyfleet_interfaces
+  geometry_msgs
+  sensor_msgs
   pluginlib
   ament_index_cpp
 )

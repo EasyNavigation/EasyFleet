@@ -16,6 +16,10 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/CapabilityDescription.msg"
   "msg/CapabilityStatus.msg"
+  "msg/FleetHeartbeat.msg"
+  "msg/OrderStatus.msg"
+  "msg/RobotStatus.msg"
+  "srv/GetOrder.srv"
   "action/Navigation.action"
   "action/Manipulation.action"
   "action/Perception.action"

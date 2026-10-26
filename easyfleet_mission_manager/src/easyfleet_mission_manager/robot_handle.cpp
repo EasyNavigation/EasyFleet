@@ -101,6 +101,23 @@ std::vector<easyfleet_mission_manager::CapabilityInfo> RobotHandle::capabilities
   return session_->capabilities_of(name_);
 }
 
+std::optional<easyfleet_interfaces::msg::RobotStatus> RobotHandle::status() const
+{
+  if (!session_) {
+    return std::nullopt;
+  }
+  return session_->robot_status(name_);
+}
+
+std::optional<easyfleet_interfaces::msg::OrderStatus> RobotHandle::get_order(
+  const std::string & order_id, std::chrono::milliseconds timeout) const
+{
+  if (!session_) {
+    return std::nullopt;
+  }
+  return session_->get_order(name_, order_id, timeout);
+}
+
 void RobotHandle::attach(FleetSession & session)
 {
   session_ = &session;

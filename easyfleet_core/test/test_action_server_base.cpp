@@ -17,12 +17,20 @@
 
 #include <chrono>
 #include <future>
+#include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+
+#include "easyfleet_interfaces/action/manipulation.hpp"
+#include "easyfleet_interfaces/action/navigation.hpp"
+#include "easyfleet_interfaces/action/perception.hpp"
 
 #include "test_fibonacci_server.hpp"
 #include "test_utils.hpp"
@@ -606,6 +614,99 @@ TEST_F(OwnServerTest, IsShutdownRequestedIsFalseOnceGoalsAreEnabledAgain)
   auto next = send(3);
   ASSERT_TRUE(next);
   EXPECT_EQ(result_of(next), rclcpp_action::ResultCode::SUCCEEDED);
+}
+
+TEST_F(OwnServerTest, HaltActiveGoal_StopsTheRunningGoalButKeepsAcceptingGoals)
+{
+  server_->set_step_delay(100ms);
+  auto running = send(50);
+  ASSERT_TRUE(running);
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+
+  server_->halt_active_goal();
+  EXPECT_EQ(result_of(running), rclcpp_action::ResultCode::ABORTED);
+  EXPECT_TRUE(server_->goals_enabled());
+  ASSERT_TRUE(wait_until([this] {return !server_->is_active();}, 2s));
+
+  // The next goal does not see the halt of the previous one.
+  server_->set_step_delay(10ms);
+  auto next = send(3);
+  ASSERT_TRUE(next);
+  EXPECT_EQ(result_of(next), rclcpp_action::ResultCode::SUCCEEDED);
+}
+
+TEST_F(OwnServerTest, HaltActiveGoalWhileIdle_DoesNothing)
+{
+  server_->halt_active_goal();
+  server_->halt_active_goal();
+  auto next = send(3);
+  ASSERT_TRUE(next);
+  EXPECT_EQ(result_of(next), rclcpp_action::ResultCode::SUCCEEDED);
+}
+
+TEST_F(OwnServerTest, HaltActiveGoal_StopsAGoalThatPreemptedAnother)
+{
+  server_->set_step_delay(100ms);
+  auto first = send(50);
+  ASSERT_TRUE(first);
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+  auto second = send(50);
+  ASSERT_TRUE(second);
+  EXPECT_EQ(result_of(first), rclcpp_action::ResultCode::ABORTED) << "preempted";
+  ASSERT_TRUE(wait_until([this] {return server_->is_active();}, 2s));
+
+  server_->halt_active_goal();
+  EXPECT_EQ(result_of(second), rclcpp_action::ResultCode::ABORTED);
+}
+
+TEST_F(OwnServerTest, GoalAcceptedCallback_GetsEveryAcceptedGoalAndNotTheRejectedOnes)
+{
+  std::mutex mutex;
+  std::vector<std::pair<rclcpp_action::GoalUUID, std::string>> accepted;
+  server_->set_goal_accepted_callback(
+    [&](const rclcpp_action::GoalUUID & uuid, const std::string & order_id) {
+      std::lock_guard<std::mutex> lock(mutex);
+      accepted.emplace_back(uuid, order_id);
+    });
+  auto a = send(2);
+  ASSERT_TRUE(a);
+  EXPECT_EQ(result_of(a), rclcpp_action::ResultCode::SUCCEEDED);
+  EXPECT_FALSE(send(-1)) << "rejected by on_goal_received";
+  auto b = send(3);
+  ASSERT_TRUE(b);
+  EXPECT_EQ(result_of(b), rclcpp_action::ResultCode::SUCCEEDED);
+
+  std::lock_guard<std::mutex> lock(mutex);
+  ASSERT_EQ(accepted.size(), 2u);
+  EXPECT_EQ(accepted[0].first, a->get_goal_id());
+  EXPECT_EQ(accepted[1].first, b->get_goal_id());
+  EXPECT_EQ(accepted[0].second, "") << "Fibonacci goals have no order_id";
+}
+
+TEST_F(OwnServerTest, GoalAcceptedCallback_CanBeCleared)
+{
+  std::atomic_int calls{0};
+  server_->set_goal_accepted_callback(
+    [&](const rclcpp_action::GoalUUID &, const std::string &) {calls.fetch_add(1);});
+  auto a = send(2);
+  ASSERT_TRUE(a);
+  result_of(a);
+  server_->set_goal_accepted_callback(nullptr);
+  auto b = send(2);
+  ASSERT_TRUE(b);
+  result_of(b);
+  EXPECT_EQ(calls.load(), 1);
+}
+
+TEST(HasOrderIdTest, DetectsTheOrderIdField)
+{
+  EXPECT_FALSE(easyfleet_core::detail::has_order_id<Fibonacci::Goal>::value);
+  EXPECT_TRUE(
+    easyfleet_core::detail::has_order_id<easyfleet_interfaces::action::Navigation::Goal>::value);
+  EXPECT_TRUE(
+    easyfleet_core::detail::has_order_id<easyfleet_interfaces::action::Perception::Goal>::value);
+  EXPECT_TRUE(
+    easyfleet_core::detail::has_order_id<easyfleet_interfaces::action::Manipulation::Goal>::value);
 }
 
 int main(int argc, char ** argv)

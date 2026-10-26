@@ -12,6 +12,10 @@ geometry_msgs/PoseStamped pose_target
 string end_effector_link
 string named_task
 string parameters_json
+# Identity of this order, persistent and queryable on the robot
+# (<capability>/get_order) while it is in its recent history. Empty: the
+# capability uses the goal's UUID (32 hex digits) as its order id.
+string order_id
 ---
 # Result
 # Shared result-code convention across Navigation/Manipulation/Perception

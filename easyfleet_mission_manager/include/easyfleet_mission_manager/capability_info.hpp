@@ -16,6 +16,7 @@
 #ifndef EASYFLEET_MISSION_MANAGER__CAPABILITY_INFO_HPP_
 #define EASYFLEET_MISSION_MANAGER__CAPABILITY_INFO_HPP_
 
+#include <cstdint>
 #include <string>
 
 #include "nlohmann/json.hpp"
@@ -51,6 +52,12 @@ struct CapabilityInfo
   /// false: a capability that isn't publishing heartbeats at all can't be
   /// "busy" or "idle", it's just gone.
   bool busy{false};
+  /// @brief The order running now, or the last one (empty if none), and its
+  /// state (`OrderStatus::STATE_*`), from the latest heartbeat.
+  std::string order_id;
+  uint8_t order_state{0};
+  /// @brief Whether the capability hears this fleet (`CapabilityStatus::LINK_*`).
+  uint8_t link_state{0};
 };
 
 /// @brief Pretty-prints the full capability description (requirements, effects,

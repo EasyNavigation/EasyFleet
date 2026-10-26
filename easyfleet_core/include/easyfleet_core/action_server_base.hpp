@@ -18,10 +18,13 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
@@ -29,6 +32,16 @@
 
 namespace easyfleet_core
 {
+
+namespace detail
+{
+/// Whether a goal type has an `order_id` field (EasyFleet's own actions do).
+template<typename GoalT, typename = void>
+struct has_order_id : std::false_type {};
+template<typename GoalT>
+struct has_order_id<GoalT, std::void_t<decltype(std::declval<GoalT>().order_id)>>
+  : std::true_type {};
+}  // namespace detail
 
 /// @brief Base class that hides the boilerplate of running a ROS 2 action server.
 /**
@@ -119,6 +132,20 @@ public:
   /// `on_execute()`.
   void stop();
 
+  /// @brief Ask the running goal to stop, and abort a queued one, without
+  /// disabling goals: `is_shutdown_requested()` is true until the running goal
+  /// returns. Does not wait. Used, e.g., when the link to the fleet is lost.
+  void halt_active_goal();
+
+  /// @brief Called (from the accepting thread) with every goal accepted to run,
+  /// and its `order_id` field, empty if the goal has none.
+  using GoalAcceptedCallback =
+    std::function<void (const rclcpp_action::GoalUUID & uuid, const std::string & order_id)>;
+
+  /// @brief Set the callback called with every accepted goal (nullptr: none).
+  /// @param callback The callback.
+  void set_goal_accepted_callback(GoalAcceptedCallback callback);
+
   /// @brief Current value of the "allow_preemption" parameter for this action.
   /// @return Current value of the "allow_preemption" parameter for this
   ///   action.
@@ -193,7 +220,7 @@ protected:
   bool is_preempt_requested() const noexcept;
 
   /// @brief Whether the running goal must stop because goals are being
-  /// disabled or the server is being stopped.
+  /// disabled, the server is being stopped or `halt_active_goal()` was called.
   /// @return Whether the running goal must stop. Long-running
   ///   `on_execute()` implementations should treat this the same as a
   ///   preemption request.
@@ -246,6 +273,9 @@ private:
   std::condition_variable idle_cv_;
   std::atomic_bool shutting_down_{false};
   std::atomic_bool halt_requested_{false};
+  /// Set by halt_active_goal(), cleared when the running goal returns.
+  std::atomic_bool goal_halt_requested_{false};
+  GoalAcceptedCallback goal_accepted_callback_;
   std::atomic_bool goals_enabled_{true};
   std::atomic_bool preempt_requested_{false};
   GoalHandleSharedPtr active_handle_;

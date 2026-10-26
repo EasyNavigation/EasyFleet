@@ -164,6 +164,39 @@ TEST(DeploymentTest, TryStartFailureRollsEveryCapabilityBackToUnconfigured)
   }
 }
 
+TEST(DeploymentTest, RobotStatusReportsEveryActiveCapabilityOnceStarted)
+{
+  easyfleet::Deployment deployment("robot_1");
+  deployment.add_capability(
+    "test_capability/fibonacci", options_with_capabilities_file(R"({"name":"test"})"));
+  deployment.add_capability(
+    "test_capability_two/fibonacci", options_with_capabilities_file(R"({"name":"test2"})"));
+  EXPECT_EQ(deployment.robot_status_publisher(), nullptr) << "only once started";
+  ASSERT_TRUE(deployment.try_start());
+  ASSERT_NE(deployment.robot_status_publisher(), nullptr);
+
+  auto status = deployment.robot_status_publisher()->make_status();
+  ASSERT_EQ(status.capabilities.size(), 2u);
+  EXPECT_EQ(status.capabilities[0].capability, "test_capability");
+  EXPECT_EQ(status.capabilities[1].capability, "test_capability_two");
+  EXPECT_FALSE(status.has_pose);
+  EXPECT_FALSE(status.has_battery);
+
+  // An inactive capability is not reported.
+  deployment.capabilities()[0]->deactivate_node();
+  status = deployment.robot_status_publisher()->make_status();
+  ASSERT_EQ(status.capabilities.size(), 1u);
+  EXPECT_EQ(status.capabilities[0].capability, "test_capability_two");
+}
+
+TEST(DeploymentTest, FailedStartHasNoRobotStatus)
+{
+  easyfleet::Deployment deployment("robot_1");
+  deployment.add_capability("test_capability/fibonacci");
+  EXPECT_FALSE(deployment.try_start());
+  EXPECT_EQ(deployment.robot_status_publisher(), nullptr);
+}
+
 TEST(DeploymentTest, TryStartWithNoCapabilitiesSucceedsTrivially)
 {
   easyfleet::Deployment deployment("robot_1");

@@ -72,6 +72,9 @@ std::vector<CapabilityInfo> discover_capabilities(
       info.action_name = msg->action_name;
       info.active = true;
       info.busy = msg->busy;
+      info.order_id = msg->order_id;
+      info.order_state = msg->order_state;
+      info.link_state = msg->link_state;
     });
 
   std::this_thread::sleep_for(window);

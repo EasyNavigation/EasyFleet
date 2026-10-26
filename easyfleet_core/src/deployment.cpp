@@ -169,7 +169,26 @@ bool Deployment::try_start()
       return false;
     }
   }
+  if (!robot_status_) {
+    robot_status_ = std::make_unique<easyfleet_core::RobotStatusPublisher>(
+      config_node(), [this]() {
+        std::vector<easyfleet_interfaces::msg::CapabilityStatus> statuses;
+        for (const auto & capability : capabilities_) {
+          if (capability->get_current_state_id() ==
+          lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+          {
+            statuses.push_back(capability->get_status());
+          }
+        }
+        return statuses;
+      });
+  }
   return true;
+}
+
+easyfleet_core::RobotStatusPublisher * Deployment::robot_status_publisher() const noexcept
+{
+  return robot_status_.get();
 }
 
 void Deployment::run()
@@ -185,7 +204,10 @@ void Deployment::run()
   for (const auto & capability : capabilities_) {
     executor_.add_node(capability->get_node_base_interface());
   }
+  const auto status_node = config_node();
+  executor_.add_node(status_node);
   easyfleet_core::spin_until_shutdown(executor_);
+  executor_.remove_node(status_node);
   for (const auto & capability : capabilities_) {
     executor_.remove_node(capability->get_node_base_interface());
   }

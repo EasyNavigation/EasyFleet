@@ -24,6 +24,7 @@
   <depend>easyfleet_core</depend>
   <depend>easyfleet_interfaces</depend>
   <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>nlohmann-json-dev</depend>
   <depend>visualization_msgs</depend>
 

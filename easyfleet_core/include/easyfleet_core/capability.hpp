@@ -24,9 +24,14 @@
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 
 #include "easyfleet_core/action_server_base.hpp"
+#include "action_msgs/msg/goal_status_array.hpp"
 #include "easyfleet_core/capability_node_base.hpp"
+#include "easyfleet_core/link_watchdog.hpp"
+#include "easyfleet_core/order_history.hpp"
 #include "easyfleet_interfaces/msg/capability_description.hpp"
 #include "easyfleet_interfaces/msg/capability_status.hpp"
+#include "easyfleet_interfaces/msg/fleet_heartbeat.hpp"
+#include "easyfleet_interfaces/srv/get_order.hpp"
 
 namespace easyfleet_core
 {
@@ -44,7 +49,12 @@ namespace easyfleet_core
  *    `easyfleet_interfaces/CapabilityDescription` on the reliable,
  *    transient-local `/capabilities` topic, so late subscribers still get it;
  *  - while active, publishes an `easyfleet_interfaces/CapabilityStatus`
- *    heartbeat once a second on `/capabilities_status`.
+ *    heartbeat once a second on `/capabilities_status`;
+ *  - keeps its recent orders (`<capability>.order_history`, 20 by default),
+ *    queryable on the `~/get_order` service (e.g. /robot1/navigation/get_order);
+ *  - with `<capability>.link_timeout` > 0 s, watches `/fleet_heartbeat` and,
+ *    when it is not heard for that long and `<capability>.on_link_lost` is
+ *    "cancel", stops the running goal ("continue", the default, only reports it).
  *
  * `ActionServerT` must publicly inherit `ActionServerBase<SomeActionType>`
  * and be constructible as `ActionServerT(LifecycleNode &, const std::string &)`.
@@ -101,6 +111,12 @@ public:
   /// @return The resolved, fully-qualified action name.
   const std::string & get_resolved_action_name() const noexcept;
 
+  /// @brief The recent orders of this capability.
+  const OrderHistory & get_order_history() const noexcept;
+
+  /// @brief This capability's status, as in its heartbeat.
+  easyfleet_interfaces::msg::CapabilityStatus get_status() const override;
+
   // -- CapabilityNodeBase --
   //
   // Named *_node() (see capability_node_base.hpp) precisely so these don't
@@ -153,6 +169,10 @@ protected:
 private:
   void publish_heartbeat();
   void stop_heartbeat();
+  void check_link();
+  void on_get_order(
+    const std::shared_ptr<easyfleet_interfaces::srv::GetOrder::Request> request,
+    std::shared_ptr<easyfleet_interfaces::srv::GetOrder::Response> response);
 
   std::string capability_name_;
   std::string robot_name_;
@@ -164,6 +184,18 @@ private:
   rclcpp_lifecycle::LifecyclePublisher<
     easyfleet_interfaces::msg::CapabilityStatus>::SharedPtr status_pub_;
   rclcpp::TimerBase::SharedPtr heartbeat_timer_;
+
+  std::string order_history_param_;
+  std::string link_timeout_param_;
+  std::string on_link_lost_param_;
+  std::unique_ptr<OrderHistory> order_history_;
+  rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr goal_status_sub_;
+  rclcpp::Service<easyfleet_interfaces::srv::GetOrder>::SharedPtr get_order_srv_;
+
+  LinkWatchdog link_watchdog_;
+  bool cancel_on_link_lost_{false};
+  rclcpp::Subscription<easyfleet_interfaces::msg::FleetHeartbeat>::SharedPtr fleet_heartbeat_sub_;
+  rclcpp::TimerBase::SharedPtr link_timer_;
 };
 
 }  // namespace easyfleet_core

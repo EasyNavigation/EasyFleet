@@ -119,3 +119,25 @@ target_link_libraries(test_deployment_shutdown
   GTest::gtest
 )
 add_dependencies(test_deployment_shutdown test_capability_factory_plugin)
+
+ament_add_gtest(test_order_history test_order_history.cpp)
+target_link_libraries(test_order_history ${PROJECT_NAME})
+
+ament_add_gtest(test_link_watchdog test_link_watchdog.cpp)
+target_link_libraries(test_link_watchdog ${PROJECT_NAME})
+
+ament_add_gtest(test_capability_orders test_capability_orders.cpp
+  TIMEOUT 120 SKIP_LINKING_MAIN_LIBRARIES
+  ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=84)
+target_link_libraries(test_capability_orders
+  ${PROJECT_NAME}
+  GTest::gtest
+)
+
+ament_add_gtest(test_robot_status test_robot_status.cpp
+  TIMEOUT 60 SKIP_LINKING_MAIN_LIBRARIES
+  ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=85)
+target_link_libraries(test_robot_status
+  ${PROJECT_NAME}
+  GTest::gtest
+)
