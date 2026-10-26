@@ -1,15 +1,19 @@
 var searchData=
 [
-  ['send_5fgoal_0',['send_goal',['../classeasyfleet__core_1_1ActionClient.html#a4325e08a2b131ee007e7754007a59e26',1,'easyfleet_core::ActionClient']]],
-  ['send_5fgoal_5fand_5fwait_1',['send_goal_and_wait',['../classeasyfleet__core_1_1ActionClient.html#a52d463900f09d43a5b7ba897d6dcc422',1,'easyfleet_core::ActionClient']]],
-  ['set_5fstatus_2',['set_status',['../classeasyfleet__mission__manager_1_1StatusMarkerPublisher.html#ab6d67bc1e4c3f2027ea8fb411c8a63d2',1,'easyfleet_mission_manager::StatusMarkerPublisher']]],
-  ['shutdown_3',['shutdown',['../classeasyfleet_1_1Deployment.html#a7861ee1569802186a619778efc85af13',1,'easyfleet::Deployment::shutdown()'],['../classeasyfleet_1_1FleetSession.html#a7861ee1569802186a619778efc85af13',1,'easyfleet::FleetSession::shutdown()'],['../classeasyfleet_1_1SimpleController.html#a7861ee1569802186a619778efc85af13',1,'easyfleet::SimpleController::shutdown()']]],
-  ['shutdown_5fnode_4',['shutdown_node',['../classeasyfleet__core_1_1Capability.html#a904735de4c71db90c9608badf634efa5',1,'easyfleet_core::Capability::shutdown_node()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#a55c296186fae78e297e37329979a55da',1,'easyfleet_core::CapabilityNodeBase::shutdown_node()']]],
-  ['spin_5ffor_5',['spin_for',['../classeasyfleet_1_1FleetSession.html#a799bb999be2adcbe802e1a630a45d219',1,'easyfleet::FleetSession::spin_for()'],['../classeasyfleet_1_1SimpleController.html#a799bb999be2adcbe802e1a630a45d219',1,'easyfleet::SimpleController::spin_for()']]],
-  ['spin_5fsome_6',['spin_some',['../classeasyfleet_1_1FleetSession.html#a812c0845be47239fdea59fa293370d12',1,'easyfleet::FleetSession::spin_some()'],['../classeasyfleet_1_1SimpleController.html#a812c0845be47239fdea59fa293370d12',1,'easyfleet::SimpleController::spin_some()']]],
-  ['start_7',['start',['../classeasyfleet_1_1Deployment.html#a60de64d75454385b23995437f1d72669',1,'easyfleet::Deployment']]],
-  ['state_8',['state',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html#a75276d07aa23e97d5d7268be6cb05faf',1,'easyfleet_mission_manager::detail::RunningCapabilityBase::state()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4a91dede9f9a945f2d83b4357b34354e',1,'easyfleet_mission_manager::detail::RunningCapability::state()']]],
-  ['statusmarkerpublisher_9',['StatusMarkerPublisher',['../classeasyfleet__mission__manager_1_1StatusMarkerPublisher.html#acb3c9212de18b6e196a9b54e7082d22b',1,'easyfleet_mission_manager::StatusMarkerPublisher']]],
-  ['stop_10',['stop',['../classeasyfleet__core_1_1ActionServerBase.html#a8c528baf37154d347366083f0f816846',1,'easyfleet_core::ActionServerBase::stop()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html#a0efff8623a2fb79dad94a96dcf16d966',1,'easyfleet_mission_manager::detail::RunningCapabilityBase::stop()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#ab3536e22848ce87b16a9b96d6d824d45',1,'easyfleet_mission_manager::detail::RunningCapability::stop()']]],
-  ['stop_5fcapability_11',['stop_capability',['../classeasyfleet_1_1RobotHandle.html#a58117314d0974540b1370912f962746a',1,'easyfleet::RobotHandle']]]
+  ['ready_0',['ready',['../classeasyfleet__mission__manager_1_1Throttle.html#ae0659ce466366fc566dc1425c658a019',1,'easyfleet_mission_manager::Throttle']]],
+  ['request_1',['request',['../classeasyfleet__core_1_1CapabilityClient.html#ada548859b20f06e7ac0cda47b316c139',1,'easyfleet_core::CapabilityClient']]],
+  ['request_5fand_5fwait_2',['request_and_wait',['../classeasyfleet__core_1_1CapabilityClient.html#a20160b8a3461ec1e7ec8332549ab3e5a',1,'easyfleet_core::CapabilityClient']]],
+  ['reset_3',['reset',['../classeasyfleet__core_1_1LinkWatchdog.html#a5ae19ebe9dd6800ca2436c4daf5dbc37',1,'easyfleet_core::LinkWatchdog']]],
+  ['resume_4',['resume',['../classeasyfleet_1_1RobotNavigationWatcher.html#a41de8150eff044a237990c271d57ea27',1,'easyfleet::RobotNavigationWatcher']]],
+  ['robot_5fid_5',['robot_id',['../classeasyfleet_1_1RobotNavigationWatcher.html#a9e12a08989bab97669c3b736ea5a0bed',1,'easyfleet::RobotNavigationWatcher']]],
+  ['robot_5fstatus_6',['robot_status',['../classeasyfleet_1_1FleetSession.html#a1be54e13243b4b505dc7937cc2a4fed0',1,'easyfleet::FleetSession']]],
+  ['robot_5fstatus_5fpublisher_7',['robot_status_publisher',['../classeasyfleet_1_1Deployment.html#aaeaca2c836c0a7559ab4ffd3c16af32b',1,'easyfleet::Deployment']]],
+  ['robothandle_8',['RobotHandle',['../classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0',1,'easyfleet::RobotHandle']]],
+  ['robotnavigationwatcher_9',['RobotNavigationWatcher',['../classeasyfleet_1_1RobotNavigationWatcher.html#af70731a4e26b221844b71ce1fe25ec8f',1,'easyfleet::RobotNavigationWatcher']]],
+  ['robotposetracker_10',['RobotPoseTracker',['../classeasyfleet_1_1RobotPoseTracker.html#a1cce5d9e05b71642b4a3afa032ecf885',1,'easyfleet::RobotPoseTracker']]],
+  ['robots_11',['robots',['../classeasyfleet_1_1FleetSession.html#ae7954b2b9890a5017938c0f47e8e3113',1,'easyfleet::FleetSession::robots()'],['../classeasyfleet_1_1SimpleController.html#ae7954b2b9890a5017938c0f47e8e3113',1,'easyfleet::SimpleController::robots()']]],
+  ['robotstatuspublisher_12',['RobotStatusPublisher',['../classeasyfleet__core_1_1RobotStatusPublisher.html#a78a7075a943280f7832d3778b52899a6',1,'easyfleet_core::RobotStatusPublisher']]],
+  ['run_13',['run',['../classeasyfleet_1_1Deployment.html#a13a43e6d814de94978c515cb084873b1',1,'easyfleet::Deployment::run()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4f62e84a2a92e3f989a0a552a0b45219',1,'easyfleet_mission_manager::detail::RunningCapability::run()']]],
+  ['run_5fcapability_14',['run_capability',['../classeasyfleet_1_1RobotHandle.html#ac46846c63e2660cd7b284fb1183fb23c',1,'easyfleet::RobotHandle']]],
+  ['runningcapability_15',['RunningCapability',['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a1d03b6a8b97f7a43c12f4308c3784af9',1,'easyfleet_mission_manager::detail::RunningCapability']]]
 ];

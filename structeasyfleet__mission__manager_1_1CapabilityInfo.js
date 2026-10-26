@@ -7,5 +7,7 @@ var structeasyfleet__mission__manager_1_1CapabilityInfo =
     [ "description_json", "structeasyfleet__mission__manager_1_1CapabilityInfo.html#a1d9e0718b9fbe0ea359aaac41d44b010", null ],
     [ "description_json_raw", "structeasyfleet__mission__manager_1_1CapabilityInfo.html#a4740a204570c36793597790a6d38fc4f", null ],
     [ "description_json_valid", "structeasyfleet__mission__manager_1_1CapabilityInfo.html#a9b6c24d8e400161453e55e0c6ccf4223", null ],
+    [ "link_state", "structeasyfleet__mission__manager_1_1CapabilityInfo.html#a006ed158e3331da40e11679a1abc2885", null ],
+    [ "order_id", "structeasyfleet__mission__manager_1_1CapabilityInfo.html#a98926707cd90693eef776415b21e8d35", null ],
     [ "robot", "structeasyfleet__mission__manager_1_1CapabilityInfo.html#a9c2860daa385d9fdebd014cbd6c60d38", null ]
 ];

@@ -12,6 +12,8 @@ var searchData=
   ['onhalted_9',['onHalted',['../classeasyfleet__easynav__navigation_1_1Navigate.html#a48ecf4a322c233a781dc752b41f7f070',1,'easyfleet_easynav_navigation::Navigate']]],
   ['onrunning_10',['onRunning',['../classeasyfleet__easynav__navigation_1_1Navigate.html#a90a1421f6191f4c28b9a4f969a08e16f',1,'easyfleet_easynav_navigation::Navigate']]],
   ['onstart_11',['onStart',['../classeasyfleet__easynav__navigation_1_1Navigate.html#a90ffb5ea14302d5578fd67e700614288',1,'easyfleet_easynav_navigation::Navigate']]],
-  ['outcome_12',['Outcome',['../classeasyfleet__core_1_1CapabilityClient.html#af8c0f8de1d7a7f709aa79f5016a34cd5',1,'easyfleet_core::CapabilityClient']]],
-  ['outcome_13',['outcome',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html#ad89d31755ca91a0a1091150f0edec711',1,'easyfleet_core::ActionClient::GoalResult::outcome'],['../structeasyfleet__core_1_1CapabilityClient_1_1Response.html#ac8379e2fc7afc943f38890977d381c0e',1,'easyfleet_core::CapabilityClient::Response::outcome']]]
+  ['order_5fid_12',['order_id',['../structeasyfleet__mission__manager_1_1CapabilityInfo.html#a98926707cd90693eef776415b21e8d35',1,'easyfleet_mission_manager::CapabilityInfo']]],
+  ['orderhistory_13',['OrderHistory',['../classeasyfleet__core_1_1OrderHistory.html',1,'OrderHistory'],['../classeasyfleet__core_1_1OrderHistory.html#ab232c5ec76ee490bb8835e12faf1d325',1,'easyfleet_core::OrderHistory::OrderHistory()']]],
+  ['outcome_14',['Outcome',['../classeasyfleet__core_1_1CapabilityClient.html#af8c0f8de1d7a7f709aa79f5016a34cd5',1,'easyfleet_core::CapabilityClient']]],
+  ['outcome_15',['outcome',['../structeasyfleet__core_1_1ActionClient_1_1GoalResult.html#ad89d31755ca91a0a1091150f0edec711',1,'easyfleet_core::ActionClient::GoalResult::outcome'],['../structeasyfleet__core_1_1CapabilityClient_1_1Response.html#ac8379e2fc7afc943f38890977d381c0e',1,'easyfleet_core::CapabilityClient::Response::outcome']]]
 ];

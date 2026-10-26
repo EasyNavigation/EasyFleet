@@ -155,6 +155,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:af5dbc6a1ccad50b9795816bf71568a68"><td class="mdescLeft">&#160;</td><td class="mdescRight">This node's namespace, without the leading '/' (empty if none), e.g.  <br /></td></tr>
 <tr class="memitem:a309d9dc01ab8e63ac203d27d8ea452ed" id="r_a309d9dc01ab8e63ac203d27d8ea452ed"><td class="memItemLeft">const std::string &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a309d9dc01ab8e63ac203d27d8ea452ed">get_resolved_action_name</a> () const noexcept</td></tr>
 <tr class="memdesc:a309d9dc01ab8e63ac203d27d8ea452ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fully-qualified name of the action this capability exposes, e.g.  <br /></td></tr>
+<tr class="memitem:a969d8d07e09d86c0a007e419c7d328c7" id="r_a969d8d07e09d86c0a007e419c7d328c7"><td class="memItemLeft"><a id="a969d8d07e09d86c0a007e419c7d328c7" name="a969d8d07e09d86c0a007e419c7d328c7"></a>
+const <a class="el" href="classeasyfleet__core_1_1OrderHistory.html">OrderHistory</a> &amp;&#160;</td><td class="memItemRight"><b>get_order_history</b> () const noexcept</td></tr>
+<tr class="memdesc:a969d8d07e09d86c0a007e419c7d328c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The recent orders of this capability. <br /></td></tr>
+<tr class="memitem:a67cb0d4e324d8aa553f68a3125bb5397" id="r_a67cb0d4e324d8aa553f68a3125bb5397"><td class="memItemLeft">easyfleet_interfaces::msg::CapabilityStatus&#160;</td><td class="memItemRight"><a class="el" href="#a67cb0d4e324d8aa553f68a3125bb5397">get_status</a> () const override</td></tr>
+<tr class="memdesc:a67cb0d4e324d8aa553f68a3125bb5397"><td class="mdescLeft">&#160;</td><td class="mdescRight">This capability's status, as in its heartbeat.  <br /></td></tr>
 <tr class="memitem:ae34d57f5de79428ef2051f8588f4add2" id="r_ae34d57f5de79428ef2051f8588f4add2"><td class="memItemLeft"><a class="el" href="#aa016ff104ce1b9e5361e03e3dc22c0a0">CallbackReturn</a>&#160;</td><td class="memItemRight"><a class="el" href="#ae34d57f5de79428ef2051f8588f4add2">configure_node</a> () override</td></tr>
 <tr class="memdesc:ae34d57f5de79428ef2051f8588f4add2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Drive the underlying lifecycle node from UNCONFIGURED to INACTIVE.  <br /></td></tr>
 <tr class="memitem:a1be3a10c5fc4717e6a87c95de4ea1ee2" id="r_a1be3a10c5fc4717e6a87c95de4ea1ee2"><td class="memItemLeft"><a class="el" href="#aa016ff104ce1b9e5361e03e3dc22c0a0">CallbackReturn</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1be3a10c5fc4717e6a87c95de4ea1ee2">activate_node</a> () override</td></tr>
@@ -189,7 +194,9 @@ class easyfleet_core::Capability&lt; ActionServerT &gt;</div><p>Lifecycle node t
 <p><span class="tt"><a class="el" href="classeasyfleet__core_1_1Capability.html" title="Lifecycle node that advertises a single action as a &quot;capability&quot;.">Capability</a>&lt;ActionServerT&gt;</span> is a <span class="tt">rclcpp_lifecycle::LifecycleNode</span> that:</p><ul>
 <li>owns an instance of <span class="tt">ActionServerT</span> (a concrete subclass of <span class="tt"><a class="el" href="classeasyfleet__core_1_1ActionServerBase.html" title="Base class that hides the boilerplate of running a ROS 2 action server.">ActionServerBase</a>&lt;ActionType&gt;</span>, constructed as <span class="tt">ActionServerT(rclcpp_lifecycle::LifecycleNode &amp;, const std::string &amp;)</span>), exposed through its <span class="tt"><a class="el" href="classeasyfleet__core_1_1ActionServerBase.html" title="Base class that hides the boilerplate of running a ROS 2 action server.">ActionServerBase</a>&lt;ActionType&gt;::<a class="el" href="classeasyfleet__core_1_1CapabilityNodeBase.html#aaea44655e8a94afa52c400e9c9b45718" title="Shared pointer to a CapabilityNodeBase.">SharedPtr</a></span> base type;</li>
 <li>on <span class="tt"><a class="el" href="#a5ba84177988738847c5295758c6112b3" title="Publishes the capability description and starts the status heartbeat.">on_activate</a></span>, reads the file named by the <span class="tt">capabilities_file</span> string parameter and publishes it, together with its own runtime identity (namespace and fully-qualified action name), as an <span class="tt">easyfleet_interfaces/CapabilityDescription</span> on the reliable, transient-local <span class="tt">/capabilities</span> topic, so late subscribers still get it;</li>
-<li>while active, publishes an <span class="tt">easyfleet_interfaces/CapabilityStatus</span> heartbeat once a second on <span class="tt">/capabilities_status</span>.</li>
+<li>while active, publishes an <span class="tt">easyfleet_interfaces/CapabilityStatus</span> heartbeat once a second on <span class="tt">/capabilities_status</span>;</li>
+<li>keeps its recent orders (<span class="tt">&lt;capability&gt;.order_history</span>, 20 by default), queryable on the <span class="tt">~/get_order</span> service (e.g. /robot1/navigation/get_order);</li>
+<li>with <span class="tt">&lt;capability&gt;.link_timeout</span> &gt; 0 s, watches <span class="tt">/fleet_heartbeat</span> and, when it is not heard for that long and <span class="tt">&lt;capability&gt;.on_link_lost</span> is "cancel", stops the running goal ("continue", the default, only reports it).</li>
 </ul>
 <p><span class="tt">ActionServerT</span> must publicly inherit <span class="tt"><a class="el" href="classeasyfleet__core_1_1ActionServerBase.html" title="Base class that hides the boilerplate of running a ROS 2 action server.">ActionServerBase</a>&lt;SomeActionType&gt;</span> and be constructible as <span class="tt">ActionServerT(LifecycleNode &amp;, const std::string &amp;)</span>.</p>
 <p>The <span class="tt">robot</span>/<span class="tt">capability</span>/<span class="tt">action_name</span> identity published on both topics is resolved from this node's actual namespace at construction time, so a capability launched under namespace <span class="tt">robot1</span> announces itself as such without any code changes &ndash; this is what lets a control center tell apart, say, <span class="tt">robot1</span>'s and <span class="tt">robot2</span>'s <span class="tt">navigation</span> capabilities.</p>
@@ -549,6 +556,37 @@ template&lt;typename ActionServerT&gt; </div>
 <p>"robot1". This is the <span class="tt">robot</span> identity field published on /capabilities and /capabilities_status. </p><dl class="section return"><dt>Returns</dt><dd>This node's resolved robot name. </dd></dl>
 
 <p>Implements <a class="el" href="classeasyfleet__core_1_1CapabilityNodeBase.html#a4e9e61eaf42e3e8b2190821071c85c55">CapabilityNodeBase</a>.</p>
+
+</div>
+</div>
+<a id="a67cb0d4e324d8aa553f68a3125bb5397" name="a67cb0d4e324d8aa553f68a3125bb5397"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67cb0d4e324d8aa553f68a3125bb5397">&#9670;&#160;</a></span>get_status()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ActionServerT&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">easyfleet_interfaces::msg::CapabilityStatus get_status </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This capability's status, as in its heartbeat. </p>
+
+<p>Implements <a class="el" href="classeasyfleet__core_1_1CapabilityNodeBase.html#a40b1033ded77f2c2abd312e7b1f639c6">CapabilityNodeBase</a>.</p>
 
 </div>
 </div>

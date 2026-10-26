@@ -1,6 +1,18 @@
 var searchData=
 [
-  ['throttle_0',['Throttle',['../classeasyfleet__mission__manager_1_1Throttle.html#a25a85274e04499727f4f975493bfb158',1,'easyfleet_mission_manager::Throttle']]],
-  ['try_5fadd_5fcapabilities_5ffrom_5fparameters_1',['try_add_capabilities_from_parameters',['../classeasyfleet_1_1Deployment.html#aef2cc656dcbbbdc7e0becbc6f6eab1b5',1,'easyfleet::Deployment']]],
-  ['try_5fstart_2',['try_start',['../classeasyfleet_1_1Deployment.html#a9665bab2beca3e21df201bc705491147',1,'easyfleet::Deployment']]]
+  ['send_5fgoal_0',['send_goal',['../classeasyfleet__core_1_1ActionClient.html#a4325e08a2b131ee007e7754007a59e26',1,'easyfleet_core::ActionClient']]],
+  ['send_5fgoal_5fand_5fwait_1',['send_goal_and_wait',['../classeasyfleet__core_1_1ActionClient.html#a52d463900f09d43a5b7ba897d6dcc422',1,'easyfleet_core::ActionClient']]],
+  ['set_5fgoal_5faccepted_5fcallback_2',['set_goal_accepted_callback',['../classeasyfleet__core_1_1ActionServerBase.html#a5ac98427443504a98e53bedc1a9fb0a5',1,'easyfleet_core::ActionServerBase']]],
+  ['set_5fstatus_3',['set_status',['../classeasyfleet__mission__manager_1_1StatusMarkerPublisher.html#ab6d67bc1e4c3f2027ea8fb411c8a63d2',1,'easyfleet_mission_manager::StatusMarkerPublisher']]],
+  ['shutdown_4',['shutdown',['../classeasyfleet_1_1Deployment.html#a7861ee1569802186a619778efc85af13',1,'easyfleet::Deployment::shutdown()'],['../classeasyfleet_1_1FleetSession.html#a7861ee1569802186a619778efc85af13',1,'easyfleet::FleetSession::shutdown()'],['../classeasyfleet_1_1SimpleController.html#a7861ee1569802186a619778efc85af13',1,'easyfleet::SimpleController::shutdown()']]],
+  ['shutdown_5fnode_5',['shutdown_node',['../classeasyfleet__core_1_1Capability.html#a904735de4c71db90c9608badf634efa5',1,'easyfleet_core::Capability::shutdown_node()'],['../classeasyfleet__core_1_1CapabilityNodeBase.html#a55c296186fae78e297e37329979a55da',1,'easyfleet_core::CapabilityNodeBase::shutdown_node()']]],
+  ['size_6',['size',['../classeasyfleet__core_1_1OrderHistory.html#ade1601ccf1fa3bcf050867f0852ca4e5',1,'easyfleet_core::OrderHistory']]],
+  ['spin_5ffor_7',['spin_for',['../classeasyfleet_1_1FleetSession.html#a799bb999be2adcbe802e1a630a45d219',1,'easyfleet::FleetSession::spin_for()'],['../classeasyfleet_1_1SimpleController.html#a799bb999be2adcbe802e1a630a45d219',1,'easyfleet::SimpleController::spin_for()']]],
+  ['spin_5fsome_8',['spin_some',['../classeasyfleet_1_1FleetSession.html#a812c0845be47239fdea59fa293370d12',1,'easyfleet::FleetSession::spin_some()'],['../classeasyfleet_1_1SimpleController.html#a812c0845be47239fdea59fa293370d12',1,'easyfleet::SimpleController::spin_some()']]],
+  ['start_9',['start',['../classeasyfleet_1_1Deployment.html#a60de64d75454385b23995437f1d72669',1,'easyfleet::Deployment']]],
+  ['state_10',['state',['../classeasyfleet__core_1_1LinkWatchdog.html#a1742ba31694147bb406061ba27ee9ed9',1,'easyfleet_core::LinkWatchdog::state()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html#a75276d07aa23e97d5d7268be6cb05faf',1,'easyfleet_mission_manager::detail::RunningCapabilityBase::state()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#a4a91dede9f9a945f2d83b4357b34354e',1,'easyfleet_mission_manager::detail::RunningCapability::state()']]],
+  ['status_11',['status',['../classeasyfleet_1_1RobotHandle.html#a01430eccf949c758a328e0f0e318ba32',1,'easyfleet::RobotHandle']]],
+  ['statusmarkerpublisher_12',['StatusMarkerPublisher',['../classeasyfleet__mission__manager_1_1StatusMarkerPublisher.html#acb3c9212de18b6e196a9b54e7082d22b',1,'easyfleet_mission_manager::StatusMarkerPublisher']]],
+  ['stop_13',['stop',['../classeasyfleet__core_1_1ActionServerBase.html#a8c528baf37154d347366083f0f816846',1,'easyfleet_core::ActionServerBase::stop()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapabilityBase.html#a0efff8623a2fb79dad94a96dcf16d966',1,'easyfleet_mission_manager::detail::RunningCapabilityBase::stop()'],['../classeasyfleet__mission__manager_1_1detail_1_1RunningCapability.html#ab3536e22848ce87b16a9b96d6d824d45',1,'easyfleet_mission_manager::detail::RunningCapability::stop()']]],
+  ['stop_5fcapability_14',['stop_capability',['../classeasyfleet_1_1RobotHandle.html#a58117314d0974540b1370912f962746a',1,'easyfleet::RobotHandle']]]
 ];

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['wait_5ffor_5fcapability_0',['wait_for_capability',['../classeasyfleet__core_1_1CapabilityClient.html#aa7f216599e65e4664ab4f8188da1aada',1,'easyfleet_core::CapabilityClient::wait_for_capability()'],['../classeasyfleet__core_1_1CapabilityClient.html#ad79f263f3e61b5be83834a9e0b6f3787',1,'easyfleet_core::CapabilityClient::wait_for_capability(std::chrono::milliseconds timeout)']]],
-  ['wait_5ffor_5fserver_1',['wait_for_server',['../classeasyfleet__core_1_1ActionClient.html#a02c7233795dbbf8ebc1c6455ceca4b2b',1,'easyfleet_core::ActionClient::wait_for_server()'],['../classeasyfleet__core_1_1ActionClient.html#a0c92ed00eb7c4ee42c568c50e71379bd',1,'easyfleet_core::ActionClient::wait_for_server(std::chrono::milliseconds timeout)']]]
+  ['update_0',['update',['../classeasyfleet__core_1_1LinkWatchdog.html#a56af280628a3053e3bc3fe574259704c',1,'easyfleet_core::LinkWatchdog::update()'],['../classeasyfleet__core_1_1OrderHistory.html#addbed3cefe33145cc61bae6d52b085fa',1,'easyfleet_core::OrderHistory::update()'],['../classeasyfleet_1_1RobotPoseTracker.html#a579179f26ba766cd3b67da80670a1cd0',1,'easyfleet::RobotPoseTracker::update()']]]
 ];

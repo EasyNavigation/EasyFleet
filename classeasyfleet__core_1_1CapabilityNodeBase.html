@@ -156,6 +156,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:addf8c1df75c102b6b8eb255803d382b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <span class="tt">capability</span> identity field published on /capabilities and /capabilities_status.  <br /></td></tr>
 <tr class="memitem:a4e9e61eaf42e3e8b2190821071c85c55" id="r_a4e9e61eaf42e3e8b2190821071c85c55"><td class="memItemLeft">virtual const std::string &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a4e9e61eaf42e3e8b2190821071c85c55">get_robot_name</a> () const =0</td></tr>
 <tr class="memdesc:a4e9e61eaf42e3e8b2190821071c85c55"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <span class="tt">robot</span> identity field published on /capabilities and /capabilities_status.  <br /></td></tr>
+<tr class="memitem:a40b1033ded77f2c2abd312e7b1f639c6" id="r_a40b1033ded77f2c2abd312e7b1f639c6"><td class="memItemLeft">virtual easyfleet_interfaces::msg::CapabilityStatus&#160;</td><td class="memItemRight"><a class="el" href="#a40b1033ded77f2c2abd312e7b1f639c6">get_status</a> () const =0</td></tr>
+<tr class="memdesc:a40b1033ded77f2c2abd312e7b1f639c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">This capability's status, as in its /capabilities_status heartbeat.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Non-template handle to an already-constructed <span class="tt"><a class="el" href="classeasyfleet__core_1_1Capability.html" title="Lifecycle node that advertises a single action as a &quot;capability&quot;.">Capability</a>&lt;ActionServerT&gt;</span> instance, exposing exactly the surface <span class="tt">Robot</span>/<span class="tt">Deployment</span> need to drive it &ndash; lifecycle transitions, its node (to add to an executor), and its identity &ndash; without needing to know <span class="tt">ActionServerT</span>. </p>
@@ -398,6 +400,36 @@ Public Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>The <span class="tt">robot</span> identity field published on /capabilities and /capabilities_status. </dd></dl>
 
 <p>Implemented in <a class="el" href="classeasyfleet__core_1_1Capability.html#af5dbc6a1ccad50b9795816bf71568a68">Capability&lt; ActionServerT &gt;</a>.</p>
+
+</div>
+</div>
+<a id="a40b1033ded77f2c2abd312e7b1f639c6" name="a40b1033ded77f2c2abd312e7b1f639c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40b1033ded77f2c2abd312e7b1f639c6">&#9670;&#160;</a></span>get_status()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual easyfleet_interfaces::msg::CapabilityStatus get_status </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel pure-virtual">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>This capability's status, as in its /capabilities_status heartbeat. </p>
+<dl class="section return"><dt>Returns</dt><dd>The status. </dd></dl>
+
+<p>Implemented in <a class="el" href="classeasyfleet__core_1_1Capability.html#a67cb0d4e324d8aa553f68a3125bb5397">Capability&lt; ActionServerT &gt;</a>.</p>
 
 </div>
 </div>

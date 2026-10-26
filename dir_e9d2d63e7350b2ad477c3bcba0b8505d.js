@@ -10,8 +10,11 @@ var dir_e9d2d63e7350b2ad477c3bcba0b8505d =
     [ "deployment.hpp", "deployment_8hpp_source.html", null ],
     [ "easyfleet_core.hpp", "easyfleet__core_8hpp_source.html", null ],
     [ "init.hpp", "init_8hpp_source.html", null ],
+    [ "link_watchdog.hpp", "link__watchdog_8hpp_source.html", null ],
     [ "manipulation_action_server_base.hpp", "manipulation__action__server__base_8hpp_source.html", null ],
     [ "navigation_action_server_base.hpp", "navigation__action__server__base_8hpp_source.html", null ],
+    [ "order_history.hpp", "order__history_8hpp_source.html", null ],
     [ "perception_action_server_base.hpp", "perception__action__server__base_8hpp_source.html", null ],
+    [ "robot_status_publisher.hpp", "robot__status__publisher_8hpp_source.html", null ],
     [ "spin_utils.hpp", "spin__utils_8hpp_source.html", null ]
 ];

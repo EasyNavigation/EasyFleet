@@ -138,6 +138,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a60de64d75454385b23995437f1d72669"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures, then activates, every added capability, in the order they were added.  <br /></td></tr>
 <tr class="memitem:a9665bab2beca3e21df201bc705491147" id="r_a9665bab2beca3e21df201bc705491147"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a9665bab2beca3e21df201bc705491147">try_start</a> ()</td></tr>
 <tr class="memdesc:a9665bab2beca3e21df201bc705491147"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <span class="tt"><a class="el" href="#a60de64d75454385b23995437f1d72669" title="Configures, then activates, every added capability, in the order they were added.">start()</a></span>, but returns <span class="tt">false</span> instead of exiting.  <br /></td></tr>
+<tr class="memitem:aaeaca2c836c0a7559ab4ffd3c16af32b" id="r_aaeaca2c836c0a7559ab4ffd3c16af32b"><td class="memItemLeft"><a class="el" href="classeasyfleet__core_1_1RobotStatusPublisher.html">easyfleet_core::RobotStatusPublisher</a> *&#160;</td><td class="memItemRight"><a class="el" href="#aaeaca2c836c0a7559ab4ffd3c16af32b">robot_status_publisher</a> () const noexcept</td></tr>
+<tr class="memdesc:aaeaca2c836c0a7559ab4ffd3c16af32b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The /robot_status publisher, created by a successful <a class="el" href="#a60de64d75454385b23995437f1d72669" title="Configures, then activates, every added capability, in the order they were added.">start()</a> (nullptr before).  <br /></td></tr>
 <tr class="memitem:a13a43e6d814de94978c515cb084873b1" id="r_a13a43e6d814de94978c515cb084873b1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a13a43e6d814de94978c515cb084873b1">run</a> ()</td></tr>
 <tr class="memdesc:a13a43e6d814de94978c515cb084873b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds every capability's node to one shared executor and blocks until SIGINT/SIGTERM (see <span class="tt">spin_until_shutdown()</span>), then deactivates and cleans up every capability &ndash; in reverse order &ndash; before returning.  <br /></td></tr>
 <tr class="memitem:a7861ee1569802186a619778efc85af13" id="r_a7861ee1569802186a619778efc85af13"><td class="memItemLeft"><a id="a7861ee1569802186a619778efc85af13" name="a7861ee1569802186a619778efc85af13"></a>
@@ -157,7 +159,7 @@ void&#160;</td><td class="memItemRight"><b>shutdown</b> ()</td></tr>
 <div class="line">deployment.start();</div>
 <div class="line">deployment.run();</div>
 <div class="line">deployment.shutdown();</div>
-<div class="ttc" id="aclasseasyfleet_1_1Deployment_html"><div class="ttname"><a href="classeasyfleet_1_1Deployment.html">easyfleet::Deployment</a></div><div class="ttdoc">Everything one robot&#39;s process needs: load its capabilities, bring them up, run them until shutdown,...</div><div class="ttdef"><b>Definition</b> deployment.hpp:84</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1Deployment_html"><div class="ttname"><a href="classeasyfleet_1_1Deployment.html">easyfleet::Deployment</a></div><div class="ttdoc">Everything one robot&#39;s process needs: load its capabilities, bring them up, run them until shutdown,...</div><div class="ttdef"><b>Definition</b> deployment.hpp:85</div></div>
 </div><!-- fragment --><p>Usage, letting parameters say which capabilities to load (see <span class="tt"><a class="el" href="#a95f73a2678e18b49dc81ba5405569e29" title="Reads which capabilities to host from this process&#39;s own &quot;capabilities&quot; (string list) and &quot;config_sub...">add_capabilities_from_parameters()</a></span>) &ndash; the common case, and what makes one <span class="tt">deployment.cpp</span>-style executable reusable, unchanged, across every robot in a scenario: </p><div class="fragment"><div class="line">easyfleet::init(argc, argv);</div>
 <div class="line"> </div>
 <div class="line"><a class="code hl_class" href="classeasyfleet_1_1Deployment.html">easyfleet::Deployment</a> deployment;</div>
@@ -166,9 +168,9 @@ void&#160;</td><td class="memItemRight"><b>shutdown</b> ()</td></tr>
 <div class="line">deployment.<a class="code hl_function" href="#a60de64d75454385b23995437f1d72669">start</a>();</div>
 <div class="line">deployment.<a class="code hl_function" href="#a13a43e6d814de94978c515cb084873b1">run</a>();</div>
 <div class="line">deployment.<a class="code hl_function" href="#a7861ee1569802186a619778efc85af13">shutdown</a>();</div>
-<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a13a43e6d814de94978c515cb084873b1"><div class="ttname"><a href="#a13a43e6d814de94978c515cb084873b1">easyfleet::Deployment::run</a></div><div class="ttdeci">void run()</div><div class="ttdoc">Adds every capability&#39;s node to one shared executor and blocks until SIGINT/SIGTERM (see spin_until_s...</div><div class="ttdef"><b>Definition</b> deployment.cpp:175</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a13a43e6d814de94978c515cb084873b1"><div class="ttname"><a href="#a13a43e6d814de94978c515cb084873b1">easyfleet::Deployment::run</a></div><div class="ttdeci">void run()</div><div class="ttdoc">Adds every capability&#39;s node to one shared executor and blocks until SIGINT/SIGTERM (see spin_until_s...</div><div class="ttdef"><b>Definition</b> deployment.cpp:194</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a60de64d75454385b23995437f1d72669"><div class="ttname"><a href="#a60de64d75454385b23995437f1d72669">easyfleet::Deployment::start</a></div><div class="ttdeci">void start()</div><div class="ttdoc">Configures, then activates, every added capability, in the order they were added.</div><div class="ttdef"><b>Definition</b> deployment.cpp:133</div></div>
-<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a7861ee1569802186a619778efc85af13"><div class="ttname"><a href="#a7861ee1569802186a619778efc85af13">easyfleet::Deployment::shutdown</a></div><div class="ttdeci">void shutdown()</div><div class="ttdoc">Shuts down every capability&#39;s lifecycle node, then calls rclcpp::shutdown() – the ROS context teardow...</div><div class="ttdef"><b>Definition</b> deployment.cpp:203</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a7861ee1569802186a619778efc85af13"><div class="ttname"><a href="#a7861ee1569802186a619778efc85af13">easyfleet::Deployment::shutdown</a></div><div class="ttdeci">void shutdown()</div><div class="ttdoc">Shuts down every capability&#39;s lifecycle node, then calls rclcpp::shutdown() – the ROS context teardow...</div><div class="ttdef"><b>Definition</b> deployment.cpp:225</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1Deployment_html_a95f73a2678e18b49dc81ba5405569e29"><div class="ttname"><a href="#a95f73a2678e18b49dc81ba5405569e29">easyfleet::Deployment::add_capabilities_from_parameters</a></div><div class="ttdeci">void add_capabilities_from_parameters(const std::string &amp;package_name)</div><div class="ttdoc">Reads which capabilities to host from this process&#39;s own &quot;capabilities&quot; (string list) and &quot;config_sub...</div><div class="ttdef"><b>Definition</b> deployment.cpp:95</div></div>
 </div><!-- fragment --> </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adf0dcd27ba570928796cc5d41d06f68c" name="adf0dcd27ba570928796cc5d41d06f68c"></a>
@@ -340,6 +342,34 @@ void&#160;</td><td class="memItemRight"><b>shutdown</b> ()</td></tr>
 
 <p>This robot's identity, as passed to the constructor. </p>
 <dl class="section return"><dt>Returns</dt><dd>This robot's identity, as passed to the constructor (or inferred from the process's own ROS namespace). </dd></dl>
+
+</div>
+</div>
+<a id="aaeaca2c836c0a7559ab4ffd3c16af32b" name="aaeaca2c836c0a7559ab4ffd3c16af32b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaeaca2c836c0a7559ab4ffd3c16af32b">&#9670;&#160;</a></span>robot_status_publisher()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classeasyfleet__core_1_1RobotStatusPublisher.html">easyfleet_core::RobotStatusPublisher</a> * robot_status_publisher </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The /robot_status publisher, created by a successful <a class="el" href="#a60de64d75454385b23995437f1d72669" title="Configures, then activates, every added capability, in the order they were added.">start()</a> (nullptr before). </p>
+<p>See <span class="tt"><a class="el" href="classeasyfleet__core_1_1RobotStatusPublisher.html" title="Publishes the aggregated status of a robot process on /robot_status.">easyfleet_core::RobotStatusPublisher</a></span> for its <span class="tt">robot_status.*</span> parameters, read from this process's parameters. </p><dl class="section return"><dt>Returns</dt><dd>The publisher, or nullptr. </dd></dl>
 
 </div>
 </div>

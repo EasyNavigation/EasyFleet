@@ -143,6 +143,14 @@ bool&#160;</td><td class="memItemRight"><b>active</b> {false}</td></tr>
 <tr class="memdesc:a03c996f9fcf0e10baeb3e700be0c409a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this capability was announced on /capabilities at all, at discovery time. <br /></td></tr>
 <tr class="memitem:abbe792bb2cf67584b86443440a194f46" id="r_abbe792bb2cf67584b86443440a194f46"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#abbe792bb2cf67584b86443440a194f46">busy</a> {false}</td></tr>
 <tr class="memdesc:abbe792bb2cf67584b86443440a194f46"><td class="mdescLeft">&#160;</td><td class="mdescRight">True while the capability has a goal currently executing (from the latest CapabilityStatus heartbeat seen).  <br /></td></tr>
+<tr class="memitem:a98926707cd90693eef776415b21e8d35" id="r_a98926707cd90693eef776415b21e8d35"><td class="memItemLeft"><a id="a98926707cd90693eef776415b21e8d35" name="a98926707cd90693eef776415b21e8d35"></a>
+std::string&#160;</td><td class="memItemRight"><b>order_id</b></td></tr>
+<tr class="memdesc:a98926707cd90693eef776415b21e8d35"><td class="mdescLeft">&#160;</td><td class="mdescRight">The order running now, or the last one (empty if none), and its state (<span class="tt">OrderStatus::STATE_*</span>), from the latest heartbeat. <br /></td></tr>
+<tr class="memitem:aa7d5878d36c0c3fca175505a56404301" id="r_aa7d5878d36c0c3fca175505a56404301"><td class="memItemLeft"><a id="aa7d5878d36c0c3fca175505a56404301" name="aa7d5878d36c0c3fca175505a56404301"></a>
+uint8_t&#160;</td><td class="memItemRight"><b>order_state</b> {0}</td></tr>
+<tr class="memitem:a006ed158e3331da40e11679a1abc2885" id="r_a006ed158e3331da40e11679a1abc2885"><td class="memItemLeft"><a id="a006ed158e3331da40e11679a1abc2885" name="a006ed158e3331da40e11679a1abc2885"></a>
+uint8_t&#160;</td><td class="memItemRight"><b>link_state</b> {0}</td></tr>
+<tr class="memdesc:a006ed158e3331da40e11679a1abc2885"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the capability hears this fleet (<span class="tt">CapabilityStatus::LINK_*</span>). <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Everything known about one running capability instance, gathered from its <span class="tt">/capabilities</span> (easyfleet_interfaces/CapabilityDescription) and <span class="tt">/capabilities_status</span> (easyfleet_interfaces/CapabilityStatus) messages. </p>

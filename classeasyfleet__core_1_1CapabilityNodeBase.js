@@ -10,5 +10,6 @@ var classeasyfleet__core_1_1CapabilityNodeBase =
     [ "get_current_state_id", "classeasyfleet__core_1_1CapabilityNodeBase.html#af7b1c2651d2a5c16293f17abad47b58b", null ],
     [ "get_node_base_interface", "classeasyfleet__core_1_1CapabilityNodeBase.html#a2f20e4ff15b8cb20c8fd1d6441f2febb", null ],
     [ "get_robot_name", "classeasyfleet__core_1_1CapabilityNodeBase.html#a4e9e61eaf42e3e8b2190821071c85c55", null ],
+    [ "get_status", "classeasyfleet__core_1_1CapabilityNodeBase.html#a40b1033ded77f2c2abd312e7b1f639c6", null ],
     [ "shutdown_node", "classeasyfleet__core_1_1CapabilityNodeBase.html#a55c296186fae78e297e37329979a55da", null ]
 ];

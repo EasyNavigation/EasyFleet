@@ -133,84 +133,95 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('robot__handle_
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &lt;chrono&gt;</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;map&gt;</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;memory&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;string&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/capability_info.hpp&quot;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/capability_state.hpp&quot;</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/detail/running_capability.hpp&quot;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/mission_helpers.hpp&quot;</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span>easyfleet</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>{</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;optional&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;string&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &quot;easyfleet_interfaces/msg/order_status.hpp&quot;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;easyfleet_interfaces/msg/robot_status.hpp&quot;</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/capability_info.hpp&quot;</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/capability_state.hpp&quot;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/detail/running_capability.hpp&quot;</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &quot;easyfleet_mission_manager/mission_helpers.hpp&quot;</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">class </span><a class="code hl_class" href="classeasyfleet_1_1FleetSession.html">FleetSession</a>;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">namespace </span>easyfleet</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>{</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keyword">class </span><a class="code hl_class" href="classeasyfleet_1_1FleetSession.html">FleetSession</a>;</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span></div>
-<div class="foldopen" id="foldopen00075" data-start="{" data-end="};">
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="classeasyfleet_1_1RobotHandle.html">   75</a></span><span class="keyword">class </span><a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a></div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>{</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  <span class="keyword">explicit</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a>(std::string <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a24efda839dcb5101dbb0befdac4a5b2e">name</a>);</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span></div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>  <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">~RobotHandle</a>();</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>  <span class="comment">// The session keeps a reference to this handle: it must not be copied or moved.</span></div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>  <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a>(<span class="keyword">const</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a> &amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>  <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a> &amp; operator=(<span class="keyword">const</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a> &amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span></div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>  <span class="keyword">const</span> std::string &amp; <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a24efda839dcb5101dbb0befdac4a5b2e">name</a>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span></div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a98aef97b1058a29c1678f394b19ad4a8">has_capability</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span></div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> ActionT&gt;</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#ac46846c63e2660cd7b284fb1183fb23c">run_capability</a>(</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    <span class="keyword">const</span> std::string &amp; capability_type,</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    <span class="keyword">const</span> <span class="keyword">typename</span> ActionT::Goal &amp; goal = <span class="keyword">typename</span> ActionT::Goal(),</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    std::chrono::seconds timeout = easyfleet_mission_manager::kRunTimeout);</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span></div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a58117314d0974540b1370912f962746a">stop_capability</a>(<span class="keyword">const</span> std::string &amp; capability_type);</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span></div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#ad2feeb52bc662cb9a1d8dc804fcb94c6">is_capability_running</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span></div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>  CapabilityState <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a9508be35c4e6a940b6b094ee0631c37c">capability_state</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a46b75bfed6190898834078d861e538d4">is_alive</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span></div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a82bf88ee3a36bda4679e444cd40869dd">print_capabilities</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span></div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>  std::vector&lt;easyfleet_mission_manager::CapabilityInfo&gt; <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a5eafd2127c05d3ac08fc9466da846b48">capabilities</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span> </div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>  <span class="keyword">friend</span> <span class="keyword">class </span>FleetSession;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span></div>
+<div class="foldopen" id="foldopen00078" data-start="{" data-end="};">
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno"><a class="line" href="classeasyfleet_1_1RobotHandle.html">   78</a></span><span class="keyword">class </span><a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>{</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>  <span class="keyword">explicit</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a>(std::string <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a24efda839dcb5101dbb0befdac4a5b2e">name</a>);</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span></div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>  <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">~RobotHandle</a>();</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>  <span class="comment">// The session keeps a reference to this handle: it must not be copied or moved.</span></div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>  <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a>(<span class="keyword">const</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a> &amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>  <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a> &amp; operator=(<span class="keyword">const</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">RobotHandle</a> &amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>  <span class="keyword">const</span> std::string &amp; <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a24efda839dcb5101dbb0befdac4a5b2e">name</a>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a98aef97b1058a29c1678f394b19ad4a8">has_capability</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span></div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> ActionT&gt;</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#ac46846c63e2660cd7b284fb1183fb23c">run_capability</a>(</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>    <span class="keyword">const</span> std::string &amp; capability_type,</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>    <span class="keyword">const</span> <span class="keyword">typename</span> ActionT::Goal &amp; goal = <span class="keyword">typename</span> ActionT::Goal(),</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    std::chrono::seconds timeout = easyfleet_mission_manager::kRunTimeout);</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span></div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a58117314d0974540b1370912f962746a">stop_capability</a>(<span class="keyword">const</span> std::string &amp; capability_type);</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span></div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#ad2feeb52bc662cb9a1d8dc804fcb94c6">is_capability_running</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span></div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>  CapabilityState <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a9508be35c4e6a940b6b094ee0631c37c">capability_state</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span></div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a46b75bfed6190898834078d861e538d4">is_alive</a>(<span class="keyword">const</span> std::string &amp; capability_type) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a82bf88ee3a36bda4679e444cd40869dd">print_capabilities</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span></div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>  std::vector&lt;easyfleet_mission_manager::CapabilityInfo&gt; <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a5eafd2127c05d3ac08fc9466da846b48">capabilities</a>() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span></div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  <span class="keywordtype">void</span> attach(FleetSession &amp; session);</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span></div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  <span class="keywordtype">void</span> detach() <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span></div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>  <span class="keywordtype">void</span> check_timeouts();</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  std::string name_;</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>  std::map&lt;std::string,</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    std::unique_ptr&lt;easyfleet_mission_manager::detail::RunningCapabilityBase&gt;&gt; running_;</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  <span class="comment">// Deliberately a raw pointer, not a reference: unlike every other</span></div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  <span class="comment">// non-owning back-reference in this codebase, this one is genuinely</span></div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="comment">// nullable (a RobotHandle can exist before attach() ever runs -- e.g.</span></div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  <span class="comment">// right after `RobotHandle robot_1(&quot;robot_1&quot;);`, before it&#39;s added to</span></div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  <span class="comment">// any FleetSession) *and* set exactly once, later, by attach() -- a</span></div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="comment">// reference member could do neither (never null, never reseatable).</span></div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  FleetSession * session_{<span class="keyword">nullptr</span>};</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>};</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  std::optional&lt;easyfleet_interfaces::msg::RobotStatus&gt; <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a01430eccf949c758a328e0f0e318ba32">status</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  std::optional&lt;easyfleet_interfaces::msg::OrderStatus&gt; <a class="code hl_function" href="classeasyfleet_1_1RobotHandle.html#a523e89f4fbec6cfcc9dc798e7ce1599c">get_order</a>(</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    <span class="keyword">const</span> std::string &amp; order_id,</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    std::chrono::milliseconds timeout = std::chrono::milliseconds(2000)) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  <span class="keyword">friend</span> <span class="keyword">class </span>FleetSession;</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span></div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordtype">void</span> attach(FleetSession &amp; session);</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span></div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="keywordtype">void</span> detach() <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span></div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  <span class="keywordtype">void</span> check_timeouts();</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  std::string name_;</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  std::map&lt;std::string,</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>    std::unique_ptr&lt;easyfleet_mission_manager::detail::RunningCapabilityBase&gt;&gt; running_;</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="comment">// Deliberately a raw pointer, not a reference: unlike every other</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>  <span class="comment">// non-owning back-reference in this codebase, this one is genuinely</span></div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>  <span class="comment">// nullable (a RobotHandle can exist before attach() ever runs -- e.g.</span></div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>  <span class="comment">// right after `RobotHandle robot_1(&quot;robot_1&quot;);`, before it&#39;s added to</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  <span class="comment">// any FleetSession) *and* set exactly once, later, by attach() -- a</span></div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="comment">// reference member could do neither (never null, never reseatable).</span></div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  FleetSession * session_{<span class="keyword">nullptr</span>};</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>};</div>
 </div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span> </div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>}  <span class="comment">// namespace easyfleet</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span><span class="preprocessor">#endif  </span><span class="comment">// EASYFLEET_MISSION_MANAGER__ROBOT_HANDLE_HPP_</span></div>
-<div class="ttc" id="aclasseasyfleet_1_1FleetSession_html"><div class="ttname"><a href="classeasyfleet_1_1FleetSession.html">easyfleet::FleetSession</a></div><div class="ttdoc">Everything talking to a fleet from a mission-control process actually needs, regardless of what decid...</div><div class="ttdef"><b>Definition</b> fleet_session.hpp:90</div></div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span> </div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>}  <span class="comment">// namespace easyfleet</span></div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span><span class="preprocessor">#endif  </span><span class="comment">// EASYFLEET_MISSION_MANAGER__ROBOT_HANDLE_HPP_</span></div>
+<div class="ttc" id="aclasseasyfleet_1_1FleetSession_html"><div class="ttname"><a href="classeasyfleet_1_1FleetSession.html">easyfleet::FleetSession</a></div><div class="ttdoc">Everything talking to a fleet from a mission-control process actually needs, regardless of what decid...</div><div class="ttdef"><b>Definition</b> fleet_session.hpp:99</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a01430eccf949c758a328e0f0e318ba32"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a01430eccf949c758a328e0f0e318ba32">easyfleet::RobotHandle::status</a></div><div class="ttdeci">std::optional&lt; easyfleet_interfaces::msg::RobotStatus &gt; status() const</div><div class="ttdoc">This robot&#39;s latest status (see FleetSession::robot_status()).</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:104</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a24efda839dcb5101dbb0befdac4a5b2e"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a24efda839dcb5101dbb0befdac4a5b2e">easyfleet::RobotHandle::name</a></div><div class="ttdeci">const std::string &amp; name() const noexcept</div><div class="ttdoc">This robot&#39;s identity, as passed to the constructor.</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:42</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a3e1f0161823e1b7379b576359dccb3d0"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a3e1f0161823e1b7379b576359dccb3d0">easyfleet::RobotHandle::RobotHandle</a></div><div class="ttdeci">RobotHandle(std::string name)</div><div class="ttdoc">Constructs a handle for the robot identified by name.</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:30</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a46b75bfed6190898834078d861e538d4"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a46b75bfed6190898834078d861e538d4">easyfleet::RobotHandle::is_alive</a></div><div class="ttdeci">bool is_alive(const std::string &amp;capability_type) const</div><div class="ttdoc">Whether a heartbeat has been seen recently on /capabilities_status for this capability – continuously...</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:79</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a523e89f4fbec6cfcc9dc798e7ce1599c"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a523e89f4fbec6cfcc9dc798e7ce1599c">easyfleet::RobotHandle::get_order</a></div><div class="ttdeci">std::optional&lt; easyfleet_interfaces::msg::OrderStatus &gt; get_order(const std::string &amp;order_id, std::chrono::milliseconds timeout=std::chrono::milliseconds(2000)) const</div><div class="ttdoc">Asks this robot for an order (see FleetSession::get_order()).</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:112</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a58117314d0974540b1370912f962746a"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a58117314d0974540b1370912f962746a">easyfleet::RobotHandle::stop_capability</a></div><div class="ttdeci">void stop_capability(const std::string &amp;capability_type)</div><div class="ttdoc">Asks capability_type to stop whatever it&#39;s doing, if anything.</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:57</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a5eafd2127c05d3ac08fc9466da846b48"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a5eafd2127c05d3ac08fc9466da846b48">easyfleet::RobotHandle::capabilities</a></div><div class="ttdeci">std::vector&lt; easyfleet_mission_manager::CapabilityInfo &gt; capabilities() const</div><div class="ttdoc">Every capability this robot announced, as known right now – the full CapabilityInfo (type,...</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:96</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html_a82bf88ee3a36bda4679e444cd40869dd"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html#a82bf88ee3a36bda4679e444cd40869dd">easyfleet::RobotHandle::print_capabilities</a></div><div class="ttdeci">void print_capabilities() const</div><div class="ttdoc">Prints every discovered capability of this robot, like today&#39;s print_capability_info()/print_capabili...</div><div class="ttdef"><b>Definition</b> robot_handle.cpp:84</div></div>

@@ -141,6 +141,8 @@ using&#160;</td><td class="memItemRight"><b>GoalHandleSharedPtr</b> = std::share
 <tr class="memitem:a0b2ab737b3716b8e50c81e85025fa91b" id="r_a0b2ab737b3716b8e50c81e85025fa91b"><td class="memItemLeft"><a id="a0b2ab737b3716b8e50c81e85025fa91b" name="a0b2ab737b3716b8e50c81e85025fa91b"></a>
 using&#160;</td><td class="memItemRight"><b>SharedPtr</b> = std::shared_ptr&lt;ActionServerBase&lt;ActionT&gt;&gt;</td></tr>
 <tr class="memdesc:a0b2ab737b3716b8e50c81e85025fa91b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer to an <span class="tt"><a class="el" href="classeasyfleet__core_1_1ActionServerBase.html" title="Base class that hides the boilerplate of running a ROS 2 action server.">ActionServerBase</a>&lt;ActionT&gt;</span>. <br /></td></tr>
+<tr class="memitem:aba1b604c31bad2357d6fed666111f8cf" id="r_aba1b604c31bad2357d6fed666111f8cf"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#aba1b604c31bad2357d6fed666111f8cf">GoalAcceptedCallback</a></td></tr>
+<tr class="memdesc:aba1b604c31bad2357d6fed666111f8cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called (from the accepting thread) with every goal accepted to run, and its <span class="tt">order_id</span> field, empty if the goal has none.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -161,6 +163,10 @@ void&#160;</td><td class="memItemRight"><b>enable_goals</b> ()</td></tr>
 <tr class="memdesc:afa77914e0a34f691732b38321c4f4151"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether new goals are currently accepted.  <br /></td></tr>
 <tr class="memitem:a8c528baf37154d347366083f0f816846" id="r_a8c528baf37154d347366083f0f816846"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8c528baf37154d347366083f0f816846">stop</a> ()</td></tr>
 <tr class="memdesc:a8c528baf37154d347366083f0f816846"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disable goals and join the worker thread.  <br /></td></tr>
+<tr class="memitem:ad575662a08c34196a4ed866ccb5318d2" id="r_ad575662a08c34196a4ed866ccb5318d2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad575662a08c34196a4ed866ccb5318d2">halt_active_goal</a> ()</td></tr>
+<tr class="memdesc:ad575662a08c34196a4ed866ccb5318d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ask the running goal to stop, and abort a queued one, without disabling goals: <span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled, the server is being stopped or h...">is_shutdown_requested()</a></span> is true until the running goal returns.  <br /></td></tr>
+<tr class="memitem:a5ac98427443504a98e53bedc1a9fb0a5" id="r_a5ac98427443504a98e53bedc1a9fb0a5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5ac98427443504a98e53bedc1a9fb0a5">set_goal_accepted_callback</a> (<a class="el" href="#aba1b604c31bad2357d6fed666111f8cf">GoalAcceptedCallback</a> callback)</td></tr>
+<tr class="memdesc:a5ac98427443504a98e53bedc1a9fb0a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the callback called with every accepted goal (nullptr: none).  <br /></td></tr>
 <tr class="memitem:aaebf59fd5976ea70219bc7f8fb24d0cf" id="r_aaebf59fd5976ea70219bc7f8fb24d0cf"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aaebf59fd5976ea70219bc7f8fb24d0cf">is_preemptable</a> () const noexcept</td></tr>
 <tr class="memdesc:aaebf59fd5976ea70219bc7f8fb24d0cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Current value of the "allow_preemption" parameter for this action.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -180,7 +186,7 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:aae6860e60136835a33c7a1447ce42c38" id="r_aae6860e60136835a33c7a1447ce42c38"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aae6860e60136835a33c7a1447ce42c38">is_preempt_requested</a> () const noexcept</td></tr>
 <tr class="memdesc:aae6860e60136835a33c7a1447ce42c38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether a newer goal has been accepted and is waiting to replace the one currently executing.  <br /></td></tr>
 <tr class="memitem:a06f110faf1767f7476bf07106c156825" id="r_a06f110faf1767f7476bf07106c156825"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a06f110faf1767f7476bf07106c156825">is_shutdown_requested</a> () const noexcept</td></tr>
-<tr class="memdesc:a06f110faf1767f7476bf07106c156825"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the running goal must stop because goals are being disabled or the server is being stopped.  <br /></td></tr>
+<tr class="memdesc:a06f110faf1767f7476bf07106c156825"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the running goal must stop because goals are being disabled, the server is being stopped or <span class="tt"><a class="el" href="#ad575662a08c34196a4ed866ccb5318d2" title="Ask the running goal to stop, and abort a queued one, without disabling goals: is_shutdown_requested(...">halt_active_goal()</a></span> was called.  <br /></td></tr>
 <tr class="memitem:a55fc6863f5d48f8cba524f04d6d85770" id="r_a55fc6863f5d48f8cba524f04d6d85770"><td class="memItemLeft">rclcpp::Logger&#160;</td><td class="memItemRight"><a class="el" href="#a55fc6863f5d48f8cba524f04d6d85770">logger</a> () const</td></tr>
 <tr class="memdesc:a55fc6863f5d48f8cba524f04d6d85770"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logger of the node hosting this action server.  <br /></td></tr>
 </table>
@@ -190,13 +196,34 @@ class easyfleet_core::ActionServerBase&lt; ActionT &gt;</div><p>Base class that 
 <p>A node exposes an action by inheriting from <span class="tt"><a class="el" href="classeasyfleet__core_1_1ActionServerBase.html" title="Base class that hides the boilerplate of running a ROS 2 action server.">ActionServerBase</a>&lt;ActionT&gt;</span> and implementing three hooks: <span class="tt"><a class="el" href="#aedc4e8ecdb0b7f109d1c2c6bfa9b1d6a" title="Validate an incoming goal.">on_goal_received()</a></span>, <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span> and, optionally, <span class="tt"><a class="el" href="#aae0ba116799882891b07668bec2099c8" title="Decide whether a cancel request (via the action&#39;s cancel service) should be accepted.">on_cancel_requested()</a></span>. Everything else &ndash; wiring the <span class="tt">rclcpp_action::Server</span>, running goals on a dedicated worker thread, transitioning the goal state machine, and deciding whether an incoming goal is allowed to preempt the one currently running &ndash; is handled here.</p>
 <p>Preemption is governed by a boolean ROS 2 parameter named <span class="tt">"&lt;action_name&gt;.allow_preemption"</span> (with '/' in the action name mapped to '.'), so it can be set at startup and changed at runtime. Only one goal is ever executed at a time:</p><ul>
 <li>If preemption is disallowed and a goal is active, new goals are rejected outright.</li>
-<li>If preemption is allowed, a new goal is accepted immediately and <span class="tt"><a class="el" href="#aae6860e60136835a33c7a1447ce42c38" title="Whether a newer goal has been accepted and is waiting to replace the one currently executing.">is_preempt_requested()</a></span> starts returning <span class="tt">true</span> for the running goal. A long-running <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span> implementation is expected to poll it (and <span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled or the server is being stopped.">is_shutdown_requested()</a></span>) and return promptly, having settled the goal handle (succeeded/aborted/canceled).</li>
+<li>If preemption is allowed, a new goal is accepted immediately and <span class="tt"><a class="el" href="#aae6860e60136835a33c7a1447ce42c38" title="Whether a newer goal has been accepted and is waiting to replace the one currently executing.">is_preempt_requested()</a></span> starts returning <span class="tt">true</span> for the running goal. A long-running <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span> implementation is expected to poll it (and <span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled, the server is being stopped or h...">is_shutdown_requested()</a></span>) and return promptly, having settled the goal handle (succeeded/aborted/canceled).</li>
 </ul>
 <p>Goals are only accepted while goals are enabled (the default). <span class="tt"><a class="el" href="#ad484ea0f2e83ff59539cdf19e49435b8" title="Reject new goals, abort a queued goal and wait for the running one to return.">disable_goals()</a></span> rejects new goals, aborts a queued one and waits for the running one to return; <span class="tt"><a class="el" href="classeasyfleet__core_1_1Capability.html" title="Lifecycle node that advertises a single action as a &quot;capability&quot;.">Capability</a></span> uses it to follow its lifecycle state.</p>
 <p>A derived class must call <span class="tt"><a class="el" href="#a8c528baf37154d347366083f0f816846" title="Disable goals and join the worker thread.">stop()</a></span> from its own destructor (or its owner before destroying it): the worker thread calls the pure virtual <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span>, so it must be joined while the derived object still exists. <span class="tt"><a class="el" href="#a8c528baf37154d347366083f0f816846" title="Disable goals and join the worker thread.">stop()</a></span> is idempotent, and <span class="tt">~ActionServerBase()</span> calls it as a last resort.</p>
 <p>This class is not copyable and does not itself derive from <span class="tt">rclcpp::Node</span>, so a node can inherit from several <span class="tt"><a class="el" href="classeasyfleet__core_1_1ActionServerBase.html" title="Base class that hides the boilerplate of running a ROS 2 action server.">ActionServerBase</a>&lt;ActionT&gt;</span> (one per action) without any diamond-inheritance issues.</p>
 <p>It attaches to any node type exposing the standard <span class="tt">rclcpp</span> node interfaces (<span class="tt">get_node_base_interface()</span>, <span class="tt">get_node_clock_interface()</span>, <span class="tt">get_node_logging_interface()</span>, <span class="tt">get_node_parameters_interface()</span>, <span class="tt">get_node_waitables_interface()</span>), which covers both <span class="tt">rclcpp::Node</span> and <span class="tt">rclcpp_lifecycle::LifecycleNode</span>. </p>
-</div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
+<a id="aba1b604c31bad2357d6fed666111f8cf" name="aba1b604c31bad2357d6fed666111f8cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba1b604c31bad2357d6fed666111f8cf">&#9670;&#160;</a></span>GoalAcceptedCallback</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ActionT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="#aba1b604c31bad2357d6fed666111f8cf">GoalAcceptedCallback</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"> </div>
+<div class="line">std::function&lt;void (<span class="keyword">const</span> rclcpp_action::GoalUUID &amp; uuid, <span class="keyword">const</span> std::string &amp; order_id)&gt;</div>
+</div><!-- fragment -->
+<p>Called (from the accepting thread) with every goal accepted to run, and its <span class="tt">order_id</span> field, empty if the goal has none. </p>
+
+</div>
+</div>
+<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0ee35d599fa3c88c4672f7e878969be5" name="a0ee35d599fa3c88c4672f7e878969be5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0ee35d599fa3c88c4672f7e878969be5">&#9670;&#160;</a></span>ActionServerBase()</h2>
 
@@ -264,7 +291,7 @@ template&lt;typename ActionT&gt; </div>
 </div><div class="memdoc">
 
 <p>Reject new goals, abort a queued goal and wait for the running one to return. </p>
-<p><span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled or the server is being stopped.">is_shutdown_requested()</a></span> is true while waiting. Must not be called from <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span>. </p>
+<p><span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled, the server is being stopped or h...">is_shutdown_requested()</a></span> is true while waiting. Must not be called from <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span>. </p>
 
 </div>
 </div>
@@ -325,6 +352,28 @@ template&lt;typename ActionT&gt; </div>
 
 <p>Whether new goals are currently accepted. </p>
 <dl class="section return"><dt>Returns</dt><dd>Whether new goals are currently accepted. </dd></dl>
+
+</div>
+</div>
+<a id="ad575662a08c34196a4ed866ccb5318d2" name="ad575662a08c34196a4ed866ccb5318d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad575662a08c34196a4ed866ccb5318d2">&#9670;&#160;</a></span>halt_active_goal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ActionT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void halt_active_goal </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Ask the running goal to stop, and abort a queued one, without disabling goals: <span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled, the server is being stopped or h...">is_shutdown_requested()</a></span> is true until the running goal returns. </p>
+<p>Does not wait. Used, e.g., when the link to the fleet is lost. </p>
 
 </div>
 </div>
@@ -435,7 +484,7 @@ template&lt;typename ActionT&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Whether the running goal must stop because goals are being disabled or the server is being stopped. </p>
+<p>Whether the running goal must stop because goals are being disabled, the server is being stopped or <span class="tt"><a class="el" href="#ad575662a08c34196a4ed866ccb5318d2" title="Ask the running goal to stop, and abort a queued one, without disabling goals: is_shutdown_requested(...">halt_active_goal()</a></span> was called. </p>
 <dl class="section return"><dt>Returns</dt><dd>Whether the running goal must stop. Long-running <span class="tt"><a class="el" href="#a535fbae5d82873be29ff31fbece2ccd8" title="Run an accepted goal to completion.">on_execute()</a></span> implementations should treat this the same as a preemption request. </dd></dl>
 
 </div>
@@ -532,7 +581,7 @@ template&lt;typename ActionT&gt; </div>
 </div><div class="memdoc">
 
 <p>Run an accepted goal to completion. </p>
-<p>Must leave the goal handle in a terminal state (<span class="tt">succeed()</span>, <span class="tt">abort()</span> or <span class="tt">canceled()</span>) before returning. Long-running implementations should periodically check <span class="tt"><a class="el" href="#aae6860e60136835a33c7a1447ce42c38" title="Whether a newer goal has been accepted and is waiting to replace the one currently executing.">is_preempt_requested()</a></span>, <span class="tt">goal_handle-&gt;is_canceling()</span> and <span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled or the server is being stopped.">is_shutdown_requested()</a></span> and return promptly when any of them is true. Only settle the goal with <span class="tt">canceled()</span> when <span class="tt">goal_handle-&gt;is_canceling()</span> is true (a client asked for it, so rcl_action has already transitioned the goal to CANCELING); for preemption or shutdown, which happen while the goal is still EXECUTING, use <span class="tt">abort()</span> instead &ndash; <span class="tt">canceled()</span> from EXECUTING is an invalid state transition. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Must leave the goal handle in a terminal state (<span class="tt">succeed()</span>, <span class="tt">abort()</span> or <span class="tt">canceled()</span>) before returning. Long-running implementations should periodically check <span class="tt"><a class="el" href="#aae6860e60136835a33c7a1447ce42c38" title="Whether a newer goal has been accepted and is waiting to replace the one currently executing.">is_preempt_requested()</a></span>, <span class="tt">goal_handle-&gt;is_canceling()</span> and <span class="tt"><a class="el" href="#a06f110faf1767f7476bf07106c156825" title="Whether the running goal must stop because goals are being disabled, the server is being stopped or h...">is_shutdown_requested()</a></span> and return promptly when any of them is true. Only settle the goal with <span class="tt">canceled()</span> when <span class="tt">goal_handle-&gt;is_canceling()</span> is true (a client asked for it, so rcl_action has already transitioned the goal to CANCELING); for preemption or shutdown, which happen while the goal is still EXECUTING, use <span class="tt">abort()</span> instead &ndash; <span class="tt">canceled()</span> from EXECUTING is an invalid state transition. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">goal_handle</td><td>Handle of the accepted goal to run to completion. </td></tr>
   </table>
@@ -611,6 +660,33 @@ template&lt;typename ActionT&gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">preempted_goal_handle</td><td>Handle of the goal being preempted. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a5ac98427443504a98e53bedc1a9fb0a5" name="a5ac98427443504a98e53bedc1a9fb0a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ac98427443504a98e53bedc1a9fb0a5">&#9670;&#160;</a></span>set_goal_accepted_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ActionT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void set_goal_accepted_callback </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#aba1b604c31bad2357d6fed666111f8cf">GoalAcceptedCallback</a></td>          <td class="paramname"><span class="paramname"><em>callback</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the callback called with every accepted goal (nullptr: none). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">callback</td><td>The callback. </td></tr>
   </table>
   </dd>
 </dl>

@@ -149,6 +149,10 @@ void&#160;</td><td class="memItemRight"><b>print_capabilities</b> () const</td><
 <tr class="memdesc:a82bf88ee3a36bda4679e444cd40869dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prints every discovered capability of this robot, like today's <span class="tt">print_capability_info()</span>/<span class="tt">print_capability_summary_line()</span> free functions. <br /></td></tr>
 <tr class="memitem:a5eafd2127c05d3ac08fc9466da846b48" id="r_a5eafd2127c05d3ac08fc9466da846b48"><td class="memItemLeft">std::vector&lt; <a class="el" href="structeasyfleet__mission__manager_1_1CapabilityInfo.html">easyfleet_mission_manager::CapabilityInfo</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a5eafd2127c05d3ac08fc9466da846b48">capabilities</a> () const</td></tr>
 <tr class="memdesc:a5eafd2127c05d3ac08fc9466da846b48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every capability this robot announced, as known right now &ndash; the full <span class="tt">CapabilityInfo</span> (type, action name, description JSON, active/busy state), not just a yes/no check like <span class="tt"><a class="el" href="#a98aef97b1058a29c1678f394b19ad4a8" title="True if this robot has a capability of this type with a recent heartbeat, as tracked live by its Flee...">has_capability()</a></span>.  <br /></td></tr>
+<tr class="memitem:a01430eccf949c758a328e0f0e318ba32" id="r_a01430eccf949c758a328e0f0e318ba32"><td class="memItemLeft">std::optional&lt; easyfleet_interfaces::msg::RobotStatus &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a01430eccf949c758a328e0f0e318ba32">status</a> () const</td></tr>
+<tr class="memdesc:a01430eccf949c758a328e0f0e318ba32"><td class="mdescLeft">&#160;</td><td class="mdescRight">This robot's latest status (see <span class="tt"><a class="el" href="classeasyfleet_1_1FleetSession.html#a1be54e13243b4b505dc7937cc2a4fed0" title="The latest status of a robot, merged from every process that publishes /robot_status for it: the capa...">FleetSession::robot_status()</a></span>).  <br /></td></tr>
+<tr class="memitem:a523e89f4fbec6cfcc9dc798e7ce1599c" id="r_a523e89f4fbec6cfcc9dc798e7ce1599c"><td class="memItemLeft">std::optional&lt; easyfleet_interfaces::msg::OrderStatus &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a523e89f4fbec6cfcc9dc798e7ce1599c">get_order</a> (const std::string &amp;order_id, std::chrono::milliseconds timeout=std::chrono::milliseconds(2000)) const</td></tr>
+<tr class="memdesc:a523e89f4fbec6cfcc9dc798e7ce1599c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Asks this robot for an order (see <span class="tt"><a class="el" href="classeasyfleet_1_1FleetSession.html#a8ed46cd28a68e56fd1e84fbcfd887d60" title="Asks every known capability of a robot (&lt;action&gt;/get_order) for an order.">FleetSession::get_order()</a></span>).  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-friends" class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -172,7 +176,7 @@ class&#160;</td><td class="memItemRight"><b>FleetSession</b></td></tr>
 <div class="line">  controller.<a class="code hl_function" href="classeasyfleet_1_1SimpleController.html#a812c0845be47239fdea59fa293370d12">spin_some</a>();</div>
 <div class="line">}</div>
 <div class="line"><span class="keywordflow">if</span> (robot_1.capability_state(<span class="stringliteral">&quot;navigation&quot;</span>) != easyfleet::CapabilityState::SUCCEEDED) { ... }</div>
-<div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html">easyfleet::RobotHandle</a></div><div class="ttdoc">A remote robot&#39;s capabilities, as seen and commanded from a mission script.</div><div class="ttdef"><b>Definition</b> robot_handle.hpp:76</div></div>
+<div class="ttc" id="aclasseasyfleet_1_1RobotHandle_html"><div class="ttname"><a href="classeasyfleet_1_1RobotHandle.html">easyfleet::RobotHandle</a></div><div class="ttdoc">A remote robot&#39;s capabilities, as seen and commanded from a mission script.</div><div class="ttdef"><b>Definition</b> robot_handle.hpp:79</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1SimpleController_html"><div class="ttname"><a href="classeasyfleet_1_1SimpleController.html">easyfleet::SimpleController</a></div><div class="ttdoc">The plain, manual controller: a mission script decides everything by hand (which robot runs which cap...</div><div class="ttdef"><b>Definition</b> simple_controller.hpp:65</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1SimpleController_html_a118a664c72fb7ea67db012fa72129d1e"><div class="ttname"><a href="classeasyfleet_1_1SimpleController.html#a118a664c72fb7ea67db012fa72129d1e">easyfleet::SimpleController::discover_capabilities</a></div><div class="ttdeci">void discover_capabilities(std::chrono::milliseconds window=std::chrono::milliseconds(2500))</div><div class="ttdoc">See FleetSession::discover_capabilities().</div><div class="ttdef"><b>Definition</b> simple_controller.hpp:92</div></div>
 <div class="ttc" id="aclasseasyfleet_1_1SimpleController_html_a812c0845be47239fdea59fa293370d12"><div class="ttname"><a href="classeasyfleet_1_1SimpleController.html#a812c0845be47239fdea59fa293370d12">easyfleet::SimpleController::spin_some</a></div><div class="ttdeci">void spin_some()</div><div class="ttdoc">See FleetSession::spin_some().</div><div class="ttdef"><b>Definition</b> simple_controller.hpp:98</div></div>
@@ -255,6 +259,37 @@ class&#160;</td><td class="memItemRight"><b>FleetSession</b></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The capability's current state. </dd></dl>
+
+</div>
+</div>
+<a id="a523e89f4fbec6cfcc9dc798e7ce1599c" name="a523e89f4fbec6cfcc9dc798e7ce1599c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a523e89f4fbec6cfcc9dc798e7ce1599c">&#9670;&#160;</a></span>get_order()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::optional&lt; easyfleet_interfaces::msg::OrderStatus &gt; get_order </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>order_id</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::chrono::milliseconds</td>          <td class="paramname"><span class="paramname"><em>timeout</em></span><span class="paramdefsep"> = </span><span class="paramdefval">std::chrono::milliseconds(2000)</span>&#160;) const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Asks this robot for an order (see <span class="tt"><a class="el" href="classeasyfleet_1_1FleetSession.html#a8ed46cd28a68e56fd1e84fbcfd887d60" title="Asks every known capability of a robot (&lt;action&gt;/get_order) for an order.">FleetSession::get_order()</a></span>). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">order_id</td><td>The order id (or goal UUID in hex). </td></tr>
+    <tr><td class="paramname">timeout</td><td>How long to wait for the answers. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The order, or nothing if unknown or not in a session. </dd></dl>
 
 </div>
 </div>
@@ -407,6 +442,26 @@ make_navigation_goal("kitchen"))</span>), or by building an <span class="tt">Act
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a01430eccf949c758a328e0f0e318ba32" name="a01430eccf949c758a328e0f0e318ba32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01430eccf949c758a328e0f0e318ba32">&#9670;&#160;</a></span>status()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::optional&lt; easyfleet_interfaces::msg::RobotStatus &gt; status </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This robot's latest status (see <span class="tt"><a class="el" href="classeasyfleet_1_1FleetSession.html#a1be54e13243b4b505dc7937cc2a4fed0" title="The latest status of a robot, merged from every process that publishes /robot_status for it: the capa...">FleetSession::robot_status()</a></span>). </p>
+<dl class="section return"><dt>Returns</dt><dd>The status, or nothing if none was heard (or not in a session). </dd></dl>
 
 </div>
 </div>

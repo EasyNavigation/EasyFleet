@@ -3,6 +3,7 @@ var classeasyfleet__core_1_1ActionServerBase =
     [ "ActionType", "classeasyfleet__core_1_1ActionServerBase.html#a56669251d59d2a715376768f83be9b97", null ],
     [ "Feedback", "classeasyfleet__core_1_1ActionServerBase.html#ae0bb42d059326c411aea87219d60d360", null ],
     [ "Goal", "classeasyfleet__core_1_1ActionServerBase.html#a7a93e2c4e83c0bc1d9067fe9b979b77e", null ],
+    [ "GoalAcceptedCallback", "classeasyfleet__core_1_1ActionServerBase.html#aba1b604c31bad2357d6fed666111f8cf", null ],
     [ "GoalHandle", "classeasyfleet__core_1_1ActionServerBase.html#a8d22be39125a27e826b25153ce526858", null ],
     [ "GoalHandleSharedPtr", "classeasyfleet__core_1_1ActionServerBase.html#aed4c1fa33f272e748e39e4c60ce34e83", null ],
     [ "Result", "classeasyfleet__core_1_1ActionServerBase.html#a95902dc118e91ac889171494a4ddd411", null ],
@@ -12,6 +13,7 @@ var classeasyfleet__core_1_1ActionServerBase =
     [ "enable_goals", "classeasyfleet__core_1_1ActionServerBase.html#ae908e117e756a4e2b9e27003d90083a9", null ],
     [ "get_action_name", "classeasyfleet__core_1_1ActionServerBase.html#a26fe2cea18d7ec3a6a5c28d1fa16fecc", null ],
     [ "goals_enabled", "classeasyfleet__core_1_1ActionServerBase.html#afa77914e0a34f691732b38321c4f4151", null ],
+    [ "halt_active_goal", "classeasyfleet__core_1_1ActionServerBase.html#ad575662a08c34196a4ed866ccb5318d2", null ],
     [ "is_active", "classeasyfleet__core_1_1ActionServerBase.html#aee71b01d2e4d055b188db7ce81f1a8b8", null ],
     [ "is_preempt_requested", "classeasyfleet__core_1_1ActionServerBase.html#aae6860e60136835a33c7a1447ce42c38", null ],
     [ "is_preemptable", "classeasyfleet__core_1_1ActionServerBase.html#aaebf59fd5976ea70219bc7f8fb24d0cf", null ],
@@ -21,5 +23,6 @@ var classeasyfleet__core_1_1ActionServerBase =
     [ "on_execute", "classeasyfleet__core_1_1ActionServerBase.html#a535fbae5d82873be29ff31fbece2ccd8", null ],
     [ "on_goal_received", "classeasyfleet__core_1_1ActionServerBase.html#aedc4e8ecdb0b7f109d1c2c6bfa9b1d6a", null ],
     [ "on_preempted", "classeasyfleet__core_1_1ActionServerBase.html#aeba542e0db4025eb060c57e96f6a510f", null ],
+    [ "set_goal_accepted_callback", "classeasyfleet__core_1_1ActionServerBase.html#a5ac98427443504a98e53bedc1a9fb0a5", null ],
     [ "stop", "classeasyfleet__core_1_1ActionServerBase.html#a8c528baf37154d347366083f0f816846", null ]
 ];
