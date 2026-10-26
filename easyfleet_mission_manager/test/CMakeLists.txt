@@ -54,3 +54,12 @@ target_link_libraries(test_fleet_session_shutdown
   ${PROJECT_NAME}
   GTest::gtest
 )
+
+# Fleet heartbeat, get_order and /robot_status merging, against fake robots.
+ament_add_gtest(test_fleet_session_status test_fleet_session_status.cpp
+  TIMEOUT 180 SKIP_LINKING_MAIN_LIBRARIES
+  ENV ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST ROS_DOMAIN_ID=92)
+target_link_libraries(test_fleet_session_status
+  ${PROJECT_NAME}
+  GTest::gtest
+)

@@ -15,6 +15,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(easyfleet_core REQUIRED)
 find_package(easyfleet_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
@@ -35,6 +36,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   easyfleet_core::easyfleet_core
   easyfleet_interfaces::easyfleet_interfaces
   ${geometry_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
   nlohmann_json::nlohmann_json
   ${visualization_msgs_TARGETS}
 )
@@ -58,6 +60,7 @@ ament_export_dependencies(
   easyfleet_core
   easyfleet_interfaces
   geometry_msgs
+  sensor_msgs
   nlohmann_json
   visualization_msgs
 )

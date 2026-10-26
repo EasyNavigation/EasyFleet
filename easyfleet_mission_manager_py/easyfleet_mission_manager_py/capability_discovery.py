@@ -65,6 +65,9 @@ def discover_capabilities(node, window_sec: float = 2.5) -> list[CapabilityInfo]
             info.action_name = msg.action_name
             info.active = True
             info.busy = msg.busy
+            info.order_id = msg.order_id
+            info.order_state = msg.order_state
+            info.link_state = msg.link_state
 
     capabilities_sub = node.create_subscription(
         CapabilityDescription, '/capabilities', on_description,

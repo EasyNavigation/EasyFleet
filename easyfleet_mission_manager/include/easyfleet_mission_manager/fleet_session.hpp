@@ -24,12 +24,17 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 
 #include "easyfleet_interfaces/msg/capability_description.hpp"
 #include "easyfleet_interfaces/msg/capability_status.hpp"
+#include "easyfleet_interfaces/msg/fleet_heartbeat.hpp"
+#include "easyfleet_interfaces/msg/order_status.hpp"
+#include "easyfleet_interfaces/msg/robot_status.hpp"
+#include "easyfleet_interfaces/srv/get_order.hpp"
 
 #include "easyfleet_mission_manager/robot_handle.hpp"
 #include "easyfleet_mission_manager/status_markers.hpp"
@@ -65,6 +70,10 @@ namespace easyfleet
  * `/capabilities` and `/capabilities_status` for its whole life, so a
  * capability that appears, restarts or dies after `discover_capabilities()`
  * is reflected in every `RobotHandle` without another discovery pass.
+ * The session also publishes `/fleet_heartbeat` once a second, the link
+ * the robots' capabilities watch (`<capability>.link_timeout`), and merges
+ * every `/robot_status` of each robot (see `robot_status()`).
+ *
  * All of that happens on the background spin thread; `RobotHandle` calls
  * (and `add_robot()`, `spin_some()`, ...) are meant for the caller's thread.
  *
@@ -134,6 +143,25 @@ public:
   /// @return Whether the capability is alive right now.
   bool is_alive(const std::string & robot_name, const std::string & capability_type) const;
 
+  /// @brief The latest status of a robot, merged from every process that
+  /// publishes `/robot_status` for it: the capabilities reported within the
+  /// last few seconds, and its last known pose and battery.
+  /// @param robot_name Robot identity.
+  /// @return The status, or nothing if no `/robot_status` was heard for it.
+  std::optional<easyfleet_interfaces::msg::RobotStatus> robot_status(
+    const std::string & robot_name) const;
+
+  /// @brief Asks every known capability of a robot (`<action>/get_order`)
+  /// for an order. Call from the caller's thread, not from a callback.
+  /// @param robot_name Robot identity.
+  /// @param order_id The order id (or goal UUID in hex).
+  /// @param timeout How long to wait for the answers.
+  /// @return The newest matching order, or nothing if no capability has it
+  ///   (or none answered in time).
+  std::optional<easyfleet_interfaces::msg::OrderStatus> get_order(
+    const std::string & robot_name, const std::string & order_id,
+    std::chrono::milliseconds timeout = std::chrono::milliseconds(2000));
+
   /// @brief Gives the background spin thread a short slice of time and
   /// enforces every robot's `run_capability()` timeouts and liveness --
   /// call this in a `while (robot.is_capability_running(...))` loop.
@@ -170,6 +198,18 @@ private:
   /// Called by ~RobotHandle().
   void remove_robot(const RobotHandle & robot) noexcept;
   bool alive(const RegistryEntry & entry, std::chrono::steady_clock::time_point now) const;
+  void on_robot_status(const easyfleet_interfaces::msg::RobotStatus & msg);
+
+  /// What is known of one robot from its /robot_status messages.
+  struct RobotStatusEntry
+  {
+    /// By action name: the last report and when it arrived.
+    std::map<std::string, std::pair<easyfleet_interfaces::msg::CapabilityStatus,
+      std::chrono::steady_clock::time_point>> capabilities;
+    std::optional<geometry_msgs::msg::PoseWithCovarianceStamped> pose;
+    std::optional<sensor_msgs::msg::BatteryState> battery;
+    builtin_interfaces::msg::Time stamp;
+  };
 
   /// Status marker publisher `RobotHandle::run_capability()` publishes
   /// through -- package-private, since a mission script is never meant to
@@ -188,6 +228,17 @@ private:
     capability_description_sub_;
   rclcpp::Subscription<easyfleet_interfaces::msg::CapabilityStatus>::SharedPtr
     capability_status_sub_;
+
+  rclcpp::Publisher<easyfleet_interfaces::msg::FleetHeartbeat>::SharedPtr fleet_heartbeat_pub_;
+  rclcpp::TimerBase::SharedPtr fleet_heartbeat_timer_;
+
+  mutable std::mutex robot_status_mutex_;
+  std::map<std::string, RobotStatusEntry> robot_status_;
+  rclcpp::Subscription<easyfleet_interfaces::msg::RobotStatus>::SharedPtr robot_status_sub_;
+
+  std::mutex get_order_mutex_;
+  std::map<std::string, rclcpp::Client<easyfleet_interfaces::srv::GetOrder>::SharedPtr>
+  get_order_clients_;
 };
 
 }  // namespace easyfleet

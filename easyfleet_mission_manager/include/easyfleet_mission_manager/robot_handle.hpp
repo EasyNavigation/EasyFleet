@@ -19,9 +19,12 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "easyfleet_interfaces/msg/order_status.hpp"
+#include "easyfleet_interfaces/msg/robot_status.hpp"
 #include "easyfleet_mission_manager/capability_info.hpp"
 #include "easyfleet_mission_manager/capability_state.hpp"
 #include "easyfleet_mission_manager/detail/running_capability.hpp"
@@ -177,6 +180,18 @@ public:
   /// @return Every capability this robot announced, as known right now
   ///   (empty if this handle was never added to a `FleetSession`).
   std::vector<easyfleet_mission_manager::CapabilityInfo> capabilities() const;
+
+  /// @brief This robot's latest status (see `FleetSession::robot_status()`).
+  /// @return The status, or nothing if none was heard (or not in a session).
+  std::optional<easyfleet_interfaces::msg::RobotStatus> status() const;
+
+  /// @brief Asks this robot for an order (see `FleetSession::get_order()`).
+  /// @param order_id The order id (or goal UUID in hex).
+  /// @param timeout How long to wait for the answers.
+  /// @return The order, or nothing if unknown or not in a session.
+  std::optional<easyfleet_interfaces::msg::OrderStatus> get_order(
+    const std::string & order_id,
+    std::chrono::milliseconds timeout = std::chrono::milliseconds(2000)) const;
 
 private:
   friend class FleetSession;

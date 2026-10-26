@@ -22,6 +22,8 @@
 #include "rclcpp/node_interfaces/node_base_interface.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 
+#include "easyfleet_interfaces/msg/capability_status.hpp"
+
 namespace easyfleet_core
 {
 
@@ -89,6 +91,10 @@ public:
   /// @return The `robot` identity field published on /capabilities and
   ///   /capabilities_status.
   virtual const std::string & get_robot_name() const = 0;
+
+  /// @brief This capability's status, as in its /capabilities_status heartbeat.
+  /// @return The status.
+  virtual easyfleet_interfaces::msg::CapabilityStatus get_status() const = 0;
 };
 
 }  // namespace easyfleet_core

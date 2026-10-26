@@ -40,6 +40,9 @@ class CapabilityInfo:
         description_json_valid: bool = False,
         active: bool = False,
         busy: bool = False,
+        order_id: str = '',
+        order_state: int = 0,
+        link_state: int = 0,
     ):
         self.robot = robot
         self.capability = capability
@@ -49,6 +52,11 @@ class CapabilityInfo:
         self.description_json_valid = description_json_valid
         self.active = active
         self.busy = busy
+        # The order running now, or the last one, and its state
+        # (OrderStatus.STATE_*); whether it hears the fleet (CapabilityStatus.LINK_*).
+        self.order_id = order_id
+        self.order_state = order_state
+        self.link_state = link_state
 
 
 def _identity(info: CapabilityInfo) -> str:

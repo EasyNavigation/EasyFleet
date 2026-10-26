@@ -19,10 +19,13 @@ import copy
 import threading
 import time
 
-from easyfleet_interfaces.msg import CapabilityDescription, CapabilityStatus
+from easyfleet_interfaces.msg import (
+    CapabilityDescription, CapabilityStatus, FleetHeartbeat, RobotStatus)
+from easyfleet_interfaces.srv import GetOrder
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.time import Time
 
 from .capability_discovery import apply_description
 from .capability_info import CapabilityInfo
@@ -44,6 +47,10 @@ class FleetSession:
     a live registry of every capability announced on /capabilities and
     /capabilities_status, the registry of added robots, and the
     automatic status markers RobotHandle.run_capability() publishes.
+
+    The session also publishes /fleet_heartbeat once a second, the link
+    the robots' capabilities watch (`<capability>.link_timeout`), and
+    merges every /robot_status of each robot (see robot_status()).
 
     `SimpleController` -- a plain mission script driving robots by hand
     -- is the simplest possible thing built on top of a FleetSession,
@@ -84,6 +91,24 @@ class FleetSession:
             CapabilityStatus, '/capabilities_status', self._on_capability_status,
             QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
 
+        self._robot_status_lock = threading.Lock()
+        # robot -> {'capabilities': {action_name: (status, time)}, 'pose', 'battery', 'stamp'}
+        self._robot_status: dict[str, dict] = {}
+        self._robot_status_sub = self._node.create_subscription(
+            RobotStatus, '/robot_status', self._on_robot_status,
+            QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
+
+        # The link every capability with a link_timeout watches.
+        self._fleet_heartbeat_pub = self._node.create_publisher(
+            FleetHeartbeat, '/fleet_heartbeat',
+            QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT))
+        self._fleet_heartbeat_timer = self._node.create_timer(
+            1.0, lambda: self._fleet_heartbeat_pub.publish(
+                FleetHeartbeat(source=self._node.get_fully_qualified_name())))
+
+        self._get_order_lock = threading.Lock()
+        self._get_order_clients: dict = {}
+
         self._executor = SingleThreadedExecutor()
         self._executor.add_node(self._node)
         self._spin_thread = spin_in_background(self._executor)
@@ -100,7 +125,88 @@ class FleetSession:
             info.capability = msg.capability
             info.action_name = msg.action_name
             info.busy = msg.busy
+            info.order_id = msg.order_id
+            info.order_state = msg.order_state
+            info.link_state = msg.link_state
             self._last_heartbeat[msg.action_name] = time.monotonic()
+
+    def _on_robot_status(self, msg: RobotStatus) -> None:
+        now = time.monotonic()
+        with self._robot_status_lock:
+            entry = self._robot_status.setdefault(
+                msg.robot, {'capabilities': {}, 'pose': None, 'battery': None, 'stamp': None})
+            for capability in msg.capabilities:
+                entry['capabilities'][capability.action_name] = (capability, now)
+            if msg.has_pose:
+                entry['pose'] = msg.pose
+            if msg.has_battery:
+                entry['battery'] = msg.battery
+            if entry['stamp'] is None or Time.from_msg(msg.stamp) > Time.from_msg(entry['stamp']):
+                entry['stamp'] = msg.stamp
+
+    def robot_status(self, robot_name: str):
+        """
+        Return the latest RobotStatus of a robot, or None if none was heard.
+
+        Merged from every process that publishes /robot_status for it: the
+        capabilities reported within the last few seconds, and its last
+        known pose and battery.
+        """
+        now = time.monotonic()
+        with self._robot_status_lock:
+            entry = self._robot_status.get(robot_name)
+            if entry is None:
+                return None
+            msg = RobotStatus(robot=robot_name, stamp=entry['stamp'])
+            msg.capabilities = [
+                status for status, heard in entry['capabilities'].values()
+                if now - heard < ALIVE_TIMEOUT_SEC]
+            if entry['pose'] is not None:
+                msg.has_pose = True
+                msg.pose = entry['pose']
+            if entry['battery'] is not None:
+                msg.has_battery = True
+                msg.battery = entry['battery']
+            return msg
+
+    def get_order(self, robot_name: str, order_id: str, timeout_sec: float = 2.0):
+        """
+        Ask every known capability of a robot (`<action>/get_order`) for an order.
+
+        Call from the caller's thread, not from a callback.
+
+        :return: The newest matching OrderStatus, or None if no capability
+            has it (or none answered in time).
+        """
+        answers = []
+        with self._get_order_lock:
+            for info in self.capabilities_of(robot_name):
+                client = self._get_order_clients.get(info.action_name)
+                if client is None:
+                    client = self._node.create_client(GetOrder, info.action_name + '/get_order')
+                    self._get_order_clients[info.action_name] = client
+                if not client.service_is_ready():
+                    # Just created, or the capability is gone: give discovery a moment.
+                    client.wait_for_service(timeout_sec=0.2)
+                if client.service_is_ready():
+                    request = GetOrder.Request(order_id=order_id)
+                    answers.append((client, client.call_async(request)))
+
+        deadline = time.monotonic() + timeout_sec
+        newest = None
+        for client, future in answers:
+            while not future.done() and time.monotonic() < deadline:
+                time.sleep(0.01)
+            if not future.done():
+                client.remove_pending_request(future)
+                continue
+            response = future.result()
+            if response is not None and response.found and (
+                    newest is None or
+                    Time.from_msg(response.order.accepted_stamp) >
+                    Time.from_msg(newest.accepted_stamp)):
+                newest = response.order
+        return newest
 
     def _alive(self, action_name: str, now: float) -> bool:
         last = self._last_heartbeat.get(action_name)

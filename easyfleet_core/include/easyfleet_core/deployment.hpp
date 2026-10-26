@@ -27,6 +27,7 @@
 
 #include "easyfleet_core/capability_factory.hpp"
 #include "easyfleet_core/capability_node_base.hpp"
+#include "easyfleet_core/robot_status_publisher.hpp"
 
 namespace easyfleet
 {
@@ -176,6 +177,12 @@ public:
   /// @return Whether every capability reached ACTIVE.
   bool try_start();
 
+  /// @brief The /robot_status publisher, created by a successful start()
+  /// (nullptr before). See `easyfleet_core::RobotStatusPublisher` for its
+  /// `robot_status.*` parameters, read from this process's parameters.
+  /// @return The publisher, or nullptr.
+  easyfleet_core::RobotStatusPublisher * robot_status_publisher() const noexcept;
+
   /// @brief Adds every capability's node to one shared executor and blocks until
   /// SIGINT/SIGTERM (see `spin_until_shutdown()`), then deactivates and
   /// cleans up every capability -- in reverse order -- before returning.
@@ -211,6 +218,9 @@ private:
   /// distinct from theirs.
   rclcpp::Node::SharedPtr config_node();
   rclcpp::Node::SharedPtr config_node_;
+
+  /// @brief Last member: destroyed first, while the capabilities it reads exist.
+  std::unique_ptr<easyfleet_core::RobotStatusPublisher> robot_status_;
 };
 
 }  // namespace easyfleet

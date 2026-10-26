@@ -135,6 +135,30 @@ void ActionServerBase<ActionT>::disable_goals()
 }
 
 template<typename ActionT>
+void ActionServerBase<ActionT>::halt_active_goal()
+{
+  GoalHandleSharedPtr queued;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    queued = std::move(pending_handle_);
+    pending_handle_.reset();
+    if (active_handle_) {
+      goal_halt_requested_.store(true);
+    }
+  }
+  if (queued) {
+    settle_unstarted(queued);
+  }
+}
+
+template<typename ActionT>
+void ActionServerBase<ActionT>::set_goal_accepted_callback(GoalAcceptedCallback callback)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  goal_accepted_callback_ = std::move(callback);
+}
+
+template<typename ActionT>
 bool ActionServerBase<ActionT>::goals_enabled() const noexcept
 {
   return goals_enabled_.load();
@@ -211,7 +235,7 @@ bool ActionServerBase<ActionT>::is_preempt_requested() const noexcept
 template<typename ActionT>
 bool ActionServerBase<ActionT>::is_shutdown_requested() const noexcept
 {
-  return shutting_down_.load() || halt_requested_.load();
+  return shutting_down_.load() || halt_requested_.load() || goal_halt_requested_.load();
 }
 
 template<typename ActionT>
@@ -307,6 +331,19 @@ void ActionServerBase<ActionT>::handle_accepted(GoalHandleSharedPtr goal_handle)
     }
   }
 
+  GoalAcceptedCallback callback;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    callback = goal_accepted_callback_;
+  }
+  if (callback) {
+    std::string order_id;
+    if constexpr (detail::has_order_id<Goal>::value) {
+      order_id = goal_handle->get_goal()->order_id;
+    }
+    callback(goal_handle->get_goal_id(), order_id);
+  }
+
   if (bumped) {
     RCLCPP_WARN(
       node_logging_->get_logger(),
@@ -400,6 +437,7 @@ void ActionServerBase<ActionT>::worker_loop()
     {
       std::lock_guard<std::mutex> lock(mutex_);
       active_handle_.reset();
+      goal_halt_requested_.store(false);
     }
     idle_cv_.notify_all();
   }

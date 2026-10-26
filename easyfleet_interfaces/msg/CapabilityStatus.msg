@@ -23,3 +23,17 @@ string action_name
 # busy" apart from "alive and free" without having to send a goal (or a
 # preempting one) just to find out.
 bool busy
+
+# The order running now, or the last one when idle (empty if none yet), and
+# its state (OrderStatus.STATE_*).
+string order_id
+uint8 order_state
+
+# Whether this capability hears the fleet's heartbeat (/fleet_heartbeat).
+uint8 LINK_NOT_MONITORED=0
+uint8 LINK_WAITING=1
+uint8 LINK_OK=2
+uint8 LINK_LOST=3
+# LINK_NOT_MONITORED: its link_timeout is 0. LINK_WAITING: no heartbeat heard
+# yet. LINK_OK / LINK_LOST: the last one is newer / older than link_timeout.
+uint8 link_state

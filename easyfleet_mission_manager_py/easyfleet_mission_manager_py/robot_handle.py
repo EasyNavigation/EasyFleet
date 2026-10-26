@@ -162,6 +162,18 @@ class RobotHandle:
         session = self._session
         return session.capabilities_of(self._name) if session is not None else []
 
+    def status(self):
+        """Return this robot's latest RobotStatus, or None (see FleetSession.robot_status)."""
+        session = self._session
+        return session.robot_status(self._name) if session is not None else None
+
+    def get_order(self, order_id: str, timeout_sec: float = 2.0):
+        """Return this robot's OrderStatus for `order_id`, or None (see FleetSession.get_order)."""
+        session = self._session
+        if session is None:
+            return None
+        return session.get_order(self._name, order_id, timeout_sec)
+
     # --- Internal: called by FleetSession only, not part of the public API ---
 
     def _attach(self, session) -> None:

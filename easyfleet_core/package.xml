@@ -25,6 +25,8 @@
   <depend>rcl_interfaces</depend>
   <depend>lifecycle_msgs</depend>
   <depend>easyfleet_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>pluginlib</depend>
   <depend>ament_index_cpp</depend>
 

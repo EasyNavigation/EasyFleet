@@ -1,0 +1,7 @@
+# Served by every capability at <capability>/get_order (e.g.
+# /robot1/navigation/get_order): the state of one of its recent orders.
+string order_id
+---
+# False if this capability ran no such order, or it is no longer in its history.
+bool found
+OrderStatus order

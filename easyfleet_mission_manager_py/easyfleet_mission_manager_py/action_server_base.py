@@ -125,6 +125,9 @@ class ActionServerBase:
         self._idle = threading.Condition(self._lock)
         self._shutting_down = False
         self._halt_requested = False
+        # Set by halt_active_goal(), cleared when the running goal returns.
+        self._goal_halt_requested = False
+        self._goal_accepted_callback = None
         self._goals_enabled = True
         # Keyed by id(goal_handle): ServerGoalHandle isn't hashable. Goals
         # accepted whose on_execute() hasn't started yet, and the one whose
@@ -172,13 +175,43 @@ class ActionServerBase:
         """
         with self._idle:
             self._goals_enabled = False
-            if not self._waiting_handles and not self._active_handles:
+            # Waiting goals never run: they abort when dispatched. Not waited
+            # for, as their dispatch may never come (e.g. executor stopped).
+            for waiting in self._waiting_handles.values():
+                waiting._easyfleet_preempted = True
+            self._waiting_handles.clear()
+            if not self._active_handles:
                 return
             self._halt_requested = True
             self._idle.notify_all()
-            while self._waiting_handles or self._active_handles:
+            while self._active_handles:
                 self._idle.wait(0.05)
             self._halt_requested = False
+
+    def halt_active_goal(self) -> None:
+        """
+        Ask the running goal to stop, and abort waiting ones, without disabling goals.
+
+        `is_shutdown_requested()` is True until the running goal returns.
+        Does not wait. Used, e.g., when the link to the fleet is lost.
+        """
+        with self._idle:
+            for waiting in self._waiting_handles.values():
+                waiting._easyfleet_preempted = True
+            self._waiting_handles.clear()
+            if self._active_handles:
+                self._goal_halt_requested = True
+            self._idle.notify_all()
+
+    def set_goal_accepted_callback(self, callback) -> None:
+        """
+        Set the callback called with every accepted goal (None: none).
+
+        Called as `callback(goal_uuid, order_id)`, with `order_id` empty if
+        the goal has no such field.
+        """
+        with self._lock:
+            self._goal_accepted_callback = callback
 
     def goals_enabled(self) -> bool:
         """Return whether new goals are currently accepted."""
@@ -211,9 +244,9 @@ class ActionServerBase:
         return getattr(goal_handle, '_easyfleet_preempted', False)
 
     def is_shutdown_requested(self) -> bool:
-        """Return whether the running goal must stop: goals are being disabled or destroyed."""
+        """Return whether the running goal must stop: disabled, destroyed or halted."""
         with self._lock:
-            return self._shutting_down or self._halt_requested
+            return self._shutting_down or self._halt_requested or self._goal_halt_requested
 
     @property
     def logger(self):
@@ -322,6 +355,12 @@ class ActionServerBase:
         with self._lock:
             preempted = list(self._active_handles.values()) + list(self._waiting_handles.values())
             self._waiting_handles[id(goal_handle)] = goal_handle
+            callback = self._goal_accepted_callback
+
+        if callback is not None:
+            callback(
+                bytes(goal_handle.goal_id.uuid),
+                getattr(goal_handle.request, 'order_id', ''))
 
         for preempted_handle in preempted:
             preempted_handle._easyfleet_preempted = True
@@ -397,4 +436,5 @@ class ActionServerBase:
             self._thread_local.goal_handle = None
             with self._idle:
                 self._active_handles.pop(id(goal_handle), None)
+                self._goal_halt_requested = False
                 self._idle.notify_all()

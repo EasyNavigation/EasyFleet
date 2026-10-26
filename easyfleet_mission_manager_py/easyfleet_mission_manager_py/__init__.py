@@ -38,6 +38,7 @@ from .capability_info import CapabilityInfo, print_capability_info, print_capabi
 from .capability_state import CapabilityState
 from .capability_state import to_string as capability_state_to_string
 from .fleet_session import FleetSession
+from .link_watchdog import LinkWatchdog
 from .mission_helpers import (
     find_robot_capability,
     make_manipulation_feedback_printer,
@@ -54,7 +55,9 @@ from .mission_helpers import (
     RUN_TIMEOUT_SEC,
     spin_in_background,
 )
+from .order_history import OrderHistory
 from .robot_handle import MissionManagerError, RobotHandle
+from .robot_status_publisher import RobotStatusPublisher
 from .simple_controller import SimpleController
 from .status_markers import StatusMarkerPublisher
 from .throttle import Throttle
@@ -69,11 +72,14 @@ __all__ = [
     'CapabilityResponse',
     'CapabilityState',
     'FleetSession',
+    'LinkWatchdog',
     'Manipulation',
     'MissionManagerError',
     'Navigation',
+    'OrderHistory',
     'Perception',
     'RobotHandle',
+    'RobotStatusPublisher',
     'SimpleController',
     'StatusMarkerPublisher',
     'Throttle',
